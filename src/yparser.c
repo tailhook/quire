@@ -60,6 +60,8 @@ charinfo chars[256];
 
 char *token_to_str[] = {
     "ERROR",
+    "DOC_START",
+    "DOC_END",
     "WHITESPACE",
     "PLAINSTRING",
     "SINGLESTRING",
@@ -281,8 +283,10 @@ static yaml_token *init_token(yaml_parse_context *ctx) {
 
 int yaml_tokenize(yaml_parse_context *ctx) {
 
-#define KLASS (chars[(int)(*ctx->ptr)].klass)
-#define FLAGS (chars[(int)(*ctx->ptr)].flags)
+#define KLASS (chars[(int)CHAR].klass)
+#define FLAGS (chars[(int)CHAR].flags)
+#define NEXT_KLASS (chars[(int)NEXT_CHAR].klass)
+#define NEXT_FLAGS (chars[(int)NEXT_CHAR].flags)
 #define LOOP for(; ctx->ptr < end; ++ctx->ptr, ++ctx->curpos)
 #define NEXT ((++ctx->curpos, ++ctx->ptr) < end)
 #define FORCE_NEXT if((++ctx->curpos, ++ctx->ptr) >= end) { \
@@ -510,9 +514,9 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 ctok->kind = TOKEN_PLAINSTRING;
                 int flag = ctx->flow_num ? CHAR_PLAIN_FLOW : CHAR_PLAIN;
                 LOOP {
-                    if(!(FLAGS & flag)) break;
-                    if(CHAR == ':' && NEXT_CHAR == ' ') break;
-                    if(CHAR == ' ' && NEXT_CHAR == '#') break;
+                    if(!(FLAGS & flag) && CHAR != ' ' && CHAR != '\t') break;
+                    if(CHAR == ':' && NEXT_KLASS == CHAR_WHITESPACE) break;
+                    if(KLASS == CHAR_WHITESPACE && NEXT_CHAR == '#') break;
                 }
             } else {
                 SYNTAX_ERROR("Wrong character, only printable chars allowed");
