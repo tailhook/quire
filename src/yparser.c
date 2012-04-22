@@ -482,7 +482,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 break;
             // end of indicators
             };
-            if(CHAR != '?' && CHAR != '-') {
+            if(CHAR != '?' && CHAR != '-' && CHAR != ':') {
                 ctx->linestart = 0;
             }
             break;
