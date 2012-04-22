@@ -84,6 +84,8 @@ char *token_to_str[] = {
 
 typedef enum token_kind {
     TOKEN_ERROR,
+    TOKEN_DOC_START,
+    TOKEN_DOC_END,
     TOKEN_WHITESPACE,
     TOKEN_PLAINSTRING,
     TOKEN_SINGLESTRING,
@@ -326,7 +328,11 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 if(KLASS == CHAR_WHITESPACE) {
                     ctok->kind = TOKEN_SEQUENCE_ENTRY;
                     break;
-                } else {  // TODO(tailhook) document start
+                } else if(CHAR == '-' && NEXT && CHAR == '-') {
+                    ctok->kind = TOKEN_DOC_START;
+                    (void)NEXT;
+                    break;
+                } else {
                     goto plainstring;
                 }
             case '?': // key, plainstring
@@ -495,6 +501,11 @@ int yaml_tokenize(yaml_parse_context *ctx) {
         default:
             ctx->linestart = 0;
             if(FLAGS & CHAR_PLAIN) {
+                if(CHAR == '.' && NEXT && CHAR == '.' && NEXT && CHAR == '.') {
+                    ctok->kind = TOKEN_DOC_END;
+                    (void)NEXT;
+                    break;
+                }
         plainstring:
                 ctok->kind = TOKEN_PLAINSTRING;
                 int flag = ctx->flow_num ? CHAR_PLAIN_FLOW : CHAR_PLAIN;
