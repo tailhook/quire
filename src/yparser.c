@@ -115,6 +115,7 @@ typedef enum char_klass {
     CHAR_UNKNOWN,
     CHAR_INDICATOR,
     CHAR_WHITESPACE,
+    CHAR_DIGIT,
 } char_klass;
 
 typedef enum char_flag {
@@ -127,9 +128,9 @@ typedef enum char_flag {
 } char_flag;
 
 void yaml_init() {
-    chars[0x09].flags |= CHAR_PRINTABLE;
-    chars[0x0A].flags |= CHAR_PRINTABLE;
-    chars[0x0D].flags |= CHAR_PRINTABLE;
+    chars['\t'].flags |= CHAR_PRINTABLE;
+    chars['\r'].flags |= CHAR_PRINTABLE;
+    chars['\n'].flags |= CHAR_PRINTABLE;
     for(int i = 0x20; i <= 0x7E; ++i)
         chars[i].flags |= CHAR_PRINTABLE;
     for(int i = 0x80; i <= 0xFF; ++i)  // UTF-8 encoded chars
@@ -150,6 +151,9 @@ void yaml_init() {
     chars['\t'].klass = CHAR_WHITESPACE;
     chars['\r'].klass = CHAR_WHITESPACE;
     chars['\n'].klass = CHAR_WHITESPACE;
+    for(int i = '0'; i <= '9'; ++i) {
+        chars[i].klass = CHAR_DIGIT;
+    }
 }
 
 
@@ -278,7 +282,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 #define KLASS (chars[(int)(*ctx->ptr)].klass)
 #define FLAGS (chars[(int)(*ctx->ptr)].flags)
 #define LOOP for(; ctx->ptr < end; ++ctx->ptr, ++ctx->curpos)
-#define NEXT ((++ctx->curpos, ++ctx->ptr) >= end)
+#define NEXT ((++ctx->curpos, ++ctx->ptr) < end)
 #define FORCE_NEXT if((++ctx->curpos, ++ctx->ptr) >= end) { \
     ctok->kind = TOKEN_ERROR; \
     ctok->end_line = ctx->curline; \
@@ -397,12 +401,54 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                     CONSUME_WHILE(FLAGS & CHAR_TAG);
                 }
                 break;
-            case '>':
-                assert(0);
-                break;
             case '|':
-                assert(0);
-                break;
+                ctok->kind = TOKEN_LITERAL;
+                goto blockscalar;
+            case '>':
+                ctok->kind = TOKEN_FOLDED;
+            blockscalar: {
+                FORCE_NEXT;
+                int indent = ctx->indent+1;
+                if(CHAR == '-' || CHAR == '+') { // chop
+                    FORCE_NEXT;
+                }
+                if(KLASS == CHAR_DIGIT) {
+                    printf("HERE %.*s %d\n", 10, ctx->ptr, FLAGS);
+                    char *endptr;
+                    indent = strtol(ctx->ptr, &endptr, 10);
+                    if(indent > 10000 || indent <= 0)
+                        SYNTAX_ERROR("Wrong indentation indicator");
+                    indent += ctx->indent;
+                    ctx->curpos += endptr - ctx->ptr;
+                    ctx->ptr = endptr;
+                }
+                if(CHAR == '-' || CHAR == '+') { // chop
+                    FORCE_NEXT;
+                }
+                CONSUME_WHILE(KLASS == CHAR_WHITESPACE && CHAR != '\n');
+                if(CHAR == '#') {
+                    CONSUME_WHILE(CHAR != '\n');
+                }
+                if(CHAR != '\n')
+                    SYNTAX_ERROR("Garbage after block scalar indicator");
+                ctx->curline += 1;
+                ctx->curpos = 0;
+                if(!NEXT) break;
+                for(;;) {
+                    char *linestart = ctx->ptr;
+                    CONSUME_WHILE(CHAR == ' ');
+                    if(ctx->curpos-1 < indent && CHAR != '\n') {
+                        ctx->ptr = linestart;
+                        ctx->curpos = 0;
+                        break;
+                    } else {
+                    }
+                    CONSUME_WHILE(CHAR != '\n');
+                    ctx->curline += 1;
+                    ctx->curpos = 0;
+                    if(!NEXT) break;
+                }
+                } break;
             // flow indicators
             case ',':
                 ctok->kind = TOKEN_FLOW_ENTRY;
@@ -426,9 +472,9 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 break;
             // end of indicators
             };
-            //if(CHAR != '?' && CHAR != '-') {
-            //    ctx->linestart = 0;
-            //}
+            if(CHAR != '?' && CHAR != '-') {
+                ctx->linestart = 0;
+            }
             break;
         case CHAR_WHITESPACE:
             ctok->kind = TOKEN_WHITESPACE;
@@ -458,8 +504,6 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                     if(CHAR == ' ' && NEXT_CHAR == '#') break;
                 }
             } else {
-                printf("CHAR %x\n", CHAR);
-                printf("CLS %d\n", CHAR_INDICATOR);
                 SYNTAX_ERROR("Wrong character, only printable chars allowed");
             }
             break;
@@ -487,6 +531,16 @@ void safeprint(FILE *stream, char *data, int len) {
     }
 }
 
+void yaml_print_tokens(yaml_parse_context *ctx, FILE *stream) {
+    yaml_token *tok;
+    CIRCLEQ_FOREACH(tok, &ctx->tokens, lst) {
+        fprintf(stream, "%s:%d %s [%d]``", tok->filename, tok->start_line,
+            token_to_str[tok->kind], tok->indent);
+        safeprint(stream, tok->data, tok->bytelen);
+        fprintf(stream, "''\n");
+    }
+}
+
 /// TEMPORARY MAIN
 int main(int argc, char **argv) {
     assert(argc >= 2);
@@ -504,13 +558,7 @@ int main(int argc, char **argv) {
             ctx.filename, ctx.error_token->start_line,
             ctx.error_text);
     } else {
-        yaml_token *tok;
-        CIRCLEQ_FOREACH(tok, &ctx.tokens, lst) {
-            printf("%s:%d %s [%d]``", tok->filename, tok->start_line,
-                token_to_str[tok->kind], tok->indent);
-            safeprint(stdout, tok->data, tok->bytelen);
-            printf("''\n");
-        }
+        yaml_print_tokens(&ctx, stdout);
     }
     rc = yaml_context_free(&ctx);
     assert(rc != -1);
