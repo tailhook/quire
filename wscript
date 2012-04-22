@@ -26,7 +26,6 @@ def configure(conf):
     conf.env.BUILD_SHARED = Options.options.build_shared
 
 def build(bld):
-    pass
     bld(
         features     = ['c', ('cshlib'
             if bld.env.BUILD_SHARED else 'cstlib')],
@@ -45,6 +44,15 @@ def build(bld):
         defines      = ['COYAML_VERSION="%s"' % VERSION],
         cflags       = ['-std=c99', '-Wall'],
         lib          = ['yaml'],
+        )
+    bld(
+        features     = ['c', 'cprogram'],
+        source       = [
+            'src/yparser.c',
+            ],
+        target       = 'yparser',
+        includes     = ['include', 'src'],
+        cflags       = ['-std=c99', '-Wall'],
         )
     if bld.env.BUILD_SHARED:
         bld.install_files('${PREFIX}/lib', 'libcoyaml.so')
