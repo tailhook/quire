@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define MAX_FLOW_STACK 128
+#include "yparser.h"
 
 char c_sequence_entry[] = "-";
 char c_mapping_key[] = "?";
@@ -112,7 +112,8 @@ typedef enum token_kind {
 
 typedef enum yaml_error {
     YAML_NO_ERROR,
-    YAML_SCANNER_ERROR
+    YAML_SCANNER_ERROR,
+    YAML_PARSER_ERROR
 } yaml_error;
 
 typedef enum char_klass {
@@ -173,48 +174,11 @@ void obstack_chunk_free(void *ptr) {
 }
 
 
-typedef struct token_s {
-    CIRCLEQ_ENTRY(token_s) lst;
-    int kind;
-
-    char *filename;
-    int indent;  // indentation, -1 if middle of the line or flow context
-    int start_line;
-    int start_char;
-    int end_line;
-    int end_char;
-    char *data;  // real pointer to data
-    int bytepos;  // byte offset from start of file
-    int bytelen;  // length in bytes
-
-} yaml_token;
-
-typedef struct parse_context_s {
-    struct obstack pieces;
-    CIRCLEQ_HEAD(token_list, token_s) tokens;
-    char *filename;
-    char *buf;
-    int buflen;
-
-    int linestart; // boolean flag if we are still at indentation
-    int curline;
-    int curpos;
-    int indent;
-    char *ptr;
-    int flow_num;
-    char flow_stack[MAX_FLOW_STACK];
-
-    int error_kind;
-    char *error_text;
-    yaml_token *error_token;
-
-} yaml_parse_context;
-
-
 int yaml_context_init(yaml_parse_context *ctx) {
     obstack_init(&ctx->pieces);
     CIRCLEQ_INIT(&ctx->tokens);
     ctx->buf = NULL;
+    ctx->error_kind = 0;
     return 0;
 }
 
@@ -278,6 +242,7 @@ static yaml_token *init_token(yaml_parse_context *ctx) {
     ctok->data = ctx->ptr;
     ctok->bytepos = ctx->ptr - ctx->buf;
     ctok->bytelen = 0;
+    ctok->owner_node = NULL;
     return ctok;
 }
 
@@ -321,6 +286,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
     ctx->curpos = 1;
     ctx->indent = 0;
     ctx->ptr = ctx->buf;
+    ctx->flow_num = 0;
     for(;ctx->ptr < end;) {
         yaml_token *ctok = init_token(ctx);
         switch(KLASS) {
@@ -423,7 +389,6 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                     FORCE_NEXT;
                 }
                 if(KLASS == CHAR_DIGIT) {
-                    printf("HERE %.*s %d\n", 10, ctx->ptr, FLAGS);
                     char *endptr;
                     indent = strtol(ctx->ptr, &endptr, 10);
                     if(indent > 10000 || indent <= 0)
@@ -466,18 +431,30 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 break;
             case '[':
                 ctok->kind = TOKEN_FLOW_SEQ_START;
+                if(ctx->flow_num >= MAX_FLOW_STACK)
+                    SYNTAX_ERROR("Too big flow context depth");
+                ctx->flow_stack[ctx->flow_num ++] = '[';
                 (void)NEXT;
                 break;
             case ']':
                 ctok->kind = TOKEN_FLOW_SEQ_END;
+                if(ctx->flow_num == 0 ||
+                   ctx->flow_stack[-- ctx->flow_num] != '[')
+                    SYNTAX_ERROR("Unmatched ]");
                 (void)NEXT;
                 break;
             case '{':
                 ctok->kind = TOKEN_FLOW_MAP_START;
+                if(ctx->flow_num >= MAX_FLOW_STACK)
+                    SYNTAX_ERROR("Too big flow context depth");
+                ctx->flow_stack[ctx->flow_num ++] = '{';
                 (void)NEXT;
                 break;
             case '}':
                 ctok->kind = TOKEN_FLOW_MAP_END;
+                if(ctx->flow_num == 0 ||
+                   ctx->flow_stack[-- ctx->flow_num] != '{')
+                    SYNTAX_ERROR("Unmatched }");
                 (void)NEXT;
                 break;
             // end of indicators
@@ -528,9 +505,12 @@ int yaml_tokenize(yaml_parse_context *ctx) {
         ctok->bytelen = ctx->ptr - ctok->data;
     }
     return 0;
+
+#undef NEXT
+#undef SYNTAX_ERROR
 }
 
-void safeprint(FILE *stream, char *data, int len) {
+static void safeprint(FILE *stream, char *data, int len) {
     for(char *c = data, *end = data + len; c < end; ++c) {
         if(chars[(int)*c].flags & CHAR_PRINTABLE) {
             if(*c == '\r') {
@@ -546,38 +526,104 @@ void safeprint(FILE *stream, char *data, int len) {
     }
 }
 
+static void print_token(yaml_token *tok, FILE *stream) {
+    fprintf(stream, "%s:%d %s [%d]``", tok->filename, tok->start_line,
+        token_to_str[tok->kind], tok->indent);
+    safeprint(stream, tok->data, tok->bytelen);
+    fprintf(stream, "''\n");
+}
+
+static yaml_ast_node *new_node(yaml_parse_context *ctx) {
+    yaml_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(yaml_ast_node));
+    node->kind = NODE_UNKNOWN;
+    node->anchor = NULL;
+    node->tag = NULL;
+    node->start_token = NULL;
+    node->end_token = NULL;
+    node->content = NULL;
+    node->content_len = 0;
+    CIRCLEQ_INIT(&node->children);
+    return node;
+}
+
+static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
+    yaml_ast_node *node = new_node(ctx);
+    node->kind = NODE_SCALAR;
+    node->start_token = tok;
+    node->end_token = tok;
+    // TODO(tailhook) parse content
+    return node;
+}
+
+#define CTOK (ctx->cur_token)
+#define NEXT { CTOK = CIRCLEQ_NEXT(CTOK, lst); SKIP; }
+#define SKIP while(CTOK && (CTOK->kind == TOKEN_WHITESPACE \
+                            || CTOK->kind == TOKEN_COMMENT)) { \
+    CTOK = CIRCLEQ_NEXT(CTOK, lst); \
+    }
+#define SYNTAX_ERROR(message) { \
+    if(!CTOK) { \
+        ctok = CIRCLEQ_LAST(&ctx->tokens); \
+    } \
+    ctx->error_kind = YAML_PARSER_ERROR; \
+    ctx->error_text = message; \
+    ctx->error_token = CTOK; \
+    return NULL; \
+    }
+#define TOKEN_SCALAR(tok) ((tok)->kind == TOKEN_PLAINSTRING || \
+                           (tok)->kind == TOKEN_SINGLESTRING || \
+                           (tok)->kind == TOKEN_DOUBLESTRING || \
+                           (tok)->kind == TOKEN_LITERAL || \
+                           (tok)->kind == TOKEN_FOLDED)
+
+
+yaml_ast_node *parse_node(yaml_parse_context *ctx) {
+
+    if(TOKEN_SCALAR(CTOK)) {
+        yaml_ast_node *res = new_text_node(ctx, CTOK);
+        NEXT;
+        return res;
+    }
+    if(CTOK->kind == TOKEN_SEQUENCE_ENTRY) {
+        yaml_ast_node *node = new_node(ctx);
+        node->kind = NODE_SEQUENCE;
+        while(CTOK->kind == TOKEN_SEQUENCE_ENTRY) {
+            NEXT;
+            yaml_ast_node *child = parse_node(ctx);
+            CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+        }
+        return node;
+    }
+    return NULL;
+}
+
+
+int yaml_parse(yaml_parse_context *ctx) {
+
+    ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
+    SKIP;
+    while(CTOK && CTOK->kind == TOKEN_DIRECTIVE) {
+        // TODO(tailhook) parse directives
+        NEXT;
+    }
+    if(!CTOK) return 0;
+    if(CTOK->kind == TOKEN_DOC_START) NEXT;
+    if(CTOK->kind == TOKEN_DOC_END) return 0;
+
+    ctx->document = parse_node(ctx);
+
+    //print_token(CTOK, stdout);
+    assert(CTOK->kind == TOKEN_DOC_END);
+
+    return 0;
+}
+
+
 void yaml_print_tokens(yaml_parse_context *ctx, FILE *stream) {
     yaml_token *tok;
     CIRCLEQ_FOREACH(tok, &ctx->tokens, lst) {
-        fprintf(stream, "%s:%d %s [%d]``", tok->filename, tok->start_line,
-            token_to_str[tok->kind], tok->indent);
-        safeprint(stream, tok->data, tok->bytelen);
-        fprintf(stream, "''\n");
+        print_token(tok, stream);
     }
-}
-
-/// TEMPORARY MAIN
-int main(int argc, char **argv) {
-    assert(argc >= 2);
-    yaml_init();
-    yaml_parse_context ctx;
-    int rc;
-    rc = yaml_context_init(&ctx);
-    assert(rc != -1);
-    rc = yaml_load_file(&ctx, argv[1]);
-    assert(rc != -1);
-    rc = yaml_tokenize(&ctx);
-    assert(rc != -1);
-    if(ctx.error_kind) {
-        fprintf(stderr, "Error parsing file %s:%d: %s\n",
-            ctx.filename, ctx.error_token->start_line,
-            ctx.error_text);
-    } else {
-        yaml_print_tokens(&ctx, stdout);
-    }
-    rc = yaml_context_free(&ctx);
-    assert(rc != -1);
-    return 0;
 }
 
 

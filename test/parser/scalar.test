@@ -1,0 +1,5 @@
+Hello world!
+...
+---
+- command-line: ytool -E .
+  output: "Hello world!"
