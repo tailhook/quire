@@ -53,7 +53,7 @@ def build(bld):
             ],
         target       = 'ytool',
         includes     = ['include', 'src'],
-        cflags       = ['-std=c99', '-Wall'],
+        cflags       = ['-std=gnu99', '-Wall'],
         )
     if bld.env.BUILD_SHARED:
         bld.install_files('${PREFIX}/lib', 'libcoyaml.so')

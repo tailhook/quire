@@ -8,6 +8,33 @@
 #define MAX_FLOW_STACK 128
 #define MAX_NODE_STACK 256
 
+typedef enum token_kind {
+    // Keep in sync with strings in yparser.c
+    TOKEN_ERROR,
+    TOKEN_DOC_START,
+    TOKEN_DOC_END,
+    TOKEN_WHITESPACE,
+    TOKEN_PLAINSTRING,
+    TOKEN_SINGLESTRING,
+    TOKEN_DOUBLESTRING,
+    TOKEN_LITERAL,
+    TOKEN_FOLDED,
+    TOKEN_COMMENT,
+    TOKEN_TAG,
+    TOKEN_ALIAS,
+    TOKEN_ANCHOR,
+    TOKEN_SEQUENCE_ENTRY,  // '-'
+    TOKEN_MAPPING_KEY,  // '?'
+    TOKEN_MAPPING_VALUE,  // ':'
+    TOKEN_FLOW_SEQ_START,  // '['
+    TOKEN_FLOW_SEQ_END,  // ']'
+    TOKEN_FLOW_MAP_START,  // '{'
+    TOKEN_FLOW_MAP_END,  // '}'
+    TOKEN_FLOW_ENTRY,  // ','
+    TOKEN_DIRECTIVE,  // '%...'
+    TOKEN_RESERVED,  // '@' or '`'
+} token_kind;
+
 typedef enum node_kind {
     NODE_UNKNOWN,
     NODE_ALIAS,

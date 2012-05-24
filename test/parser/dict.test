@@ -1,0 +1,13 @@
+fruit: apple
+vegetable: carrot
+berry: cherry
+...
+---
+- command-line: ytool -E .fruit
+  output: "apple"
+- command-line: ytool -E .vegetable
+  output: "carrot"
+- command-line: ytool -E .berry
+  output: "cherry"
+- command-line: ytool -E .test
+  result: 1

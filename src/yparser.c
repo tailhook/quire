@@ -59,6 +59,7 @@ typedef struct {
 charinfo chars[256];
 
 char *token_to_str[] = {
+    // Keep in sync with enum in yparser.h
     "ERROR",
     "DOC_START",
     "DOC_END",
@@ -84,31 +85,6 @@ char *token_to_str[] = {
     "RESERVED",  // '@' or '`'
 };
 
-typedef enum token_kind {
-    TOKEN_ERROR,
-    TOKEN_DOC_START,
-    TOKEN_DOC_END,
-    TOKEN_WHITESPACE,
-    TOKEN_PLAINSTRING,
-    TOKEN_SINGLESTRING,
-    TOKEN_DOUBLESTRING,
-    TOKEN_LITERAL,
-    TOKEN_FOLDED,
-    TOKEN_COMMENT,
-    TOKEN_TAG,
-    TOKEN_ALIAS,
-    TOKEN_ANCHOR,
-    TOKEN_SEQUENCE_ENTRY,  // '-'
-    TOKEN_MAPPING_KEY,  // '?'
-    TOKEN_MAPPING_VALUE,  // ':'
-    TOKEN_FLOW_SEQ_START,  // '['
-    TOKEN_FLOW_SEQ_END,  // ']'
-    TOKEN_FLOW_MAP_START,  // '{'
-    TOKEN_FLOW_MAP_END,  // '}'
-    TOKEN_FLOW_ENTRY,  // ','
-    TOKEN_DIRECTIVE,  // '%...'
-    TOKEN_RESERVED,  // '@' or '`'
-} token_kind;
 
 typedef enum yaml_error {
     YAML_NO_ERROR,
@@ -556,6 +532,7 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 }
 
 #define CTOK (ctx->cur_token)
+#define NTOK CIRCLEQ_NEXT(CTOK, lst)
 #define NEXT { CTOK = CIRCLEQ_NEXT(CTOK, lst); SKIP; }
 #define SKIP while(CTOK && (CTOK->kind == TOKEN_WHITESPACE \
                             || CTOK->kind == TOKEN_COMMENT)) { \
@@ -580,9 +557,27 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 yaml_ast_node *parse_node(yaml_parse_context *ctx) {
 
     if(TOKEN_SCALAR(CTOK)) {
-        yaml_ast_node *res = new_text_node(ctx, CTOK);
-        NEXT;
-        return res;
+        if(NTOK
+            && NTOK->kind == TOKEN_MAPPING_VALUE
+            && NTOK->start_line == CTOK->start_line) {
+            // MAPPING
+            yaml_ast_node *node = new_node(ctx);
+            node->kind = NODE_MAPPING;
+            while(TOKEN_SCALAR(CTOK)
+                && NTOK->kind == TOKEN_MAPPING_VALUE
+                && NTOK->start_line == CTOK->start_line) {
+                yaml_ast_node *child = new_text_node(ctx, CTOK);
+                CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+                NEXT; NEXT;
+                child = parse_node(ctx);
+                CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+            }
+            return node;
+        } else { // SCALAR
+            yaml_ast_node *res = new_text_node(ctx, CTOK);
+            NEXT;
+            return res;
+        }
     }
     if(CTOK->kind == TOKEN_SEQUENCE_ENTRY) {
         yaml_ast_node *node = new_node(ctx);

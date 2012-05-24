@@ -3,6 +3,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
+#include <sys/queue.h>
 
 #include "yparser.h"
 
@@ -79,6 +81,19 @@ void serialize_yaml(FILE *out, yaml_ast_node *node) {
     fprintf(out, "\n");
 }
 
+char *scalar_node_value(yaml_ast_node *node) {
+    if(node->content)
+        return node->content;
+    if(node->start_token == node->end_token
+        && node->start_token->kind == TOKEN_PLAINSTRING) {
+        node->content = strndup(node->start_token->data,
+                                node->start_token->bytelen);
+        return node->content;
+    }
+    fprintf(stderr, "Not implemented\n");
+    exit(98);
+}
+
 void execute_action(char **argv, yaml_ast_node *root) {
     if(options.action == A_EXTRACT) {
         int resultok = 0;
@@ -102,8 +117,20 @@ void execute_action(char **argv, yaml_ast_node *root) {
                     }
                 }
             } else {
-                fprintf(stderr, "Not implemented\n");
-                exit(98);
+                if(curnode->kind != NODE_MAPPING) {
+                    exit(1); // Nothing found
+                }
+                yaml_ast_node *child;
+                CIRCLEQ_FOREACH(child, &curnode->children, lst) {
+                    if(!strcmp(scalar_node_value(child), argv[0]+1)) {
+                        resultok = 1;
+                        child = CIRCLEQ_NEXT(child, lst);
+                        serialize_yaml(stdout, child);
+                    } else {
+                        child = CIRCLEQ_NEXT(child, lst);
+                        if(!child) break;
+                    }
+                }
             }
         }
         if(!resultok) exit(1);
