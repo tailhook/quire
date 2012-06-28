@@ -11,3 +11,5 @@
   output: "fgh"
 - command-line: ytool -E :3
   result: 1
+- command-line: ytool -E :4
+  result: 1

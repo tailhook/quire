@@ -122,8 +122,9 @@ int extract(char *path, yaml_ast_node *root) {
         case OBJPATH_INDEX:
             if(cur->kind != NODE_SEQUENCE)
                 goto fail;
-            CIRCLEQ_FOREACH(cur, &cur->children, lst) {
+            CIRCLEQ_FOREACH(iter, &cur->children, lst) {
                 if(!val.index--) {
+                    cur = iter;
                     goto success;
                 }
             }
