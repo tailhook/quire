@@ -50,9 +50,10 @@ def build(bld):
         source       = [
             'src/ytool.c',
             'src/yparser.c',
+            'objpath/objpath.c',
             ],
         target       = 'ytool',
-        includes     = ['include', 'src'],
+        includes     = ['include', 'src', '.'],
         cflags       = ['-std=gnu99', '-Wall'],
         )
     if bld.env.BUILD_SHARED:

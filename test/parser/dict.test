@@ -3,11 +3,11 @@ vegetable: carrot
 berry: cherry
 ...
 ---
-- command-line: ytool -E .fruit
+- command-line: ytool -E /fruit
   output: "apple"
-- command-line: ytool -E .vegetable
+- command-line: ytool -E /vegetable
   output: "carrot"
-- command-line: ytool -E .berry
+- command-line: ytool -E /berry
   output: "cherry"
-- command-line: ytool -E .test
+- command-line: ytool -E /test
   result: 1

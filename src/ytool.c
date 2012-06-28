@@ -7,6 +7,7 @@
 #include <sys/queue.h>
 
 #include "yparser.h"
+#include "objpath/objpath.h"
 
 char short_options[] = "Ehf:v";
 struct option long_options[] = {
@@ -94,46 +95,100 @@ char *scalar_node_value(yaml_ast_node *node) {
     exit(98);
 }
 
-void execute_action(char **argv, yaml_ast_node *root) {
-    if(options.action == A_EXTRACT) {
-        int resultok = 0;
-        if(!strcmp(argv[0], ".")) {
-            serialize_yaml(stdout, root);
-        } else if(argv[0][0] != '.') {
-            fprintf(stderr, "Path must start with a dot\n");
-            exit(99);
-        } else {
-            yaml_ast_node *curnode = root;
-            if(isdigit(argv[0][1])) {
-                if(curnode->kind != NODE_SEQUENCE) {
-                    exit(1); // Nothing found
-                }
-                int idx = atoi(argv[0]+1);
-                yaml_ast_node *child;
-                CIRCLEQ_FOREACH(child, &curnode->children, lst) {
-                    if(!idx--) {
-                        resultok = 1;
-                        serialize_yaml(stdout, child);
-                    }
-                }
-            } else {
-                if(curnode->kind != NODE_MAPPING) {
-                    exit(1); // Nothing found
-                }
-                yaml_ast_node *child;
-                CIRCLEQ_FOREACH(child, &curnode->children, lst) {
-                    if(!strcmp(scalar_node_value(child), argv[0]+1)) {
-                        resultok = 1;
-                        child = CIRCLEQ_NEXT(child, lst);
-                        serialize_yaml(stdout, child);
-                    } else {
-                        child = CIRCLEQ_NEXT(child, lst);
-                        if(!child) break;
-                    }
+int extract(char *path, yaml_ast_node *root) {
+    int res = 1;  // if nothing found
+    void *pattern = objpath_compile(path);
+    void *ctx = objpath_start(pattern);
+    yaml_ast_node *cur = root;
+    yaml_ast_node *iter = NULL;
+    objpath_value_t val;
+    int opcode;
+    while(objpath_next(ctx, &opcode, &val, (void **)&cur, (void **)&iter)) {
+        switch(opcode) {
+        case OBJPATH_KEY:
+            if(cur->kind != NODE_MAPPING)
+                goto fail;
+            CIRCLEQ_FOREACH(iter, &cur->children, lst) {
+                if(!strcmp(scalar_node_value(iter), val.string)) {
+                    cur = CIRCLEQ_NEXT(iter, lst);
+                    goto success;
+                } else {
+                    // each second is a key
+                    iter = CIRCLEQ_NEXT(iter, lst);
+                    if(!iter) break;
                 }
             }
+            goto fail;
+        case OBJPATH_INDEX:
+            if(cur->kind != NODE_SEQUENCE)
+                goto fail;
+            CIRCLEQ_FOREACH(cur, &cur->children, lst) {
+                if(!val.index--) {
+                    goto success;
+                }
+            }
+            goto fail;
+
+        case OBJPATH_KEYS:
+            if(cur->kind != NODE_MAPPING)
+                goto fail;
+            iter = CIRCLEQ_FIRST(&cur->children);
+            if(!iter)
+                goto fail;
+            goto success;
+        case OBJPATH_VALUES:
+            if(cur->kind != NODE_MAPPING)
+                goto fail;
+            iter = CIRCLEQ_FIRST(&cur->children);
+            if(!iter)
+                goto fail;
+            // the second element is the first value
+            iter = CIRCLEQ_NEXT(iter, lst);
+            if(!iter)
+                goto fail;
+            goto success;
+        case OBJPATH_NEXTKEY:
+        case OBJPATH_NEXTVALUE:
+            iter = CIRCLEQ_NEXT(iter, lst);
+            if(!iter)
+                goto fail;
+            // each second is a key or value
+            iter = CIRCLEQ_NEXT(iter, lst);
+            if(!iter)
+                goto fail;
+            goto success;
+
+        case OBJPATH_ELEMENTS:
+            if(cur->kind != NODE_SEQUENCE)
+                goto fail;
+            iter = CIRCLEQ_FIRST(&cur->children);
+            if(!iter)
+                goto fail;
+            goto success;
+        case OBJPATH_NEXTELEMENT:
+            iter = CIRCLEQ_NEXT(iter, lst);
+            if(!iter)
+                goto fail;
+            goto success;
+
+        case OBJPATH_FINAL:
+            serialize_yaml(stdout, cur);
+            res = 0;  // at least one element found
+            goto success;
         }
-        if(!resultok) exit(1);
+        success:
+            continue;
+        fail:
+            cur = NULL;
+            continue;
+    }
+    objpath_free(ctx);
+    return res;
+}
+
+void execute_action(char **argv, yaml_ast_node *root) {
+    if(options.action == A_EXTRACT) {
+        exit(extract(argv[0], root));
     } else {
         fprintf(stderr, "Not implemented\n");
         exit(98);
