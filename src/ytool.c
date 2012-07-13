@@ -72,14 +72,42 @@ void parse_options(int argc, char **argv) {
 }
 
 void serialize_yaml(FILE *out, yaml_ast_node *node) {
-    yaml_token *start = node->start_token;
-    yaml_token *end = node->end_token;
-    while(start && start != end) {
+    // temp code, until real serialization implemented
+    yaml_ast_node *snode = node;
+    yaml_ast_node *enode = node;
+    while(snode && !snode->start_token)
+        snode = CIRCLEQ_FIRST(&snode->children);
+    while(enode && !enode->end_token)
+        enode = CIRCLEQ_LAST(&enode->children);
+    if(snode && enode) {
+        yaml_token *start = snode->start_token;
+        yaml_token *end = enode->end_token;
+        int ind = start->indent;
+        while(start && start != end) {
+            if(start->kind == TOKEN_INDENT) {
+                // The following smells like a hack, but works
+                if(start->start_line == start->end_line) {
+                    int curind = ind - start->start_char;
+                    if(curind < 0)
+                        curind = 0;
+                    if(curind < start->bytelen) {
+                        fwrite(start->data, start->bytelen - curind, 1, out);
+                    }
+                } else {
+                    int curind = ind;
+                    if(curind > start->end_char) {
+                        curind = start->end_char;
+                    }
+                    fwrite(start->data, start->bytelen - curind, 1, out);
+                }
+            } else {
+                fwrite(start->data, start->bytelen, 1, out);
+            }
+            start = CIRCLEQ_NEXT(start, lst);
+        }
         fwrite(start->data, start->bytelen, 1, out);
-        start = CIRCLEQ_NEXT(start, lst);
+        fprintf(out, "\n");
     }
-    fwrite(start->data, start->bytelen, 1, out);
-    fprintf(out, "\n");
 }
 
 char *scalar_node_value(yaml_ast_node *node) {

@@ -1,0 +1,16 @@
+fruits:
+    apple: yes
+    banana: yes
+    cherry: no
+vegetable: carrot
+berry: cherry
+...
+---
+- command-line: ytool -E /fruits/apple
+  output: "yes"
+- command-line: ytool -E /fruits/cherry
+  output: "no"
+- command-line: ytool -E /vegetable
+  output: "carrot"
+- command-line: ytool -E /fruits
+  output: "apple: yes\nbanana: yes\ncherry: no\n"

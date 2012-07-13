@@ -63,6 +63,7 @@ char *token_to_str[] = {
     "ERROR",
     "DOC_START",
     "DOC_END",
+    "INDENT",
     "WHITESPACE",
     "PLAINSTRING",
     "SINGLESTRING",
@@ -107,6 +108,29 @@ typedef enum char_flag {
     CHAR_PLAIN=16,
     CHAR_PLAIN_FLOW=32,
 } char_flag;
+
+static void safeprint(FILE *stream, char *data, int len) {
+    for(char *c = data, *end = data + len; c < end; ++c) {
+        if(chars[(int)*c].flags & CHAR_PRINTABLE) {
+            if(*c == '\r') {
+                fprintf(stream, "\\r");
+            } else if(*c == '\n') {
+                fprintf(stream, "\\n");
+            } else {
+                fputc(*c, stream);
+            }
+        } else {
+            fprintf(stream, "\\x%02x", *c);
+        }
+    }
+}
+
+static void print_token(yaml_token *tok, FILE *stream) {
+    fprintf(stream, "%s:%d %s [%d]``", tok->filename, tok->start_line,
+        token_to_str[tok->kind], tok->indent);
+    safeprint(stream, tok->data, tok->bytelen);
+    fprintf(stream, "''\n");
+}
 
 void yaml_init() {
     chars['\t'].flags |= CHAR_PRINTABLE;
@@ -273,6 +297,15 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
                     ctok->kind = TOKEN_SEQUENCE_ENTRY;
+                    if(!ctx->linestart) {
+                        ctx->error_kind = YAML_SCANNER_ERROR;
+                        ctx->error_text = "Sequence entry dash sign is only"
+                                          " allowed at the start of line";
+                        ctx->error_token = ctok;
+                        return 0;
+                    }
+                    ctx->indent += 1;
+                    ctok->indent = ctx->indent;
                     break;
                 } else if(CHAR == '-' && NEXT && CHAR == '-') {
                     ctok->kind = TOKEN_DOC_START;
@@ -434,8 +467,8 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 (void)NEXT;
                 break;
             // end of indicators
-            };
-            if(CHAR != '?' && CHAR != '-' && CHAR != ':') {
+            }
+            if(KLASS != CHAR_WHITESPACE) {
                 ctx->linestart = 0;
             }
             break;
@@ -453,6 +486,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             }
             if(ctx->linestart) {
                 ctx->indent = ctx->curpos-1;
+                ctok->kind = TOKEN_INDENT;
             }
             break;
         default:
@@ -476,9 +510,12 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             }
             break;
         }
+        assert(ctx->ptr <= end);
         ctok->end_line = ctx->curline;
         ctok->end_char = ctx->curpos-1;
         ctok->bytelen = ctx->ptr - ctok->data;
+        if(ctok->kind == TOKEN_DOC_END)
+            break;
     }
     return 0;
 
@@ -486,28 +523,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 #undef SYNTAX_ERROR
 }
 
-static void safeprint(FILE *stream, char *data, int len) {
-    for(char *c = data, *end = data + len; c < end; ++c) {
-        if(chars[(int)*c].flags & CHAR_PRINTABLE) {
-            if(*c == '\r') {
-                fprintf(stream, "\\r");
-            } else if(*c == '\n') {
-                fprintf(stream, "\\n");
-            } else {
-                fputc(*c, stream);
-            }
-        } else {
-            fprintf(stream, "\\x%02x", *c);
-        }
-    }
-}
 
-static void print_token(yaml_token *tok, FILE *stream) {
-    fprintf(stream, "%s:%d %s [%d]``", tok->filename, tok->start_line,
-        token_to_str[tok->kind], tok->indent);
-    safeprint(stream, tok->data, tok->bytelen);
-    fprintf(stream, "''\n");
-}
 
 static yaml_ast_node *new_node(yaml_parse_context *ctx) {
     yaml_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(yaml_ast_node));
@@ -535,6 +551,7 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 #define NTOK CIRCLEQ_NEXT(CTOK, lst)
 #define NEXT { CTOK = CIRCLEQ_NEXT(CTOK, lst); SKIP; }
 #define SKIP while(CTOK && (CTOK->kind == TOKEN_WHITESPACE \
+                            || CTOK->kind == TOKEN_INDENT \
                             || CTOK->kind == TOKEN_COMMENT)) { \
     CTOK = CIRCLEQ_NEXT(CTOK, lst); \
     }
@@ -562,16 +579,20 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
             && NTOK->start_line == CTOK->start_line) {
             // MAPPING
             yaml_ast_node *node = new_node(ctx);
+            node->start_token = CTOK;
             node->kind = NODE_MAPPING;
+            int mapping_indent = CTOK->indent;
             while(TOKEN_SCALAR(CTOK)
                 && NTOK->kind == TOKEN_MAPPING_VALUE
-                && NTOK->start_line == CTOK->start_line) {
+                && NTOK->start_line == CTOK->start_line
+                && CTOK->indent == mapping_indent) {
                 yaml_ast_node *child = new_text_node(ctx, CTOK);
                 CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
                 NEXT; NEXT;
                 child = parse_node(ctx);
                 CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
             }
+            node->end_token = CIRCLEQ_PREV(CTOK, lst);
             return node;
         } else { // SCALAR
             yaml_ast_node *res = new_text_node(ctx, CTOK);
@@ -582,11 +603,15 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
     if(CTOK->kind == TOKEN_SEQUENCE_ENTRY) {
         yaml_ast_node *node = new_node(ctx);
         node->kind = NODE_SEQUENCE;
-        while(CTOK->kind == TOKEN_SEQUENCE_ENTRY) {
+        node->start_token = CTOK;
+        int sequence_indent = CTOK->indent;
+        while(CTOK->kind == TOKEN_SEQUENCE_ENTRY
+              && CTOK->indent == sequence_indent) {
             NEXT;
             yaml_ast_node *child = parse_node(ctx);
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
         }
+        node->end_token = CIRCLEQ_PREV(CTOK, lst);
         return node;
     }
     return NULL;

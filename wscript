@@ -194,16 +194,16 @@ def ytoolcmd(ctx):
                 status = os.WEXITSTATUS(status)
                 if 'result' in item:
                     if status != item['result']:
-                        print('FAILED:', item['command-line'],
+                        print(file, 'FAILED:', item['command-line'],
                             ": returned", status, "instead", item['result'])
                         error = 1
                 if 'output' in item:
                     if outp != item['output']:
-                        print('FAILED:', item['command-line'],
+                        print(file, 'FAILED:', item['command-line'],
                             ': output is wrong, diff follows')
                         for line in difflib.ndiff(item['output'].splitlines(),
                                                   outp.splitlines()):
-                            print('   ', line)
+                            print('   ', line.rstrip())
                         error = 1
     return error
 
