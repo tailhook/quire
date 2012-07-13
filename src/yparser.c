@@ -109,8 +109,8 @@ typedef enum char_flag {
     CHAR_PLAIN_FLOW=32,
 } char_flag;
 
-static void safeprint(FILE *stream, char *data, int len) {
-    for(char *c = data, *end = data + len; c < end; ++c) {
+static void safeprint(FILE *stream, unsigned char *data, int len) {
+    for(unsigned char *c = data, *end = data + len; c < end; ++c) {
         if(chars[(int)*c].flags & CHAR_PRINTABLE) {
             if(*c == '\r') {
                 fprintf(stream, "\\r");
@@ -139,7 +139,7 @@ void yaml_init() {
     for(int i = 0x20; i <= 0x7E; ++i)
         chars[i].flags |= CHAR_PRINTABLE;
     for(int i = 0x80; i <= 0xFF; ++i)  // UTF-8 encoded chars
-        chars[i].flags |= CHAR_PRINTABLE;
+        chars[i].flags |= CHAR_PRINTABLE|CHAR_PLAIN;
     for(int i = 0; i < sizeof(c_flow_indicator)-1; ++i)
         chars[(int)c_flow_indicator[i]].flags |= CHAR_FLOW_INDICATOR;
     for(int i = 0; i < sizeof(ns_tag_char)-1; ++i)
@@ -184,7 +184,7 @@ int yaml_context_init(yaml_parse_context *ctx) {
 
 int yaml_load_file(yaml_parse_context *ctx, char *filename) {
     int eno;
-    char *data = NULL;
+    unsigned char *data = NULL;
     int fd = open(filename, O_RDONLY);
     if(fd < 0) return -1;
     struct stat stinfo;
@@ -280,7 +280,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 #define PREV_CHAR (*(ctx->ptr-1))  // use carefully!
 #define NEXT_CHAR (*(ctx->ptr+1))  // safe, since we have \0 at the end
 
-    char *end = ctx->buf + ctx->buflen;
+    unsigned char *end = ctx->buf + ctx->buflen;
     ctx->curline = 1;
     ctx->linestart = 1;
     ctx->curpos = 1;
@@ -353,6 +353,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 (void)NEXT;
                 break;
             case '\'':
+                FORCE_NEXT;
                 ctok->kind = TOKEN_SINGLESTRING;
                 CONSUME_UNTIL(CHAR == '\'');
                 (void)NEXT;
@@ -398,8 +399,8 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                     FORCE_NEXT;
                 }
                 if(KLASS == CHAR_DIGIT) {
-                    char *endptr;
-                    indent = strtol(ctx->ptr, &endptr, 10);
+                    unsigned char *endptr;
+                    indent = strtol((char *)ctx->ptr, (char **)&endptr, 10);
                     if(indent > 10000 || indent <= 0)
                         SYNTAX_ERROR("Wrong indentation indicator");
                     indent += ctx->indent;
@@ -419,7 +420,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 ctx->curpos = 0;
                 if(!NEXT) break;
                 for(;;) {
-                    char *linestart = ctx->ptr;
+                    unsigned char *linestart = ctx->ptr;
                     CONSUME_WHILE(CHAR == ' ');
                     if(ctx->curpos-1 < indent && CHAR != '\n') {
                         ctx->ptr = linestart;
@@ -517,6 +518,10 @@ int yaml_tokenize(yaml_parse_context *ctx) {
         if(ctok->kind == TOKEN_DOC_END)
             break;
     }
+    if(CIRCLEQ_LAST(&ctx->tokens)->kind != TOKEN_DOC_END) {
+        yaml_token *ctok = init_token(ctx);
+        ctok->kind = TOKEN_DOC_END;
+    }
     return 0;
 
 #undef NEXT
@@ -548,12 +553,12 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 }
 
 #define CTOK (ctx->cur_token)
-#define NTOK CIRCLEQ_NEXT(CTOK, lst)
-#define NEXT { CTOK = CIRCLEQ_NEXT(CTOK, lst); SKIP; }
+#define NTOK (CIRCLEQ_NEXT(CTOK, lst) == (void *)&ctx->tokens ? NULL : CIRCLEQ_NEXT(CTOK, lst))
+#define NEXT { assert(CTOK); CTOK = NTOK; SKIP; }
 #define SKIP while(CTOK && (CTOK->kind == TOKEN_WHITESPACE \
                             || CTOK->kind == TOKEN_INDENT \
                             || CTOK->kind == TOKEN_COMMENT)) { \
-    CTOK = CIRCLEQ_NEXT(CTOK, lst); \
+    CTOK = NTOK; \
     }
 #define SYNTAX_ERROR(message) { \
     if(!CTOK) { \
@@ -572,7 +577,6 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 
 
 yaml_ast_node *parse_node(yaml_parse_context *ctx) {
-
     if(TOKEN_SCALAR(CTOK)) {
         if(NTOK
             && NTOK->kind == TOKEN_MAPPING_VALUE
@@ -582,7 +586,7 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
             node->start_token = CTOK;
             node->kind = NODE_MAPPING;
             int mapping_indent = CTOK->indent;
-            while(TOKEN_SCALAR(CTOK)
+            while(CTOK && TOKEN_SCALAR(CTOK)
                 && NTOK->kind == TOKEN_MAPPING_VALUE
                 && NTOK->start_line == CTOK->start_line
                 && CTOK->indent == mapping_indent) {
@@ -605,7 +609,8 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
         node->kind = NODE_SEQUENCE;
         node->start_token = CTOK;
         int sequence_indent = CTOK->indent;
-        while(CTOK->kind == TOKEN_SEQUENCE_ENTRY
+        while(CTOK
+              && CTOK->kind == TOKEN_SEQUENCE_ENTRY
               && CTOK->indent == sequence_indent) {
             NEXT;
             yaml_ast_node *child = parse_node(ctx);
@@ -632,8 +637,10 @@ int yaml_parse(yaml_parse_context *ctx) {
 
     ctx->document = parse_node(ctx);
 
-    //print_token(CTOK, stdout);
-    assert(CTOK->kind == TOKEN_DOC_END);
+    if(CTOK->kind != TOKEN_DOC_END) {
+        print_token(CTOK, stdout);
+        assert(0);
+    }
 
     return 0;
 }

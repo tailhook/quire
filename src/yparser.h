@@ -55,7 +55,7 @@ typedef struct token_s {
     int start_char;
     int end_line;
     int end_char;
-    char *data;  // real pointer to data
+    unsigned char *data;  // real pointer to data
     int bytepos;  // byte offset from start of file
     int bytelen;  // length in bytes
 
@@ -80,7 +80,7 @@ typedef struct node_s{
 typedef struct parse_context_s {
     struct obstack pieces;
     char *filename;
-    char *buf;
+    unsigned char *buf;
     int buflen;
 
     CIRCLEQ_HEAD(token_list, token_s) tokens;
@@ -90,7 +90,7 @@ typedef struct parse_context_s {
     int curline;
     int curpos;
     int indent;
-    char *ptr;
+    unsigned char *ptr;
     int flow_num;
     char flow_stack[MAX_FLOW_STACK];
 

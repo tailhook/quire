@@ -117,11 +117,12 @@ void serialize_yaml(FILE *out, yaml_ast_node *node) {
 }
 
 char *scalar_node_value(yaml_ast_node *node) {
+    // TODO(pc) get rid of it
     if(node->content)
         return node->content;
     if(node->start_token == node->end_token
         && node->start_token->kind == TOKEN_PLAINSTRING) {
-        node->content = strndup(node->start_token->data,
+        node->content = strndup((char *)node->start_token->data,
                                 node->start_token->bytelen);
         return node->content;
     }
@@ -132,6 +133,10 @@ char *scalar_node_value(yaml_ast_node *node) {
 int extract(char *path, yaml_ast_node *root) {
     int res = 1;  // if nothing found
     void *pattern = objpath_compile(path);
+    if(!pattern) {
+        fprintf(stderr, "Can't compile pattern ``%s''\n", path);
+        return 2;
+    }
     void *ctx = objpath_start(pattern);
     yaml_ast_node *cur = root;
     yaml_ast_node *iter = NULL;
