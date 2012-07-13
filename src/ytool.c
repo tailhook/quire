@@ -82,6 +82,7 @@ void serialize_yaml(FILE *out, yaml_ast_node *node) {
     if(snode && enode) {
         yaml_token *start = snode->start_token;
         yaml_token *end = enode->end_token;
+        int first_indent = 1;
         int ind = start->indent;
         while(start && start != end) {
             if(start->kind == TOKEN_INDENT) {
@@ -101,6 +102,11 @@ void serialize_yaml(FILE *out, yaml_ast_node *node) {
                     fwrite(start->data, start->bytelen - curind, 1, out);
                 }
             } else {
+                if(start->start_char-1 < ind) {
+                    assert(first_indent);
+                    ind = start->start_char-1;
+                }
+                first_indent = 0;
                 fwrite(start->data, start->bytelen, 1, out);
             }
             start = CIRCLEQ_NEXT(start, lst);
