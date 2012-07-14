@@ -1,5 +1,6 @@
 fruits:
     - apple
+    # hello world
     - banana
     - cherry: no
       pear: yes
@@ -18,6 +19,7 @@ berry: cherry
 - command-line: ytool -E /fruits
   output: |
     - apple
+    # hello world
     - banana
     - cherry: no
       pear: yes
