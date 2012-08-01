@@ -62,8 +62,9 @@ typedef struct token_s {
     struct node_s *owner_node;
 } yaml_token;
 
-typedef struct node_s{
+typedef struct node_s {
     CIRCLEQ_ENTRY(node_s) lst;
+    LIST_ENTRY(node_s) anchors; // for anchors nodes
 
     int kind;
     yaml_token *anchor;
@@ -73,6 +74,8 @@ typedef struct node_s{
 
     char *content;  // for scalar nodes or aliases
     int content_len;
+
+    struct node_s *target;  // for aliases
 
     CIRCLEQ_HEAD(ast_children, node_s) children; // for container nodes
 } yaml_ast_node;
@@ -85,6 +88,7 @@ typedef struct parse_context_s {
 
     CIRCLEQ_HEAD(token_list, token_s) tokens;
     yaml_ast_node *document;
+    LIST_HEAD(anchor_list, node_s) anchors;
 
     int linestart; // boolean flag if we are still at indentation
     int curline;
@@ -95,6 +99,7 @@ typedef struct parse_context_s {
     char flow_stack[MAX_FLOW_STACK];
 
     yaml_token *cur_token;
+    yaml_token *cur_anchor;
 
     int error_kind;
     char *error_text;

@@ -13,6 +13,7 @@ char short_options[] = "Ehf:v";
 struct option long_options[] = {
     {"extract", 0, NULL, 'E'},
     {"verbose", 0, NULL, 'v'},
+    {"expand", 0, NULL, 'e'},
     {"help", 0, NULL, 'h'},
     {"filename", 1, NULL, 'f'},
     {NULL, 0, NULL, 0}
@@ -143,6 +144,8 @@ int extract(char *path, yaml_ast_node *root) {
     objpath_value_t val;
     int opcode;
     while(objpath_next(ctx, &opcode, &val, (void **)&cur, (void **)&iter)) {
+        if(cur->kind == NODE_ALIAS)
+            cur = cur->target;
         switch(opcode) {
         case OBJPATH_KEY:
             if(cur->kind != NODE_MAPPING)

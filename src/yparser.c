@@ -177,6 +177,7 @@ void obstack_chunk_free(void *ptr) {
 int yaml_context_init(yaml_parse_context *ctx) {
     obstack_init(&ctx->pieces);
     CIRCLEQ_INIT(&ctx->tokens);
+    LIST_INIT(&ctx->anchors);
     ctx->buf = NULL;
     ctx->error_kind = 0;
     return 0;
@@ -528,12 +529,15 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 #undef SYNTAX_ERROR
 }
 
-
-
 static yaml_ast_node *new_node(yaml_parse_context *ctx) {
     yaml_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(yaml_ast_node));
     node->kind = NODE_UNKNOWN;
-    node->anchor = NULL;
+    node->anchor = ctx->cur_anchor;
+    if(ctx->cur_anchor) {
+        LIST_INSERT_HEAD(&ctx->anchors, node, anchors);
+        ctx->cur_anchor = NULL;
+    }
+    node->target = NULL;
     node->tag = NULL;
     node->start_token = NULL;
     node->end_token = NULL;
@@ -577,6 +581,29 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 
 
 yaml_ast_node *parse_node(yaml_parse_context *ctx) {
+    if(CTOK->kind == TOKEN_ALIAS) {
+        yaml_ast_node *node = new_node(ctx);
+        node->start_token = CTOK;
+        node->end_token = CTOK;
+        node->kind = NODE_ALIAS;
+        yaml_ast_node *target;
+        LIST_FOREACH(target, &ctx->anchors, anchors) {
+            if(target->anchor->bytelen == CTOK->bytelen
+                && !strncmp((char *)target->anchor->data+1,  // "&" char
+                            (char *)CTOK->data+1,  // "*" char
+                            CTOK->bytelen-1)) {
+                node->target = target;
+                NEXT;
+                return node;
+            }
+        }
+        // TODO(tailhook) put error message here
+        return NULL;
+    }
+    if(CTOK->kind == TOKEN_ANCHOR) {
+        ctx->cur_anchor = CTOK;
+        NEXT;
+    }
     if(TOKEN_SCALAR(CTOK)) {
         if(NTOK
             && NTOK->kind == TOKEN_MAPPING_VALUE
@@ -594,6 +621,8 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
                 CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
                 NEXT; NEXT;
                 child = parse_node(ctx);
+                if(!child)
+                    return NULL;
                 CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
             }
             node->end_token = CIRCLEQ_PREV(CTOK, lst);
@@ -626,6 +655,7 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
 int yaml_parse(yaml_parse_context *ctx) {
 
     ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
+    ctx->cur_anchor = NULL;
     SKIP;
     while(CTOK && CTOK->kind == TOKEN_DIRECTIVE) {
         // TODO(tailhook) parse directives
