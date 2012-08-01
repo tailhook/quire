@@ -11,14 +11,16 @@ struct option long_options[] = {
     {"c-header", 0, NULL, 'H'},
     {"c-source", 0, NULL, 'C'},
     {"enable", 0, NULL, 'e'},
+    {"version-info", 0, NULL, 'V'},
     {NULL, 0, NULL, 0}};
 
 struct options {
     char *source_file;
     char *output_header;
     char *output_source;
+    char *version_info;
     char *sections[128];
-} options = {NULL, NULL, NULL, {NULL}};
+} options = {NULL, NULL, NULL, NULL, {NULL}};
 
 
 void print_usage(FILE *out) {
@@ -31,6 +33,8 @@ void print_usage(FILE *out) {
         " --c-header FILE  Write C header to FILE\n"
         " --c-source FILE  Write parser source in C to FILE\n"
         " --enable COND    Enable section in config marked !If:COND\n"
+        " --version-info DATA\n"
+        "                  Version info to put into command-line help\n"
         );
 };
 
@@ -50,6 +54,9 @@ void parse_options(int argc, char **argv) {
             break;
         case 'C':
             options.output_source = optarg;
+            break;
+        case 'V':
+            options.version_info = optarg;
             break;
         case 'e':
             if(cursect > sizeof(options.sections)/sizeof(char *)-1) {
