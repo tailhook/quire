@@ -27,23 +27,15 @@ def configure(conf):
 
 def build(bld):
     bld(
-        features     = ['c', ('cshlib'
-            if bld.env.BUILD_SHARED else 'cstlib')],
+        features     = ['c', 'cprogram'],
         source       = [
-            'src/parser.c',
-            'src/commandline.c',
-            'src/helpers.c',
-            'src/vars.c',
-            'src/types.c',
-            'src/emitter.c',
-            'src/copy.c',
-            'src/eval.c',
+            'src/coyaml.c',
+            'src/yparser.c',
+            'objpath/objpath.c',
             ],
-        target       = 'coyaml',
-        includes     = ['include', 'src'],
-        defines      = ['COYAML_VERSION="%s"' % VERSION],
-        cflags       = ['-std=c99', '-Wall'],
-        lib          = ['yaml'],
+        target       = 'cgen',
+        includes     = ['include', 'src', '.'],
+        cflags       = ['-std=gnu99', '-Wall'],
         )
     bld(
         features     = ['c', 'cprogram'],
@@ -56,18 +48,6 @@ def build(bld):
         includes     = ['include', 'src', '.'],
         cflags       = ['-std=gnu99', '-Wall'],
         )
-    if bld.env.BUILD_SHARED:
-        bld.install_files('${PREFIX}/lib', 'libcoyaml.so')
-    else:
-        bld.install_files('${PREFIX}/lib', 'libcoyaml.a')
-    bld.install_files('${PREFIX}/include', [
-        'include/coyaml_hdr.h',
-        'include/coyaml_src.h',
-        ])
-    bld(features='py',
-        source=bld.path.ant_glob('coyaml/*.py'),
-        install_path='${PYTHONDIR}/coyaml')
-    bld.install_files('${PREFIX}/bin', 'scripts/coyaml', chmod=0o755)
 
 def build_tests(bld):
     import coyaml.waf
