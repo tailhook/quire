@@ -100,6 +100,7 @@ typedef struct parse_context_s {
 
     yaml_token *cur_token;
     yaml_token *cur_anchor;
+    yaml_token *cur_tag;
 
     int error_kind;
     char *error_text;

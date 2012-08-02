@@ -508,6 +508,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                     if(KLASS == CHAR_WHITESPACE && NEXT_CHAR == '#') break;
                 }
             } else {
+                printf("CHAR %c %d\n", CHAR, FLAGS);
                 SYNTAX_ERROR("Wrong character, only printable chars allowed");
             }
             break;
@@ -537,6 +538,9 @@ static yaml_ast_node *new_node(yaml_parse_context *ctx) {
         LIST_INSERT_HEAD(&ctx->anchors, node, anchors);
         ctx->cur_anchor = NULL;
     }
+    node->tag = ctx->cur_tag;
+    if(ctx->cur_tag)
+        ctx->cur_tag = NULL;
     node->target = NULL;
     node->tag = NULL;
     node->start_token = NULL;
@@ -579,6 +583,89 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
                            (tok)->kind == TOKEN_LITERAL || \
                            (tok)->kind == TOKEN_FOLDED)
 
+yaml_ast_node *parse_flow_node(yaml_parse_context *ctx) {
+    if(CTOK->kind == TOKEN_ALIAS) {
+        yaml_ast_node *node = new_node(ctx);
+        node->start_token = CTOK;
+        node->end_token = CTOK;
+        node->kind = NODE_ALIAS;
+        yaml_ast_node *target;
+        LIST_FOREACH(target, &ctx->anchors, anchors) {
+            if(target->anchor->bytelen == CTOK->bytelen
+                && !strncmp((char *)target->anchor->data+1,  // "&" char
+                            (char *)CTOK->data+1,  // "*" char
+                            CTOK->bytelen-1)) {
+                node->target = target;
+                NEXT;
+                return node;
+            }
+        }
+        // TODO(tailhook) put error message here
+        return NULL;
+    }
+    if(CTOK->kind == TOKEN_ANCHOR) {
+        ctx->cur_anchor = CTOK;
+        NEXT;
+        if(CTOK->kind == TOKEN_TAG) {
+            ctx->cur_tag = CTOK;
+            NEXT;
+        }
+    } else if(CTOK->kind == TOKEN_TAG) {
+        ctx->cur_tag = CTOK;
+        NEXT;
+        if(CTOK->kind == TOKEN_ANCHOR) {
+            ctx->cur_anchor = CTOK;
+            NEXT;
+        }
+    }
+    if(TOKEN_SCALAR(CTOK)) {
+        yaml_ast_node *res = new_text_node(ctx, CTOK);
+        NEXT;
+        return res;
+    }
+    if(CTOK->kind == TOKEN_FLOW_MAP_START) {
+        yaml_ast_node *node = new_node(ctx);
+        node->start_token = CTOK;
+        node->kind = NODE_MAPPING;
+        NEXT;
+        while(1) {
+            yaml_ast_node *child = new_text_node(ctx, CTOK);
+            CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+            NEXT; NEXT;
+            child = parse_flow_node(ctx);
+            if(!child)
+                return NULL;
+            CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+            if(CTOK->kind == TOKEN_FLOW_MAP_END)
+                break;
+            if(CTOK->kind != TOKEN_FLOW_ENTRY)
+                return NULL;
+            NEXT;
+        }
+        node->end_token = CTOK;
+        NEXT;
+        return node;
+    }
+    if(CTOK->kind == TOKEN_FLOW_SEQ_START) {
+        yaml_ast_node *node = new_node(ctx);
+        node->kind = NODE_SEQUENCE;
+        node->start_token = CTOK;
+        NEXT;
+        while(1) {
+            yaml_ast_node *child = parse_flow_node(ctx);
+            CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+            if(CTOK->kind == TOKEN_FLOW_SEQ_END)
+                break;
+            if(CTOK->kind != TOKEN_FLOW_ENTRY)
+                return NULL;
+            NEXT;
+        }
+        node->end_token = CTOK;
+        NEXT;
+        return node;
+    }
+    return NULL;
+}
 
 yaml_ast_node *parse_node(yaml_parse_context *ctx) {
     if(CTOK->kind == TOKEN_ALIAS) {
@@ -603,6 +690,17 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
     if(CTOK->kind == TOKEN_ANCHOR) {
         ctx->cur_anchor = CTOK;
         NEXT;
+        if(CTOK->kind == TOKEN_TAG) {
+            ctx->cur_tag = CTOK;
+            NEXT;
+        }
+    } else if(CTOK->kind == TOKEN_TAG) {
+        ctx->cur_tag = CTOK;
+        NEXT;
+        if(CTOK->kind == TOKEN_ANCHOR) {
+            ctx->cur_anchor = CTOK;
+            NEXT;
+        }
     }
     if(TOKEN_SCALAR(CTOK)) {
         if(NTOK
@@ -648,7 +746,7 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
         node->end_token = CIRCLEQ_PREV(CTOK, lst);
         return node;
     }
-    return NULL;
+    return parse_flow_node(ctx);
 }
 
 
@@ -656,6 +754,7 @@ int yaml_parse(yaml_parse_context *ctx) {
 
     ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
     ctx->cur_anchor = NULL;
+    ctx->cur_tag = NULL;
     SKIP;
     while(CTOK && CTOK->kind == TOKEN_DIRECTIVE) {
         // TODO(tailhook) parse directives
