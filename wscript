@@ -31,6 +31,8 @@ def build(bld):
         source       = [
             'src/coyaml.c',
             'src/yparser.c',
+            'src/metadata.c',
+            'src/access.c',
             'objpath/objpath.c',
             ],
         target       = 'cgen',

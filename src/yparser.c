@@ -10,6 +10,7 @@
 #include <errno.h>
 
 #include "yparser.h"
+#include "access.h"
 
 char c_sequence_entry[] = "-";
 char c_mapping_key[] = "?";
@@ -563,22 +564,6 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
     node->end_token = tok;
     // TODO(tailhook) parse content
     return node;
-}
-
-char *yaml_node_content(yaml_ast_node *node) {
-    if(node->kind != NODE_SCALAR)
-        return NULL;
-    if(node->content)
-        return node->content;
-    if(node->start_token == node->end_token
-        && node->start_token->kind == TOKEN_PLAINSTRING) {
-        node->content = obstack_copy0(&node->ctx->pieces,
-            (char *)node->start_token->data,
-            node->start_token->bytelen);
-        return node->content;
-    }
-    fprintf(stderr, "Not implemented");
-    assert(0);
 }
 
 #define CTOK (ctx->cur_token)
