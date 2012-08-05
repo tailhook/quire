@@ -1,0 +1,11 @@
+fruits:
+    apple: yes
+    banana: yes
+    cherry: no
+    apple: no
+vegetable: carrot
+berry: cherry
+...
+---
+- command-line: ytool -E /fruits/apple --error-basename
+  output: 'Error parsing file duplicatekey.test:5: Duplicate key "apple"'

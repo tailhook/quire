@@ -90,7 +90,8 @@ char *token_to_str[] = {
 typedef enum yaml_error {
     YAML_NO_ERROR,
     YAML_SCANNER_ERROR,
-    YAML_PARSER_ERROR
+    YAML_PARSER_ERROR,
+    YAML_CONTENT_ERROR
 } yaml_error;
 
 typedef enum char_klass {
@@ -533,6 +534,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 static yaml_ast_node *new_node(yaml_parse_context *ctx) {
     yaml_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(yaml_ast_node));
     node->kind = NODE_UNKNOWN;
+    node->ctx = ctx;
     node->anchor = ctx->cur_anchor;
     if(ctx->cur_anchor) {
         LIST_INSERT_HEAD(&ctx->anchors, node, anchors);
@@ -547,6 +549,9 @@ static yaml_ast_node *new_node(yaml_parse_context *ctx) {
     node->end_token = NULL;
     node->content = NULL;
     node->content_len = 0;
+    node->tree = NULL;
+    node->left = NULL;
+    node->right = NULL;
     CIRCLEQ_INIT(&node->children);
     return node;
 }
@@ -558,6 +563,22 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
     node->end_token = tok;
     // TODO(tailhook) parse content
     return node;
+}
+
+char *yaml_node_content(yaml_ast_node *node) {
+    if(node->kind != NODE_SCALAR)
+        return NULL;
+    if(node->content)
+        return node->content;
+    if(node->start_token == node->end_token
+        && node->start_token->kind == TOKEN_PLAINSTRING) {
+        node->content = obstack_copy0(&node->ctx->pieces,
+            (char *)node->start_token->data,
+            node->start_token->bytelen);
+        return node->content;
+    }
+    fprintf(stderr, "Not implemented");
+    assert(0);
 }
 
 #define CTOK (ctx->cur_token)
@@ -667,6 +688,19 @@ yaml_ast_node *parse_flow_node(yaml_parse_context *ctx) {
     return NULL;
 }
 
+yaml_ast_node **find_node(yaml_ast_node **root, char *value) {
+    while(*root) {
+        int cmp = strcmp(yaml_node_content(*root), value);
+        if(!cmp)
+            return root;
+        if(cmp < 0)
+            root = &(*root)->left;
+        if(cmp > 0)
+            root = &(*root)->right;
+    }
+    return root;
+}
+
 yaml_ast_node *parse_node(yaml_parse_context *ctx) {
     if(CTOK->kind == TOKEN_ALIAS) {
         yaml_ast_node *node = new_node(ctx);
@@ -716,6 +750,22 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
                 && NTOK->start_line == CTOK->start_line
                 && CTOK->indent == mapping_indent) {
                 yaml_ast_node *child = new_text_node(ctx, CTOK);
+                char *cont = yaml_node_content(child);
+                if(cont) {
+                    yaml_ast_node **targ = find_node(&node->tree, cont);
+                    if(*targ) {
+                        obstack_blank(&ctx->pieces, 0);
+                        obstack_grow(&ctx->pieces, "Duplicate key \"", 15);
+                        obstack_grow(&ctx->pieces, cont, strlen(cont));
+                        obstack_grow0(&ctx->pieces, "\"", 1);
+                        ctx->error_text = obstack_finish(&ctx->pieces);
+                        ctx->error_token = child->start_token;
+                        ctx->error_kind = YAML_CONTENT_ERROR;
+                        return NULL;
+                    } else {
+                        *targ = child;
+                    }
+                }
                 CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
                 NEXT; NEXT;
                 child = parse_node(ctx);
@@ -765,6 +815,9 @@ int yaml_parse(yaml_parse_context *ctx) {
     if(CTOK->kind == TOKEN_DOC_END) return 0;
 
     ctx->document = parse_node(ctx);
+
+    if(ctx->error_kind)
+        return 0;
 
     if(CTOK->kind != TOKEN_DOC_END) {
         print_token(CTOK, stdout);

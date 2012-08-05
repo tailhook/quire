@@ -2,7 +2,13 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 
+#include "yparser.h"
+
+#define std_assert(val) if((val) == -1) {\
+    fprintf(stderr, "coyaml: %s", strerror(errno));\
+    }
 
 char *opt_string = "hf:H:C:e:";
 struct option long_options[] = {
@@ -70,12 +76,27 @@ void parse_options(int argc, char **argv) {
             exit(1);
         }
     }
-    if(optind) {
+    if(optind < argc) {
         fprintf(stderr, "cgen: unrecognized option '%s'\n", argv[optind]);
+        exit(1);
     }
     options.sections[cursect] = NULL;
 }
 
 int main(int argc, char **argv) {
     parse_options(argc, argv);
+    yaml_init();
+    yaml_parse_context ctx;
+    std_assert(yaml_context_init(&ctx));
+    std_assert(yaml_load_file(&ctx, options.source_file));
+    std_assert(yaml_tokenize(&ctx));
+    if(ctx.error_kind) {
+        fprintf(stderr, "Error parsing file %s:%d: %s\n",
+            ctx.filename, ctx.error_token->start_line,
+            ctx.error_text);
+    } else {
+        std_assert(yaml_parse(&ctx));
+    }
+    std_assert(yaml_context_free(&ctx));
+    return 0;
 }

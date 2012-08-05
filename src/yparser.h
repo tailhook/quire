@@ -8,6 +8,8 @@
 #define MAX_FLOW_STACK 128
 #define MAX_NODE_STACK 256
 
+struct parse_context_s;
+
 typedef enum token_kind {
     // Keep in sync with strings in yparser.c
     TOKEN_ERROR,
@@ -66,7 +68,9 @@ typedef struct node_s {
     CIRCLEQ_ENTRY(node_s) lst;
     LIST_ENTRY(node_s) anchors; // for anchors nodes
 
+
     int kind;
+    struct parse_context_s *ctx;
     yaml_token *anchor;
     yaml_token *tag;
     yaml_token *start_token;
@@ -76,6 +80,11 @@ typedef struct node_s {
     int content_len;
 
     struct node_s *target;  // for aliases
+
+    // for mappings
+    struct node_s *tree;
+    struct node_s *left;
+    struct node_s *right;
 
     CIRCLEQ_HEAD(ast_children, node_s) children; // for container nodes
 } yaml_ast_node;
@@ -114,6 +123,7 @@ int yaml_context_init(yaml_parse_context *ctx);
 int yaml_load_file(yaml_parse_context *ctx, char *filename);
 int yaml_tokenize(yaml_parse_context *ctx);
 int yaml_parse(yaml_parse_context *ctx);
+char *yaml_node_content(yaml_ast_node *node);
 int yaml_context_free(yaml_parse_context *ctx);
 
 

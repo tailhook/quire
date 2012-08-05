@@ -14,6 +14,7 @@ struct option long_options[] = {
     {"extract", 0, NULL, 'E'},
     {"verbose", 0, NULL, 'v'},
     {"expand", 0, NULL, 'e'},
+    {"error-basename", 0, NULL, 'r'},
     {"help", 0, NULL, 'h'},
     {"filename", 1, NULL, 'f'},
     {NULL, 0, NULL, 0}
@@ -25,6 +26,7 @@ struct {
     } action;
     int verbosity;
     char *filename;
+    int error_basename;
 } options;
 
 
@@ -54,6 +56,9 @@ void parse_options(int argc, char **argv) {
             return;
         case 'E':
             options.action = A_EXTRACT;
+            break;
+        case 'r':
+            options.error_basename = 1;
             break;
         case 'v':
             options.verbosity += 1;
@@ -117,20 +122,6 @@ void serialize_yaml(FILE *out, yaml_ast_node *node) {
     }
 }
 
-char *scalar_node_value(yaml_ast_node *node) {
-    // TODO(pc) get rid of it
-    if(node->content)
-        return node->content;
-    if(node->start_token == node->end_token
-        && node->start_token->kind == TOKEN_PLAINSTRING) {
-        node->content = strndup((char *)node->start_token->data,
-                                node->start_token->bytelen);
-        return node->content;
-    }
-    fprintf(stderr, "Not implemented\n");
-    exit(98);
-}
-
 int extract(char *path, yaml_ast_node *root) {
     int res = 1;  // if nothing found
     void *pattern = objpath_compile(path);
@@ -151,7 +142,7 @@ int extract(char *path, yaml_ast_node *root) {
             if(cur->kind != NODE_MAPPING)
                 goto fail;
             CIRCLEQ_FOREACH(iter, &cur->children, lst) {
-                if(!strcmp(scalar_node_value(iter), val.string)) {
+                if(!strcmp(yaml_node_content(iter), val.string)) {
                     cur = CIRCLEQ_NEXT(iter, lst);
                     goto success;
                 } else {
@@ -250,15 +241,31 @@ int main(int argc, char **argv) {
     assert(rc != -1);
     rc = yaml_tokenize(&ctx);
     assert(rc != -1);
+    char *errfn = ctx.filename;
+    if(options.error_basename) {
+        errfn = strrchr(ctx.filename, '/');
+        if(errfn) {
+            errfn += 1;
+        } else {
+            errfn = ctx.filename;
+        }
+    }
     if(ctx.error_kind) {
         fprintf(stderr, "Error parsing file %s:%d: %s\n",
-            ctx.filename, ctx.error_token->start_line,
+            errfn, ctx.error_token->start_line,
             ctx.error_text);
+        return 1;
     } else {
         //yaml_print_tokens(&ctx, stdout);
         //printf("-----------------\n");
         rc = yaml_parse(&ctx);
         assert(rc != -1);
+        if(ctx.error_kind) {
+            fprintf(stderr, "Error parsing file %s:%d: %s\n",
+                errfn, ctx.error_token->start_line,
+                ctx.error_text);
+            return 1;
+        }
     }
     execute_action(argv + optind, ctx.document);
     rc = yaml_context_free(&ctx);
