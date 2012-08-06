@@ -13,11 +13,11 @@
 char *opt_string = "hf:H:C:e:";
 struct option long_options[] = {
     {"help", 0, NULL, 'h'},
-    {"source", 0, NULL, 'f'},
-    {"c-header", 0, NULL, 'H'},
-    {"c-source", 0, NULL, 'C'},
-    {"enable", 0, NULL, 'e'},
-    {"version-info", 0, NULL, 'V'},
+    {"source", 1, NULL, 'f'},
+    {"c-header", 1, NULL, 'H'},
+    {"c-source", 1, NULL, 'C'},
+    {"enable", 1, NULL, 'e'},
+    {"version-info", 1, NULL, 'V'},
     {NULL, 0, NULL, 0}};
 
 struct options {
