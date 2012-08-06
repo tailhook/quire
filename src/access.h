@@ -3,10 +3,10 @@
 
 #include "yparser.h"
 
-yaml_ast_node *yaml_map_get(yaml_ast_node *node, char *key);
+qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
 
-int yaml_get_boolean(yaml_ast_node *node, int *value);
+int qu_get_boolean(qu_ast_node *node, int *value);
 
-char *yaml_node_content(yaml_ast_node *node);
+char *qu_node_content(qu_ast_node *node);
 
 #endif // _H_ACCESS

@@ -43,6 +43,7 @@ def build(bld):
         features     = ['c', 'cprogram'],
         source       = [
             'src/ytool.c',
+            'src/access.c',
             'src/yparser.c',
             'objpath/objpath.c',
             ],

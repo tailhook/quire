@@ -11,6 +11,7 @@
 
 #include "yparser.h"
 #include "access.h"
+#include "codes.h"
 
 char c_sequence_entry[] = "-";
 char c_mapping_key[] = "?";
@@ -88,12 +89,6 @@ char *token_to_str[] = {
 };
 
 
-typedef enum yaml_error {
-    YAML_NO_ERROR,
-    YAML_SCANNER_ERROR,
-    YAML_PARSER_ERROR,
-    YAML_CONTENT_ERROR
-} yaml_error;
 
 typedef enum char_klass {
     CHAR_UNKNOWN,
@@ -127,14 +122,14 @@ static void safeprint(FILE *stream, unsigned char *data, int len) {
     }
 }
 
-static void print_token(yaml_token *tok, FILE *stream) {
+static void print_token(qu_token *tok, FILE *stream) {
     fprintf(stream, "%s:%d %s [%d]``", tok->filename, tok->start_line,
         token_to_str[tok->kind], tok->indent);
     safeprint(stream, tok->data, tok->bytelen);
     fprintf(stream, "''\n");
 }
 
-void yaml_init() {
+void qu_init() {
     chars['\t'].flags |= CHAR_PRINTABLE;
     chars['\r'].flags |= CHAR_PRINTABLE;
     chars['\n'].flags |= CHAR_PRINTABLE;
@@ -176,7 +171,7 @@ void obstack_chunk_free(void *ptr) {
 }
 
 
-int yaml_context_init(yaml_parse_context *ctx) {
+int qu_context_init(qu_parse_context *ctx) {
     obstack_init(&ctx->pieces);
     CIRCLEQ_INIT(&ctx->tokens);
     LIST_INIT(&ctx->anchors);
@@ -185,7 +180,7 @@ int yaml_context_init(yaml_parse_context *ctx) {
     return 0;
 }
 
-int yaml_load_file(yaml_parse_context *ctx, char *filename) {
+int qu_load_file(qu_parse_context *ctx, char *filename) {
     int eno;
     unsigned char *data = NULL;
     int fd = open(filename, O_RDONLY);
@@ -224,7 +219,7 @@ error:
     return -1;
 }
 
-int yaml_context_free(yaml_parse_context *ctx) {
+int qu_context_free(qu_parse_context *ctx) {
     obstack_free(&ctx->pieces, NULL);
     if(ctx->buf) {
         free(ctx->buf);
@@ -232,9 +227,9 @@ int yaml_context_free(yaml_parse_context *ctx) {
     return 0;
 }
 
-static yaml_token *init_token(yaml_parse_context *ctx) {
-    yaml_token *ctok = obstack_alloc(&ctx->pieces, sizeof(yaml_token));
-    ctok->kind = TOKEN_ERROR;
+static qu_token *init_token(qu_parse_context *ctx) {
+    qu_token *ctok = obstack_alloc(&ctx->pieces, sizeof(qu_token));
+    ctok->kind = QU_TOK_ERROR;
     CIRCLEQ_INSERT_TAIL(&ctx->tokens, ctok, lst);
     ctok->filename = ctx->filename;
     ctok->indent = ctx->indent;
@@ -249,7 +244,7 @@ static yaml_token *init_token(yaml_parse_context *ctx) {
     return ctok;
 }
 
-int yaml_tokenize(yaml_parse_context *ctx) {
+int qu_tokenize(qu_parse_context *ctx) {
 
 #define KLASS (chars[(int)CHAR].klass)
 #define FLAGS (chars[(int)CHAR].flags)
@@ -258,7 +253,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 #define LOOP for(; ctx->ptr < end; ++ctx->ptr, ++ctx->curpos)
 #define NEXT ((++ctx->curpos, ++ctx->ptr) < end)
 #define FORCE_NEXT if((++ctx->curpos, ++ctx->ptr) >= end) { \
-    ctok->kind = TOKEN_ERROR; \
+    ctok->kind = QU_TOK_ERROR; \
     ctok->end_line = ctx->curline; \
     ctok->end_char = ctx->curpos; \
     ctx->error_kind = YAML_SCANNER_ERROR; \
@@ -267,7 +262,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
     return 0; \
     }
 #define SYNTAX_ERROR(message) {\
-    ctok->kind = TOKEN_ERROR; \
+    ctok->kind = QU_TOK_ERROR; \
     ctok->end_line = ctx->curline; \
     ctok->end_char = ctx->curpos; \
     ctx->error_kind = YAML_SCANNER_ERROR; \
@@ -291,7 +286,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
     ctx->ptr = ctx->buf;
     ctx->flow_num = 0;
     for(;ctx->ptr < end;) {
-        yaml_token *ctok = init_token(ctx);
+        qu_token *ctok = init_token(ctx);
         switch(KLASS) {
         case CHAR_INDICATOR:
             switch (CHAR) {
@@ -299,7 +294,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             case '-': // list element, doc start, plainstring
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
-                    ctok->kind = TOKEN_SEQUENCE_ENTRY;
+                    ctok->kind = QU_TOK_SEQUENCE_ENTRY;
                     if(!ctx->linestart) {
                         ctx->error_kind = YAML_SCANNER_ERROR;
                         ctx->error_text = "Sequence entry dash sign is only"
@@ -311,7 +306,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                     ctok->indent = ctx->indent;
                     break;
                 } else if(CHAR == '-' && NEXT && CHAR == '-') {
-                    ctok->kind = TOKEN_DOC_START;
+                    ctok->kind = QU_TOK_DOC_START;
                     (void)NEXT;
                     break;
                 } else {
@@ -320,7 +315,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             case '?': // key, plainstring
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
-                    ctok->kind = TOKEN_MAPPING_KEY;
+                    ctok->kind = QU_TOK_MAPPING_KEY;
                     break;
                 } else {
                     goto plainstring;
@@ -328,53 +323,53 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             case ':': // value, plainstring
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
-                    ctok->kind = TOKEN_MAPPING_VALUE;
+                    ctok->kind = QU_TOK_MAPPING_VALUE;
                     break;
                 } else if(CIRCLEQ_PREV(ctok, lst) &&
-                    CIRCLEQ_PREV(ctok, lst)->kind == TOKEN_DOUBLESTRING) {
+                    CIRCLEQ_PREV(ctok, lst)->kind == QU_TOK_DOUBLESTRING) {
                     // JSON-like value {"abc":123}
-                    ctok->kind = TOKEN_MAPPING_VALUE;
+                    ctok->kind = QU_TOK_MAPPING_VALUE;
                     break;
                 } else {
                     goto plainstring;
                 }
             case '%':
-                ctok->kind = TOKEN_DIRECTIVE;
+                ctok->kind = QU_TOK_DIRECTIVE;
                 CONSUME_UNTIL(CHAR == '\n');
                 break;
             case '@': case '`':
                 ctok->end_char += 1;
-                ctok->kind = TOKEN_ERROR;
+                ctok->kind = QU_TOK_ERROR;
                 ctx->error_kind = YAML_SCANNER_ERROR;
                 ctx->error_text = "Characters '@' and '`' are reserved";
                 ctx->error_token = ctok;
                 return 0;
             case '"':
                 FORCE_NEXT;
-                ctok->kind = TOKEN_DOUBLESTRING;
+                ctok->kind = QU_TOK_DOUBLESTRING;
                 CONSUME_UNTIL(CHAR == '"' && PREV_CHAR != '\\');
                 (void)NEXT;
                 break;
             case '\'':
                 FORCE_NEXT;
-                ctok->kind = TOKEN_SINGLESTRING;
+                ctok->kind = QU_TOK_SINGLESTRING;
                 CONSUME_UNTIL(CHAR == '\'');
                 (void)NEXT;
                 break;
             case '#':
-                ctok->kind = TOKEN_COMMENT;
+                ctok->kind = QU_TOK_COMMENT;
                 CONSUME_UNTIL(CHAR == '\n');
                 break;
             case '&':
-                ctok->kind = TOKEN_ANCHOR;
+                ctok->kind = QU_TOK_ANCHOR;
                 CONSUME_WHILE(FLAGS & CHAR_PLAIN_FLOW);
                 break;
             case '*':
-                ctok->kind = TOKEN_ALIAS;
+                ctok->kind = QU_TOK_ALIAS;
                 CONSUME_WHILE(FLAGS & CHAR_PLAIN_FLOW);
                 break;
             case '!':
-                ctok->kind = TOKEN_TAG;
+                ctok->kind = QU_TOK_TAG;
                 FORCE_NEXT;
                 if(CHAR == '<') {
                     FORCE_NEXT;
@@ -391,10 +386,10 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 }
                 break;
             case '|':
-                ctok->kind = TOKEN_LITERAL;
+                ctok->kind = QU_TOK_LITERAL;
                 goto blockscalar;
             case '>':
-                ctok->kind = TOKEN_FOLDED;
+                ctok->kind = QU_TOK_FOLDED;
             blockscalar: {
                 FORCE_NEXT;
                 int indent = ctx->indent+1;
@@ -439,32 +434,32 @@ int yaml_tokenize(yaml_parse_context *ctx) {
                 } break;
             // flow indicators
             case ',':
-                ctok->kind = TOKEN_FLOW_ENTRY;
+                ctok->kind = QU_TOK_FLOW_ENTRY;
                 (void)NEXT;
                 break;
             case '[':
-                ctok->kind = TOKEN_FLOW_SEQ_START;
+                ctok->kind = QU_TOK_FLOW_SEQ_START;
                 if(ctx->flow_num >= MAX_FLOW_STACK)
                     SYNTAX_ERROR("Too big flow context depth");
                 ctx->flow_stack[ctx->flow_num ++] = '[';
                 (void)NEXT;
                 break;
             case ']':
-                ctok->kind = TOKEN_FLOW_SEQ_END;
+                ctok->kind = QU_TOK_FLOW_SEQ_END;
                 if(ctx->flow_num == 0 ||
                    ctx->flow_stack[-- ctx->flow_num] != '[')
                     SYNTAX_ERROR("Unmatched ]");
                 (void)NEXT;
                 break;
             case '{':
-                ctok->kind = TOKEN_FLOW_MAP_START;
+                ctok->kind = QU_TOK_FLOW_MAP_START;
                 if(ctx->flow_num >= MAX_FLOW_STACK)
                     SYNTAX_ERROR("Too big flow context depth");
                 ctx->flow_stack[ctx->flow_num ++] = '{';
                 (void)NEXT;
                 break;
             case '}':
-                ctok->kind = TOKEN_FLOW_MAP_END;
+                ctok->kind = QU_TOK_FLOW_MAP_END;
                 if(ctx->flow_num == 0 ||
                    ctx->flow_stack[-- ctx->flow_num] != '{')
                     SYNTAX_ERROR("Unmatched }");
@@ -477,7 +472,7 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             }
             break;
         case CHAR_WHITESPACE:
-            ctok->kind = TOKEN_WHITESPACE;
+            ctok->kind = QU_TOK_WHITESPACE;
             LOOP {
                 if(*ctx->ptr == '\n') {
                     ctx->curline += 1;
@@ -490,19 +485,19 @@ int yaml_tokenize(yaml_parse_context *ctx) {
             }
             if(ctx->linestart) {
                 ctx->indent = ctx->curpos-1;
-                ctok->kind = TOKEN_INDENT;
+                ctok->kind = QU_TOK_INDENT;
             }
             break;
         default:
             ctx->linestart = 0;
             if(FLAGS & CHAR_PLAIN) {
                 if(CHAR == '.' && NEXT && CHAR == '.' && NEXT && CHAR == '.') {
-                    ctok->kind = TOKEN_DOC_END;
+                    ctok->kind = QU_TOK_DOC_END;
                     (void)NEXT;
                     break;
                 }
         plainstring:
-                ctok->kind = TOKEN_PLAINSTRING;
+                ctok->kind = QU_TOK_PLAINSTRING;
                 int flag = ctx->flow_num ? CHAR_PLAIN_FLOW : CHAR_PLAIN;
                 LOOP {
                     if(!(FLAGS & flag) && CHAR != ' ' && CHAR != '\t') break;
@@ -519,12 +514,12 @@ int yaml_tokenize(yaml_parse_context *ctx) {
         ctok->end_line = ctx->curline;
         ctok->end_char = ctx->curpos-1;
         ctok->bytelen = ctx->ptr - ctok->data;
-        if(ctok->kind == TOKEN_DOC_END)
+        if(ctok->kind == QU_TOK_DOC_END)
             break;
     }
-    if(CIRCLEQ_LAST(&ctx->tokens)->kind != TOKEN_DOC_END) {
-        yaml_token *ctok = init_token(ctx);
-        ctok->kind = TOKEN_DOC_END;
+    if(CIRCLEQ_LAST(&ctx->tokens)->kind != QU_TOK_DOC_END) {
+        qu_token *ctok = init_token(ctx);
+        ctok->kind = QU_TOK_DOC_END;
     }
     return 0;
 
@@ -532,9 +527,9 @@ int yaml_tokenize(yaml_parse_context *ctx) {
 #undef SYNTAX_ERROR
 }
 
-static yaml_ast_node *new_node(yaml_parse_context *ctx) {
-    yaml_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(yaml_ast_node));
-    node->kind = NODE_UNKNOWN;
+static qu_ast_node *new_node(qu_parse_context *ctx) {
+    qu_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(qu_ast_node));
+    node->kind = QU_NODE_UNKNOWN;
     node->ctx = ctx;
     node->anchor = ctx->cur_anchor;
     if(ctx->cur_anchor) {
@@ -557,9 +552,9 @@ static yaml_ast_node *new_node(yaml_parse_context *ctx) {
     return node;
 }
 
-static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
-    yaml_ast_node *node = new_node(ctx);
-    node->kind = NODE_SCALAR;
+static qu_ast_node *new_text_node(qu_parse_context *ctx, qu_token *tok) {
+    qu_ast_node *node = new_node(ctx);
+    node->kind = QU_NODE_SCALAR;
     node->start_token = tok;
     node->end_token = tok;
     // TODO(tailhook) parse content
@@ -569,9 +564,9 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
 #define CTOK (ctx->cur_token)
 #define NTOK (CIRCLEQ_NEXT(CTOK, lst) == (void *)&ctx->tokens ? NULL : CIRCLEQ_NEXT(CTOK, lst))
 #define NEXT { assert(CTOK); CTOK = NTOK; SKIP; }
-#define SKIP while(CTOK && (CTOK->kind == TOKEN_WHITESPACE \
-                            || CTOK->kind == TOKEN_INDENT \
-                            || CTOK->kind == TOKEN_COMMENT)) { \
+#define SKIP while(CTOK && (CTOK->kind == QU_TOK_WHITESPACE \
+                            || CTOK->kind == QU_TOK_INDENT \
+                            || CTOK->kind == QU_TOK_COMMENT)) { \
     CTOK = NTOK; \
     }
 #define SYNTAX_ERROR(message) { \
@@ -583,19 +578,19 @@ static yaml_ast_node *new_text_node(yaml_parse_context *ctx, yaml_token *tok) {
     ctx->error_token = CTOK; \
     return NULL; \
     }
-#define TOKEN_SCALAR(tok) ((tok)->kind == TOKEN_PLAINSTRING || \
-                           (tok)->kind == TOKEN_SINGLESTRING || \
-                           (tok)->kind == TOKEN_DOUBLESTRING || \
-                           (tok)->kind == TOKEN_LITERAL || \
-                           (tok)->kind == TOKEN_FOLDED)
+#define QU_TOK_SCALAR(tok) ((tok)->kind == QU_TOK_PLAINSTRING || \
+                           (tok)->kind == QU_TOK_SINGLESTRING || \
+                           (tok)->kind == QU_TOK_DOUBLESTRING || \
+                           (tok)->kind == QU_TOK_LITERAL || \
+                           (tok)->kind == QU_TOK_FOLDED)
 
-yaml_ast_node *parse_flow_node(yaml_parse_context *ctx) {
-    if(CTOK->kind == TOKEN_ALIAS) {
-        yaml_ast_node *node = new_node(ctx);
+qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
+    if(CTOK->kind == QU_TOK_ALIAS) {
+        qu_ast_node *node = new_node(ctx);
         node->start_token = CTOK;
         node->end_token = CTOK;
-        node->kind = NODE_ALIAS;
-        yaml_ast_node *target;
+        node->kind = QU_NODE_ALIAS;
+        qu_ast_node *target;
         LIST_FOREACH(target, &ctx->anchors, anchors) {
             if(target->anchor->bytelen == CTOK->bytelen
                 && !strncmp((char *)target->anchor->data+1,  // "&" char
@@ -609,42 +604,42 @@ yaml_ast_node *parse_flow_node(yaml_parse_context *ctx) {
         // TODO(tailhook) put error message here
         return NULL;
     }
-    if(CTOK->kind == TOKEN_ANCHOR) {
+    if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
         NEXT;
-        if(CTOK->kind == TOKEN_TAG) {
+        if(CTOK->kind == QU_TOK_TAG) {
             ctx->cur_tag = CTOK;
             NEXT;
         }
-    } else if(CTOK->kind == TOKEN_TAG) {
+    } else if(CTOK->kind == QU_TOK_TAG) {
         ctx->cur_tag = CTOK;
         NEXT;
-        if(CTOK->kind == TOKEN_ANCHOR) {
+        if(CTOK->kind == QU_TOK_ANCHOR) {
             ctx->cur_anchor = CTOK;
             NEXT;
         }
     }
-    if(TOKEN_SCALAR(CTOK)) {
-        yaml_ast_node *res = new_text_node(ctx, CTOK);
+    if(QU_TOK_SCALAR(CTOK)) {
+        qu_ast_node *res = new_text_node(ctx, CTOK);
         NEXT;
         return res;
     }
-    if(CTOK->kind == TOKEN_FLOW_MAP_START) {
-        yaml_ast_node *node = new_node(ctx);
+    if(CTOK->kind == QU_TOK_FLOW_MAP_START) {
+        qu_ast_node *node = new_node(ctx);
         node->start_token = CTOK;
-        node->kind = NODE_MAPPING;
+        node->kind = QU_NODE_MAPPING;
         NEXT;
         while(1) {
-            yaml_ast_node *child = new_text_node(ctx, CTOK);
+            qu_ast_node *child = new_text_node(ctx, CTOK);
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
             NEXT; NEXT;
             child = parse_flow_node(ctx);
             if(!child)
                 return NULL;
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
-            if(CTOK->kind == TOKEN_FLOW_MAP_END)
+            if(CTOK->kind == QU_TOK_FLOW_MAP_END)
                 break;
-            if(CTOK->kind != TOKEN_FLOW_ENTRY)
+            if(CTOK->kind != QU_TOK_FLOW_ENTRY)
                 return NULL;
             NEXT;
         }
@@ -652,17 +647,17 @@ yaml_ast_node *parse_flow_node(yaml_parse_context *ctx) {
         NEXT;
         return node;
     }
-    if(CTOK->kind == TOKEN_FLOW_SEQ_START) {
-        yaml_ast_node *node = new_node(ctx);
-        node->kind = NODE_SEQUENCE;
+    if(CTOK->kind == QU_TOK_FLOW_SEQ_START) {
+        qu_ast_node *node = new_node(ctx);
+        node->kind = QU_NODE_SEQUENCE;
         node->start_token = CTOK;
         NEXT;
         while(1) {
-            yaml_ast_node *child = parse_flow_node(ctx);
+            qu_ast_node *child = parse_flow_node(ctx);
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
-            if(CTOK->kind == TOKEN_FLOW_SEQ_END)
+            if(CTOK->kind == QU_TOK_FLOW_SEQ_END)
                 break;
-            if(CTOK->kind != TOKEN_FLOW_ENTRY)
+            if(CTOK->kind != QU_TOK_FLOW_ENTRY)
                 return NULL;
             NEXT;
         }
@@ -673,9 +668,9 @@ yaml_ast_node *parse_flow_node(yaml_parse_context *ctx) {
     return NULL;
 }
 
-yaml_ast_node **find_node(yaml_ast_node **root, char *value) {
+qu_ast_node **find_node(qu_ast_node **root, char *value) {
     while(*root) {
-        int cmp = strcmp(yaml_node_content(*root), value);
+        int cmp = strcmp(qu_node_content(*root), value);
         if(!cmp)
             return root;
         if(cmp < 0)
@@ -686,13 +681,13 @@ yaml_ast_node **find_node(yaml_ast_node **root, char *value) {
     return root;
 }
 
-yaml_ast_node *parse_node(yaml_parse_context *ctx) {
-    if(CTOK->kind == TOKEN_ALIAS) {
-        yaml_ast_node *node = new_node(ctx);
+qu_ast_node *parse_node(qu_parse_context *ctx) {
+    if(CTOK->kind == QU_TOK_ALIAS) {
+        qu_ast_node *node = new_node(ctx);
         node->start_token = CTOK;
         node->end_token = CTOK;
-        node->kind = NODE_ALIAS;
-        yaml_ast_node *target;
+        node->kind = QU_NODE_ALIAS;
+        qu_ast_node *target;
         LIST_FOREACH(target, &ctx->anchors, anchors) {
             if(target->anchor->bytelen == CTOK->bytelen
                 && !strncmp((char *)target->anchor->data+1,  // "&" char
@@ -706,38 +701,38 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
         // TODO(tailhook) put error message here
         return NULL;
     }
-    if(CTOK->kind == TOKEN_ANCHOR) {
+    if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
         NEXT;
-        if(CTOK->kind == TOKEN_TAG) {
+        if(CTOK->kind == QU_TOK_TAG) {
             ctx->cur_tag = CTOK;
             NEXT;
         }
-    } else if(CTOK->kind == TOKEN_TAG) {
+    } else if(CTOK->kind == QU_TOK_TAG) {
         ctx->cur_tag = CTOK;
         NEXT;
-        if(CTOK->kind == TOKEN_ANCHOR) {
+        if(CTOK->kind == QU_TOK_ANCHOR) {
             ctx->cur_anchor = CTOK;
             NEXT;
         }
     }
-    if(TOKEN_SCALAR(CTOK)) {
+    if(QU_TOK_SCALAR(CTOK)) {
         if(NTOK
-            && NTOK->kind == TOKEN_MAPPING_VALUE
+            && NTOK->kind == QU_TOK_MAPPING_VALUE
             && NTOK->start_line == CTOK->start_line) {
             // MAPPING
-            yaml_ast_node *node = new_node(ctx);
+            qu_ast_node *node = new_node(ctx);
             node->start_token = CTOK;
-            node->kind = NODE_MAPPING;
+            node->kind = QU_NODE_MAPPING;
             int mapping_indent = CTOK->indent;
-            while(CTOK && TOKEN_SCALAR(CTOK)
-                && NTOK->kind == TOKEN_MAPPING_VALUE
+            while(CTOK && QU_TOK_SCALAR(CTOK)
+                && NTOK->kind == QU_TOK_MAPPING_VALUE
                 && NTOK->start_line == CTOK->start_line
                 && CTOK->indent == mapping_indent) {
-                yaml_ast_node *child = new_text_node(ctx, CTOK);
-                char *cont = yaml_node_content(child);
+                qu_ast_node *child = new_text_node(ctx, CTOK);
+                char *cont = qu_node_content(child);
                 if(cont) {
-                    yaml_ast_node **targ = find_node(&node->tree, cont);
+                    qu_ast_node **targ = find_node(&node->tree, cont);
                     if(*targ) {
                         obstack_blank(&ctx->pieces, 0);
                         obstack_grow(&ctx->pieces, "Duplicate key \"", 15);
@@ -761,21 +756,21 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
             node->end_token = CIRCLEQ_PREV(CTOK, lst);
             return node;
         } else { // SCALAR
-            yaml_ast_node *res = new_text_node(ctx, CTOK);
+            qu_ast_node *res = new_text_node(ctx, CTOK);
             NEXT;
             return res;
         }
     }
-    if(CTOK->kind == TOKEN_SEQUENCE_ENTRY) {
-        yaml_ast_node *node = new_node(ctx);
-        node->kind = NODE_SEQUENCE;
+    if(CTOK->kind == QU_TOK_SEQUENCE_ENTRY) {
+        qu_ast_node *node = new_node(ctx);
+        node->kind = QU_NODE_SEQUENCE;
         node->start_token = CTOK;
         int sequence_indent = CTOK->indent;
         while(CTOK
-              && CTOK->kind == TOKEN_SEQUENCE_ENTRY
+              && CTOK->kind == QU_TOK_SEQUENCE_ENTRY
               && CTOK->indent == sequence_indent) {
             NEXT;
-            yaml_ast_node *child = parse_node(ctx);
+            qu_ast_node *child = parse_node(ctx);
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
         }
         node->end_token = CIRCLEQ_PREV(CTOK, lst);
@@ -785,26 +780,26 @@ yaml_ast_node *parse_node(yaml_parse_context *ctx) {
 }
 
 
-int yaml_parse(yaml_parse_context *ctx) {
+int qu_parse(qu_parse_context *ctx) {
 
     ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
     ctx->cur_anchor = NULL;
     ctx->cur_tag = NULL;
     SKIP;
-    while(CTOK && CTOK->kind == TOKEN_DIRECTIVE) {
+    while(CTOK && CTOK->kind == QU_TOK_DIRECTIVE) {
         // TODO(tailhook) parse directives
         NEXT;
     }
     if(!CTOK) return 0;
-    if(CTOK->kind == TOKEN_DOC_START) NEXT;
-    if(CTOK->kind == TOKEN_DOC_END) return 0;
+    if(CTOK->kind == QU_TOK_DOC_START) NEXT;
+    if(CTOK->kind == QU_TOK_DOC_END) return 0;
 
     ctx->document = parse_node(ctx);
 
     if(ctx->error_kind)
         return 0;
 
-    if(CTOK->kind != TOKEN_DOC_END) {
+    if(CTOK->kind != QU_TOK_DOC_END) {
         print_token(CTOK, stdout);
         assert(0);
     }
@@ -813,8 +808,8 @@ int yaml_parse(yaml_parse_context *ctx) {
 }
 
 
-void yaml_print_tokens(yaml_parse_context *ctx, FILE *stream) {
-    yaml_token *tok;
+void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
+    qu_token *tok;
     CIRCLEQ_FOREACH(tok, &ctx->tokens, lst) {
         print_token(tok, stream);
     }

@@ -85,18 +85,18 @@ void parse_options(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     parse_options(argc, argv);
-    yaml_init();
-    yaml_parse_context ctx;
-    std_assert(yaml_context_init(&ctx));
-    std_assert(yaml_load_file(&ctx, options.source_file));
-    std_assert(yaml_tokenize(&ctx));
+    qu_init();
+    qu_parse_context ctx;
+    std_assert(qu_context_init(&ctx));
+    std_assert(qu_load_file(&ctx, options.source_file));
+    std_assert(qu_tokenize(&ctx));
     if(ctx.error_kind) {
         fprintf(stderr, "Error parsing file %s:%d: %s\n",
             ctx.filename, ctx.error_token->start_line,
             ctx.error_text);
     } else {
-        std_assert(yaml_parse(&ctx));
+        std_assert(qu_parse(&ctx));
     }
-    std_assert(yaml_context_free(&ctx));
+    std_assert(qu_context_free(&ctx));
     return 0;
 }

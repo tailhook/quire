@@ -3,15 +3,16 @@
 
 #include "access.h"
 #include "yparser.h"
+#include "codes.h"
 
 
-char *yaml_node_content(yaml_ast_node *node) {
-    if(node->kind != NODE_SCALAR)
+char *qu_node_content(qu_ast_node *node) {
+    if(node->kind != QU_NODE_SCALAR)
         return NULL;
     if(node->content)
         return node->content;
     if(node->start_token == node->end_token
-        && node->start_token->kind == TOKEN_PLAINSTRING) {
+        && node->start_token->kind == QU_TOK_PLAINSTRING) {
         node->content = obstack_copy0(&node->ctx->pieces,
             (char *)node->start_token->data,
             node->start_token->bytelen);
@@ -21,14 +22,14 @@ char *yaml_node_content(yaml_ast_node *node) {
     assert(0);
 }
 
-yaml_ast_node *yaml_map_get(yaml_ast_node *node, char *key) {
-    if(node->kind != NODE_MAP)
+qu_ast_node *qu_map_get(qu_ast_node *node, char *key) {
+    if(node->kind != QU_NODE_MAPPING)
         return NULL;
     return NULL;
 }
 
-int yaml_get_boolean(yaml_ast_node *node, int *value) {
-    char *content = yaml_node_content(node);
+int qu_get_boolean(qu_ast_node *node, int *value) {
+    char *content = qu_node_content(node);
     if(!content)
         return -1;
     if(!*content

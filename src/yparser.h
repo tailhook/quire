@@ -8,47 +8,10 @@
 #define MAX_FLOW_STACK 128
 #define MAX_NODE_STACK 256
 
-struct parse_context_s;
+struct qu_parse_context_s;
 
-typedef enum token_kind {
-    // Keep in sync with strings in yparser.c
-    TOKEN_ERROR,
-    TOKEN_DOC_START,
-    TOKEN_DOC_END,
-    TOKEN_INDENT,
-    TOKEN_WHITESPACE,
-    TOKEN_PLAINSTRING,
-    TOKEN_SINGLESTRING,
-    TOKEN_DOUBLESTRING,
-    TOKEN_LITERAL,
-    TOKEN_FOLDED,
-    TOKEN_COMMENT,
-    TOKEN_TAG,
-    TOKEN_ALIAS,
-    TOKEN_ANCHOR,
-    TOKEN_SEQUENCE_ENTRY,  // '-'
-    TOKEN_MAPPING_KEY,  // '?'
-    TOKEN_MAPPING_VALUE,  // ':'
-    TOKEN_FLOW_SEQ_START,  // '['
-    TOKEN_FLOW_SEQ_END,  // ']'
-    TOKEN_FLOW_MAP_START,  // '{'
-    TOKEN_FLOW_MAP_END,  // '}'
-    TOKEN_FLOW_ENTRY,  // ','
-    TOKEN_DIRECTIVE,  // '%...'
-    TOKEN_RESERVED,  // '@' or '`'
-} token_kind;
-
-typedef enum node_kind {
-    NODE_UNKNOWN,
-    NODE_ALIAS,
-    NODE_EMPTY,
-    NODE_SCALAR,
-    NODE_SEQUENCE,
-    NODE_MAPPING,
-} node_kind;
-
-typedef struct token_s {
-    CIRCLEQ_ENTRY(token_s) lst;
+typedef struct qu_token_s {
+    CIRCLEQ_ENTRY(qu_token_s) lst;
     int kind;
 
     char *filename;
@@ -61,33 +24,33 @@ typedef struct token_s {
     int bytepos;  // byte offset from start of file
     int bytelen;  // length in bytes
 
-    struct node_s *owner_node;
-} yaml_token;
+    struct qu_node_s *owner_node;
+} qu_token;
 
-typedef struct node_s {
-    CIRCLEQ_ENTRY(node_s) lst;
-    LIST_ENTRY(node_s) anchors; // for anchors nodes
+typedef struct qu_node_s {
+    CIRCLEQ_ENTRY(qu_node_s) lst;
+    LIST_ENTRY(qu_node_s) anchors; // for anchors nodes
 
 
     int kind;
     struct parse_context_s *ctx;
-    yaml_token *anchor;
-    yaml_token *tag;
-    yaml_token *start_token;
-    yaml_token *end_token;
+    qu_token *anchor;
+    qu_token *tag;
+    qu_token *start_token;
+    qu_token *end_token;
 
     char *content;  // for scalar nodes or aliases
     int content_len;
 
-    struct node_s *target;  // for aliases
+    struct qu_node_s *target;  // for aliases
 
     // for mappings
-    struct node_s *tree;
-    struct node_s *left;
-    struct node_s *right;
+    struct qu_node_s *tree;
+    struct qu_node_s *left;
+    struct qu_node_s *right;
 
-    CIRCLEQ_HEAD(ast_children, node_s) children; // for container nodes
-} yaml_ast_node;
+    CIRCLEQ_HEAD(qu_ast_children, qu_node_s) children; // for container nodes
+} qu_ast_node;
 
 typedef struct parse_context_s {
     struct obstack pieces;
@@ -95,9 +58,9 @@ typedef struct parse_context_s {
     unsigned char *buf;
     int buflen;
 
-    CIRCLEQ_HEAD(token_list, token_s) tokens;
-    yaml_ast_node *document;
-    LIST_HEAD(anchor_list, node_s) anchors;
+    CIRCLEQ_HEAD(qu_token_list, qu_token_s) tokens;
+    qu_ast_node *document;
+    LIST_HEAD(qu_anchor_list, qu_node_s) anchors;
 
     int linestart; // boolean flag if we are still at indentation
     int curline;
@@ -107,24 +70,24 @@ typedef struct parse_context_s {
     int flow_num;
     char flow_stack[MAX_FLOW_STACK];
 
-    yaml_token *cur_token;
-    yaml_token *cur_anchor;
-    yaml_token *cur_tag;
+    qu_token *cur_token;
+    qu_token *cur_anchor;
+    qu_token *cur_tag;
 
     int error_kind;
     char *error_text;
-    yaml_token *error_token;
+    qu_token *error_token;
 
-} yaml_parse_context;
+} qu_parse_context;
 
 
-void yaml_init();
-int yaml_context_init(yaml_parse_context *ctx);
-int yaml_load_file(yaml_parse_context *ctx, char *filename);
-int yaml_tokenize(yaml_parse_context *ctx);
-int yaml_parse(yaml_parse_context *ctx);
-char *yaml_node_content(yaml_ast_node *node);
-int yaml_context_free(yaml_parse_context *ctx);
+void qu_init();
+int qu_context_init(qu_parse_context *ctx);
+int qu_load_file(qu_parse_context *ctx, char *filename);
+int qu_tokenize(qu_parse_context *ctx);
+int qu_parse(qu_parse_context *ctx);
+char *qu_node_content(qu_ast_node *node);
+int qu_context_free(qu_parse_context *ctx);
 
 
 #endif // _H_YPARSER

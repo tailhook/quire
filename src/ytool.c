@@ -7,6 +7,7 @@
 #include <sys/queue.h>
 
 #include "yparser.h"
+#include "codes.h"
 #include "objpath/objpath.h"
 
 char short_options[] = "Ehf:v";
@@ -77,21 +78,21 @@ void parse_options(int argc, char **argv) {
     }
 }
 
-void serialize_yaml(FILE *out, yaml_ast_node *node) {
+void serialize_yaml(FILE *out, qu_ast_node *node) {
     // temp code, until real serialization implemented
-    yaml_ast_node *snode = node;
-    yaml_ast_node *enode = node;
+    qu_ast_node *snode = node;
+    qu_ast_node *enode = node;
     while(snode && !snode->start_token)
         snode = CIRCLEQ_FIRST(&snode->children);
     while(enode && !enode->end_token)
         enode = CIRCLEQ_LAST(&enode->children);
     if(snode && enode) {
-        yaml_token *start = snode->start_token;
-        yaml_token *end = enode->end_token;
+        qu_token *start = snode->start_token;
+        qu_token *end = enode->end_token;
         int first_indent = 1;
         int ind = start->indent;
         while(start && start != end) {
-            if(start->kind == TOKEN_INDENT) {
+            if(start->kind == QU_TOK_INDENT) {
                 // The following smells like a hack, but works
                 if(start->start_line == start->end_line) {
                     int curind = ind - start->start_char;
@@ -122,7 +123,7 @@ void serialize_yaml(FILE *out, yaml_ast_node *node) {
     }
 }
 
-int extract(char *path, yaml_ast_node *root) {
+int extract(char *path, qu_ast_node *root) {
     int res = 1;  // if nothing found
     void *pattern = objpath_compile(path);
     if(!pattern) {
@@ -130,19 +131,19 @@ int extract(char *path, yaml_ast_node *root) {
         return 2;
     }
     void *ctx = objpath_start(pattern);
-    yaml_ast_node *cur = root;
-    yaml_ast_node *iter = NULL;
+    qu_ast_node *cur = root;
+    qu_ast_node *iter = NULL;
     objpath_value_t val;
     int opcode;
     while(objpath_next(ctx, &opcode, &val, (void **)&cur, (void **)&iter)) {
-        if(cur->kind == NODE_ALIAS)
+        if(cur->kind == QU_NODE_ALIAS)
             cur = cur->target;
         switch(opcode) {
         case OBJPATH_KEY:
-            if(cur->kind != NODE_MAPPING)
+            if(cur->kind != QU_NODE_MAPPING)
                 goto fail;
             CIRCLEQ_FOREACH(iter, &cur->children, lst) {
-                if(!strcmp(yaml_node_content(iter), val.string)) {
+                if(!strcmp(qu_node_content(iter), val.string)) {
                     cur = CIRCLEQ_NEXT(iter, lst);
                     goto success;
                 } else {
@@ -153,7 +154,7 @@ int extract(char *path, yaml_ast_node *root) {
             }
             goto fail;
         case OBJPATH_INDEX:
-            if(cur->kind != NODE_SEQUENCE)
+            if(cur->kind != QU_NODE_SEQUENCE)
                 goto fail;
             CIRCLEQ_FOREACH(iter, &cur->children, lst) {
                 if(!val.index--) {
@@ -164,14 +165,14 @@ int extract(char *path, yaml_ast_node *root) {
             goto fail;
 
         case OBJPATH_KEYS:
-            if(cur->kind != NODE_MAPPING)
+            if(cur->kind != QU_NODE_MAPPING)
                 goto fail;
             iter = CIRCLEQ_FIRST(&cur->children);
             if(!iter)
                 goto fail;
             goto success;
         case OBJPATH_VALUES:
-            if(cur->kind != NODE_MAPPING)
+            if(cur->kind != QU_NODE_MAPPING)
                 goto fail;
             iter = CIRCLEQ_FIRST(&cur->children);
             if(!iter)
@@ -193,7 +194,7 @@ int extract(char *path, yaml_ast_node *root) {
             goto success;
 
         case OBJPATH_ELEMENTS:
-            if(cur->kind != NODE_SEQUENCE)
+            if(cur->kind != QU_NODE_SEQUENCE)
                 goto fail;
             iter = CIRCLEQ_FIRST(&cur->children);
             if(!iter)
@@ -220,7 +221,7 @@ int extract(char *path, yaml_ast_node *root) {
     return res;
 }
 
-void execute_action(char **argv, yaml_ast_node *root) {
+void execute_action(char **argv, qu_ast_node *root) {
     if(options.action == A_EXTRACT) {
         exit(extract(argv[0], root));
     } else {
@@ -232,14 +233,14 @@ void execute_action(char **argv, yaml_ast_node *root) {
 int main(int argc, char **argv) {
     parse_options(argc, argv);
     assert(argc >= 2);
-    yaml_init();
-    yaml_parse_context ctx;
+    qu_init();
+    qu_parse_context ctx;
     int rc;
-    rc = yaml_context_init(&ctx);
+    rc = qu_context_init(&ctx);
     assert(rc != -1);
-    rc = yaml_load_file(&ctx, options.filename);
+    rc = qu_load_file(&ctx, options.filename);
     assert(rc != -1);
-    rc = yaml_tokenize(&ctx);
+    rc = qu_tokenize(&ctx);
     assert(rc != -1);
     char *errfn = ctx.filename;
     if(options.error_basename) {
@@ -256,9 +257,9 @@ int main(int argc, char **argv) {
             ctx.error_text);
         return 1;
     } else {
-        //yaml_print_tokens(&ctx, stdout);
+        //qu_print_tokens(&ctx, stdout);
         //printf("-----------------\n");
-        rc = yaml_parse(&ctx);
+        rc = qu_parse(&ctx);
         assert(rc != -1);
         if(ctx.error_kind) {
             fprintf(stderr, "Error parsing file %s:%d: %s\n",
@@ -268,7 +269,7 @@ int main(int argc, char **argv) {
         }
     }
     execute_action(argv + optind, ctx.document);
-    rc = yaml_context_free(&ctx);
+    rc = qu_context_free(&ctx);
     assert(rc != -1);
     return 0;
 }
