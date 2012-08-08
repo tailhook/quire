@@ -1,102 +1,38 @@
 #include <stdio.h>
-#include <getopt.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
 
 #include "yparser.h"
+#include "metadata.h"
+#include "preprocessing.h"
+#include "genheader.h"
 
 #define std_assert(val) if((val) == -1) {\
     fprintf(stderr, "coyaml: %s", strerror(errno));\
     }
 
-char *opt_string = "hf:H:C:e:";
-struct option long_options[] = {
-    {"help", 0, NULL, 'h'},
-    {"source", 1, NULL, 'f'},
-    {"c-header", 1, NULL, 'H'},
-    {"c-source", 1, NULL, 'C'},
-    {"enable", 1, NULL, 'e'},
-    {"version-info", 1, NULL, 'V'},
-    {NULL, 0, NULL, 0}};
-
-struct options {
-    char *source_file;
-    char *output_header;
-    char *output_source;
-    char *version_info;
-    char *sections[128];
-} options = {NULL, NULL, NULL, NULL, {NULL}};
-
-
-void print_usage(FILE *out) {
-    fprintf(out, "Usage:\n"
-        "    cgen --source config.yaml [--c-header config.h]"
-                                     " [--c-source config.c]\n"
-        "\n"
-        "Options:\n"
-        " --source FILE    File name of the source yaml file\n"
-        " --c-header FILE  Write C header to FILE\n"
-        " --c-source FILE  Write parser source in C to FILE\n"
-        " --enable COND    Enable section in config marked !If:COND\n"
-        " --version-info DATA\n"
-        "                  Version info to put into command-line help\n"
-        );
-};
-
-void parse_options(int argc, char **argv) {
-    int c;
-    int cursect = 0;
-    while((c = getopt_long(argc, argv, opt_string, long_options, NULL)) != -1){
-        switch(c) {
-        case 'h':
-            print_usage(stdout);
-            exit(0);
-        case 'f':
-            options.source_file = optarg;
-            break;
-        case 'H':
-            options.output_header = optarg;
-            break;
-        case 'C':
-            options.output_source = optarg;
-            break;
-        case 'V':
-            options.version_info = optarg;
-            break;
-        case 'e':
-            if(cursect > sizeof(options.sections)/sizeof(char *)-1) {
-                fprintf(stderr, "Too many --enable flags\n");
-                exit(7);
-            }
-            options.sections[cursect++] = optarg;
-            break;
-        default:
-            print_usage(stderr);
-            exit(1);
-        }
-    }
-    if(optind < argc) {
-        fprintf(stderr, "cgen: unrecognized option '%s'\n", argv[optind]);
-        exit(1);
-    }
-    options.sections[cursect] = NULL;
-}
 
 int main(int argc, char **argv) {
-    parse_options(argc, argv);
+    qu_context_t ctx;
+    quire_parse_options(&ctx.options, argc, argv);
     qu_init();
-    qu_parse_context ctx;
-    std_assert(qu_context_init(&ctx));
-    std_assert(qu_load_file(&ctx, options.source_file));
-    std_assert(qu_tokenize(&ctx));
-    if(ctx.error_kind) {
+    std_assert(qu_context_init(&ctx.parsing));
+    std_assert(qu_load_file(&ctx.parsing, ctx.options.source_file));
+    std_assert(qu_tokenize(&ctx.parsing));
+    if(ctx.parsing.error_kind) {
         fprintf(stderr, "Error parsing file %s:%d: %s\n",
-            ctx.filename, ctx.error_token->start_line,
-            ctx.error_text);
+            ctx.parsing.filename, ctx.parsing.error_token->start_line,
+            ctx.parsing.error_text);
     } else {
-        std_assert(qu_parse(&ctx));
+        std_assert(qu_parse(&ctx.parsing));
     }
-    std_assert(qu_context_free(&ctx));
+    std_assert(qu_config_preprocess(&ctx));
+
+    if(ctx.options.output_header) {
+        std_assert(qu_output_header(&ctx));
+    }
+
+    std_assert(qu_context_free(&ctx.parsing));
     return 0;
 }

@@ -3,7 +3,7 @@
 #include "metadata.h"
 #include "access.h"
 
-int parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
+int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     meta->program_name = NULL;
     meta->default_config = NULL;
     meta->description = NULL;

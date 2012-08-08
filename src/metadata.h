@@ -11,6 +11,6 @@ typedef struct qu_metadata_s {
     int mixed_arguments;
 } qu_metadata_t;
 
-int parse_metadata(qu_ast_node *root, qu_metadata_t *meta);
+int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta);
 
 #endif // _H_METADATA
