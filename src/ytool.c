@@ -7,6 +7,7 @@
 #include <sys/queue.h>
 
 #include "yparser.h"
+#include "access.h"
 #include "codes.h"
 #include "objpath/objpath.h"
 
@@ -142,16 +143,9 @@ int extract(char *path, qu_ast_node *root) {
         case OBJPATH_KEY:
             if(cur->kind != QU_NODE_MAPPING)
                 goto fail;
-            CIRCLEQ_FOREACH(iter, &cur->children, lst) {
-                if(!strcmp(qu_node_content(iter), val.string)) {
-                    cur = CIRCLEQ_NEXT(iter, lst);
-                    goto success;
-                } else {
-                    // each second is a key
-                    iter = CIRCLEQ_NEXT(iter, lst);
-                    if(!iter) break;
-                }
-            }
+            cur = qu_map_get(cur, val.string);
+            if(cur)
+                goto success;
             goto fail;
         case OBJPATH_INDEX:
             if(cur->kind != QU_NODE_SEQUENCE)
@@ -163,35 +157,6 @@ int extract(char *path, qu_ast_node *root) {
                 }
             }
             goto fail;
-
-        case OBJPATH_KEYS:
-            if(cur->kind != QU_NODE_MAPPING)
-                goto fail;
-            iter = CIRCLEQ_FIRST(&cur->children);
-            if(!iter)
-                goto fail;
-            goto success;
-        case OBJPATH_VALUES:
-            if(cur->kind != QU_NODE_MAPPING)
-                goto fail;
-            iter = CIRCLEQ_FIRST(&cur->children);
-            if(!iter)
-                goto fail;
-            // the second element is the first value
-            iter = CIRCLEQ_NEXT(iter, lst);
-            if(!iter)
-                goto fail;
-            goto success;
-        case OBJPATH_NEXTKEY:
-        case OBJPATH_NEXTVALUE:
-            iter = CIRCLEQ_NEXT(iter, lst);
-            if(!iter)
-                goto fail;
-            // each second is a key or value
-            iter = CIRCLEQ_NEXT(iter, lst);
-            if(!iter)
-                goto fail;
-            goto success;
 
         case OBJPATH_ELEMENTS:
             if(cur->kind != QU_NODE_SEQUENCE)

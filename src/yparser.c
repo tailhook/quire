@@ -422,7 +422,8 @@ int qu_tokenize(qu_parse_context *ctx) {
                     CONSUME_WHILE(CHAR == ' ');
                     if(ctx->curpos-1 < indent && CHAR != '\n') {
                         ctx->ptr = linestart;
-                        ctx->curpos = 0;
+                        ctx->curpos = 1;
+                        ctx->linestart = 1;
                         break;
                     } else {
                     }
@@ -505,7 +506,6 @@ int qu_tokenize(qu_parse_context *ctx) {
                     if(KLASS == CHAR_WHITESPACE && NEXT_CHAR == '#') break;
                 }
             } else {
-                printf("CHAR %c %d\n", CHAR, FLAGS);
                 SYNTAX_ERROR("Wrong character, only printable chars allowed");
             }
             break;
@@ -540,7 +540,6 @@ static qu_ast_node *new_node(qu_parse_context *ctx) {
     if(ctx->cur_tag)
         ctx->cur_tag = NULL;
     node->target = NULL;
-    node->tag = NULL;
     node->start_token = NULL;
     node->end_token = NULL;
     node->content = NULL;
@@ -548,6 +547,7 @@ static qu_ast_node *new_node(qu_parse_context *ctx) {
     node->tree = NULL;
     node->left = NULL;
     node->right = NULL;
+    node->value = NULL;
     CIRCLEQ_INIT(&node->children);
     return node;
 }
@@ -630,13 +630,30 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         node->kind = QU_NODE_MAPPING;
         NEXT;
         while(1) {
-            qu_ast_node *child = new_text_node(ctx, CTOK);
-            CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+            qu_ast_node *knode = new_text_node(ctx, CTOK);
+            char *cont = qu_node_content(knode);
+            if(cont) {  // duplicate key check
+                qu_ast_node **targ = qu_find_node(&node->tree, cont);
+                if(*targ) {
+                    obstack_blank(&ctx->pieces, 0);
+                    obstack_grow(&ctx->pieces, "Duplicate key \"", 15);
+                    obstack_grow(&ctx->pieces, cont, strlen(cont));
+                    obstack_grow0(&ctx->pieces, "\"", 1);
+                    ctx->error_text = obstack_finish(&ctx->pieces);
+                    ctx->error_token = knode->start_token;
+                    ctx->error_kind = YAML_CONTENT_ERROR;
+                    return NULL;
+                } else {
+                    *targ = knode;
+                }
+            }
+            CIRCLEQ_INSERT_TAIL(&node->children, knode, lst);
             NEXT; NEXT;
-            child = parse_flow_node(ctx);
-            if(!child)
+            qu_ast_node *vnode = parse_flow_node(ctx);
+            if(!vnode)
                 return NULL;
-            CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+            knode->value = vnode;
+
             if(CTOK->kind == QU_TOK_FLOW_MAP_END)
                 break;
             if(CTOK->kind != QU_TOK_FLOW_ENTRY)
@@ -666,19 +683,6 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         return node;
     }
     return NULL;
-}
-
-qu_ast_node **find_node(qu_ast_node **root, char *value) {
-    while(*root) {
-        int cmp = strcmp(qu_node_content(*root), value);
-        if(!cmp)
-            return root;
-        if(cmp < 0)
-            root = &(*root)->left;
-        if(cmp > 0)
-            root = &(*root)->right;
-    }
-    return root;
 }
 
 qu_ast_node *parse_node(qu_parse_context *ctx) {
@@ -716,6 +720,7 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
             NEXT;
         }
     }
+    print_token(CTOK, stderr);
     if(QU_TOK_SCALAR(CTOK)) {
         if(NTOK
             && NTOK->kind == QU_TOK_MAPPING_VALUE
@@ -729,29 +734,29 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
                 && NTOK->kind == QU_TOK_MAPPING_VALUE
                 && NTOK->start_line == CTOK->start_line
                 && CTOK->indent == mapping_indent) {
-                qu_ast_node *child = new_text_node(ctx, CTOK);
-                char *cont = qu_node_content(child);
-                if(cont) {
-                    qu_ast_node **targ = find_node(&node->tree, cont);
+                qu_ast_node *knode = new_text_node(ctx, CTOK);
+                char *cont = qu_node_content(knode);
+                if(cont) {  // duplicate key check
+                    qu_ast_node **targ = qu_find_node(&node->tree, cont);
                     if(*targ) {
                         obstack_blank(&ctx->pieces, 0);
                         obstack_grow(&ctx->pieces, "Duplicate key \"", 15);
                         obstack_grow(&ctx->pieces, cont, strlen(cont));
                         obstack_grow0(&ctx->pieces, "\"", 1);
                         ctx->error_text = obstack_finish(&ctx->pieces);
-                        ctx->error_token = child->start_token;
+                        ctx->error_token = knode->start_token;
                         ctx->error_kind = YAML_CONTENT_ERROR;
                         return NULL;
                     } else {
-                        *targ = child;
+                        *targ = knode;
                     }
                 }
-                CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+                CIRCLEQ_INSERT_TAIL(&node->children, knode, lst);
                 NEXT; NEXT;
-                child = parse_node(ctx);
-                if(!child)
+                qu_ast_node *vnode = parse_node(ctx);
+                if(!vnode)
                     return NULL;
-                CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
+                knode->value = vnode;
             }
             node->end_token = CIRCLEQ_PREV(CTOK, lst);
             return node;
@@ -800,8 +805,10 @@ int qu_parse(qu_parse_context *ctx) {
         return 0;
 
     if(CTOK->kind != QU_TOK_DOC_END) {
-        print_token(CTOK, stdout);
-        assert(0);
+        ctx->error_token = CTOK;
+        ctx->error_kind = YAML_PARSER_ERROR;
+        ctx->error_text = "Unexpected token";
+        return 0;
     }
 
     return 0;

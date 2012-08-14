@@ -48,6 +48,7 @@ typedef struct qu_node_s {
     struct qu_node_s *tree;
     struct qu_node_s *left;
     struct qu_node_s *right;
+    struct qu_node_s *value;  // for key nodes
 
     CIRCLEQ_HEAD(qu_ast_children, qu_node_s) children; // for container nodes
 } qu_ast_node;

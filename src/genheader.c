@@ -1,6 +1,29 @@
+#include <sys/queue.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "genheader.h"
+#include "yparser.h"
+#include "codes.h"
+
+
+int print_member(qu_ast_node *node, char *name) {
+    if(node->kind == QU_NODE_MAPPING) {
+        if(node->tag) {
+            printf("%.*s %s;\n", node->tag->bytelen,
+                node->tag->data, name);
+        } else {
+            qu_ast_node *key;
+            CIRCLEQ_FOREACH(key, &node->children, lst) {
+                char *mname = qu_node_content(key);
+                int rc = print_member(key->value, mname);
+                assert(rc >= 0);
+            }
+        }
+    }
+
+    return 0;
+}
 
 
 int qu_output_header(qu_context_t *ctx) {
@@ -11,7 +34,19 @@ int qu_output_header(qu_context_t *ctx) {
     printf("\n");
 
     // TODO describe array|mapping element structures
-    // TODO describe cfg_main_t
+
+    printf("typedef %smain_s {\n", ctx->prefix);
+
+    qu_ast_node *key;
+    CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
+        char *mname = qu_node_content(key);
+        if(!strcmp(mname, "__meta__"))
+            continue;
+        int rc = print_member(key->value, mname);
+        assert(rc >= 0);
+    }
+
+    printf("} %smain_t;\n", ctx->prefix);
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv);\n",
         ctx->prefix);
