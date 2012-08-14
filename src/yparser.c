@@ -720,7 +720,6 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
             NEXT;
         }
     }
-    print_token(CTOK, stderr);
     if(QU_TOK_SCALAR(CTOK)) {
         if(NTOK
             && NTOK->kind == QU_TOK_MAPPING_VALUE

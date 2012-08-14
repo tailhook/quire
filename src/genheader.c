@@ -6,12 +6,68 @@
 #include "yparser.h"
 #include "codes.h"
 
+char *reserved_words[] = {
+    "auto",
+    "break",
+    "case",
+    "char",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "entry",
+    "extern",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "int",
+    "long",
+    "register",
+    "return",
+    "short",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "union",
+    "unsigned",
+    "while",
+    "enum",
+    "void",
+    "const",
+    "signed",
+    "volatile"
+    };
+
+struct scalar_type_s {
+    char *tag;
+    char *typ;
+} scalar_types[] = {
+    {"!Int", "long"},
+    {"!UInt", "unsigned long"},
+    {"!File", "char*"},
+    {"!Dir", "char*"},
+    {"!String", "char*"},
+    {"!Bool", "int"},
+    {NULL, NULL}
+    };
+
 
 int print_member(qu_ast_node *node, char *name) {
     if(node->kind == QU_NODE_MAPPING) {
         if(node->tag) {
-            printf("%.*s %s;\n", node->tag->bytelen,
-                node->tag->data, name);
+            struct scalar_type_s *st = scalar_types;
+            for(;st->tag;++st) {
+                if(!strncmp((char *)node->tag->data, st->tag,
+                            node->tag->bytelen)) {
+                    printf("%s %s;\n", st->typ, name);
+                    return 0;
+                }
+            }
+            return -1;
         } else {
             qu_ast_node *key;
             CIRCLEQ_FOREACH(key, &node->children, lst) {
