@@ -5,42 +5,8 @@
 #include "genheader.h"
 #include "yparser.h"
 #include "codes.h"
+#include "cutil.h"
 
-char *reserved_words[] = {
-    "auto",
-    "break",
-    "case",
-    "char",
-    "continue",
-    "default",
-    "do",
-    "double",
-    "else",
-    "entry",
-    "extern",
-    "float",
-    "for",
-    "goto",
-    "if",
-    "int",
-    "long",
-    "register",
-    "return",
-    "short",
-    "sizeof",
-    "static",
-    "struct",
-    "switch",
-    "typedef",
-    "union",
-    "unsigned",
-    "while",
-    "enum",
-    "void",
-    "const",
-    "signed",
-    "volatile"
-    };
 
 struct scalar_type_s {
     char *tag;
@@ -56,7 +22,7 @@ struct scalar_type_s {
     };
 
 
-int print_member(qu_ast_node *node, char *name) {
+int print_member(qu_context_t *ctx, qu_ast_node *node, char *name) {
     if(node->kind == QU_NODE_MAPPING) {
         if(node->tag) {
             struct scalar_type_s *st = scalar_types;
@@ -71,8 +37,9 @@ int print_member(qu_ast_node *node, char *name) {
         } else {
             qu_ast_node *key;
             CIRCLEQ_FOREACH(key, &node->children, lst) {
-                char *mname = qu_node_content(key);
-                int rc = print_member(key->value, mname);
+                char *mname = qu_c_name(&ctx->parsing.pieces,
+                                        qu_node_content(key));
+                int rc = print_member(ctx, key->value, mname);
                 assert(rc >= 0);
             }
         }
@@ -98,7 +65,7 @@ int qu_output_header(qu_context_t *ctx) {
         char *mname = qu_node_content(key);
         if(!strcmp(mname, "__meta__"))
             continue;
-        int rc = print_member(key->value, mname);
+        int rc = print_member(ctx, key->value, mname);
         assert(rc >= 0);
     }
 

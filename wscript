@@ -36,6 +36,7 @@ def build(bld):
             'src/preprocessing.c',
             'src/genheader.c',
             'src/options.c',
+            'src/cutil.c',
             'objpath/objpath.c',
             ],
         target       = 'cgen',
