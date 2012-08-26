@@ -22,7 +22,7 @@ struct scalar_type_s {
     };
 
 
-int print_member(qu_context_t *ctx, qu_ast_node *node, char *name) {
+static int print_member(qu_context_t *ctx, qu_ast_node *node, char *name) {
     if(node->kind == QU_NODE_MAPPING) {
         if(node->tag) {
             struct scalar_type_s *st = scalar_types;
@@ -70,6 +70,8 @@ int qu_output_header(qu_context_t *ctx) {
     }
 
     printf("} %smain_t;\n", ctx->prefix);
+
+    printf("\n");  //end of types
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv);\n",
         ctx->prefix);

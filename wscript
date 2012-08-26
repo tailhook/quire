@@ -35,6 +35,7 @@ def build(bld):
             'src/access.c',
             'src/preprocessing.c',
             'src/genheader.c',
+            'src/gensource.c',
             'src/options.c',
             'src/cutil.c',
             'objpath/objpath.c',
