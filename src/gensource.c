@@ -66,6 +66,44 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node,
 }
 
 
+static int print_parser(qu_context_t *ctx, qu_ast_node *node,
+                         char *name, char *prefix) {
+    int rc;
+    if(node->kind == QU_NODE_MAPPING) {
+        if(node->tag) {
+            if(!strncmp((char *)node->tag->data, "!Int", node->tag->bytelen)) {
+
+            } else if(!strncmp((char *)node->tag->data,
+                      "!UInt", node->tag->bytelen)) {
+            } else if(!strncmp((char *)node->tag->data,
+                      "!File", node->tag->bytelen)) {
+            } else if(!strncmp((char *)node->tag->data,
+                      "!Dir", node->tag->bytelen)) {
+            } else if(!strncmp((char *)node->tag->data,
+                      "!String", node->tag->bytelen)) {
+            } else if(!strncmp((char *)node->tag->data,
+                      "!Bool", node->tag->bytelen)) {
+            } else {
+                assert (0); // Wrong type
+            }
+        } else {
+            char nprefix[strlen(name) + strlen(prefix) + 2];
+            strcpy(nprefix, prefix);
+            strcat(nprefix, name);
+            strcat(nprefix, ".");
+            qu_ast_node *key;
+            CIRCLEQ_FOREACH(key, &node->children, lst) {
+                char *mname = qu_c_name(&ctx->parsing.pieces,
+                                        qu_node_content(key));
+                int rc = print_default(ctx, key->value, mname, nprefix);
+                assert(rc >= 0);
+            }
+        }
+    }
+    return 0;
+}
+
+
 int qu_output_source(qu_context_t *ctx) {
     char *header = ctx->options.output_source;
     char *tmp = strrchr(header, '/');
@@ -86,6 +124,7 @@ int qu_output_source(qu_context_t *ctx) {
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
         ctx->prefix);
 
+    printf("// Setting defaults\n");
     qu_ast_node *key;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
         char *mname = qu_node_content(key);
@@ -95,7 +134,52 @@ int qu_output_source(qu_context_t *ctx) {
         assert(rc >= 0);
     }
 
+    printf("\n");
+    printf("// Parsing command-line options\n");
+
+    printf("\n");
+    printf("// Parsing root elements\n");
+    printf("qu_init();\n");
+    printf("int rc;\n");
+    printf("qu_parse_context ctx;\n");
+    printf("rc = qu_context_init(&ctx);\n");
+    printf("if(rc < 0)\n");
+    printf("    return rc;\n");
+    printf("rc = qu_load_file(&ctx, \"%s\");\n", ctx->meta.default_config);
+    printf("if(rc < 0)\n");
+    printf("    return rc;\n");
+    printf("rc = qu_tokenize(&ctx);\n");
+    printf("if(rc < 0)\n");
+    printf("    return rc;\n");
+
+    printf("if(!ctx->error_kind) {\n");
+    printf("rc = qu_parse(&ctx);\n");
+    printf("if(rc < 0)\n");
+    printf("    return rc;\n");
+    printf("}\n");
+
+    printf("if(ctx.error_kind) {\n");
+    printf("fprintf(stderr, \"Error parsing file %%s:%%d: %%s\\n\",\n");
+    printf("errfn, ctx.error_token->start_line,\n");
+    printf("ctx.error_text);\n");
+    printf("return -EINVAL;\n");
     printf("}\n");
     printf("\n");
+    printf("qu_ast_node *cnode;\n");
+
+    CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
+        char *mname = qu_node_content(key);
+        if(!strcmp(mname, "__meta__"))
+            continue;
+        int rc = print_parser(ctx, key->value, mname, "cfg->");
+        assert(rc >= 0);
+    }
+
+    printf("\n");
+    printf("// Free resources\n");
+    printf("qu_context_free(&ctx);\n");
+
+    printf("return 0;\n");
+    printf("}\n");
     return 0;
 }
