@@ -35,6 +35,7 @@ static int print_member(qu_context_t *ctx, qu_ast_node *node, char *name) {
             }
             return -1;
         } else {
+            printf("struct {\n");
             qu_ast_node *key;
             CIRCLEQ_FOREACH(key, &node->children, lst) {
                 char *mname = qu_c_name(&ctx->parsing.pieces,
@@ -42,6 +43,7 @@ static int print_member(qu_context_t *ctx, qu_ast_node *node, char *name) {
                 int rc = print_member(ctx, key->value, mname);
                 assert(rc >= 0);
             }
+            printf("} %s;\n", name);
         }
     }
 
@@ -58,7 +60,7 @@ int qu_output_header(qu_context_t *ctx) {
 
     // TODO describe array|mapping element structures
 
-    printf("typedef %smain_s {\n", ctx->prefix);
+    printf("typedef struct %smain_s {\n", ctx->prefix);
 
     qu_ast_node *key;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {

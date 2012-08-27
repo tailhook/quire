@@ -19,9 +19,24 @@ char *qu_node_content(qu_ast_node *node) {
         return node->content;
     }
     // TODO(tailhook) better parse text
-    node->content = obstack_copy0(&node->ctx->pieces,
-        (char *)node->start_token->data,
-        node->start_token->bytelen);
+    obstack_blank(&node->ctx->pieces, 0);
+    for(char *c = (char *)node->start_token->data,
+             *end = c+node->start_token->bytelen;
+        c < end; ++c) {
+        if(*c == '"')
+            continue;
+        else if(*c == '\\' && *(c+1))
+            switch(*++c) {
+            case 'n': obstack_1grow(&node->ctx->pieces, '\n'); break;
+            case 'r': obstack_1grow(&node->ctx->pieces, '\r'); break;
+            default: obstack_1grow(&node->ctx->pieces, *c); break;
+            }
+        else
+            obstack_1grow(&node->ctx->pieces, *c);
+    }
+    obstack_1grow(&node->ctx->pieces, 0);
+
+    node->content = obstack_finish(&node->ctx->pieces);
     return node->content;
 }
 
