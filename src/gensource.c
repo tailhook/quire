@@ -67,37 +67,67 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node,
 
 
 static int print_parser(qu_context_t *ctx, qu_ast_node *node,
-                         char *name, char *prefix) {
-    int rc;
+                        char *name, char *varname, char *prefix) {
     if(node->kind == QU_NODE_MAPPING) {
         if(node->tag) {
+            if(!ctx->node_vars[ctx->node_level]) {
+                ctx->node_vars[ctx->node_level] = 1;
+                printf("qu_ast_node *node%d;", ctx->node_level);
+            }
+            printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
+                ctx->node_level, ctx->node_level-1, name);
             if(!strncmp((char *)node->tag->data, "!Int", node->tag->bytelen)) {
-
+                printf("%s%s = strtol(qu_get_contents(node%d), NULL, 0);\n",
+                    prefix, varname, ctx->node_level);
             } else if(!strncmp((char *)node->tag->data,
                       "!UInt", node->tag->bytelen)) {
+                printf("%s%s = strtoul(qu_get_contents(node%d), NULL, 0);\n",
+                    prefix, varname, ctx->node_level);
             } else if(!strncmp((char *)node->tag->data,
                       "!File", node->tag->bytelen)) {
+                printf("%s%s = qu_get_contents(node%d);\n",
+                    prefix, varname, ctx->node_level);
+            } else if(!strncmp((char *)node->tag->data,
+                      "!File", node->tag->bytelen)) {
+                printf("%s%s = qu_get_contents(node%d);\n",
+                    prefix, varname, ctx->node_level);
             } else if(!strncmp((char *)node->tag->data,
                       "!Dir", node->tag->bytelen)) {
+                printf("%s%s = qu_get_contents(node%d);\n",
+                    prefix, varname, ctx->node_level);
             } else if(!strncmp((char *)node->tag->data,
                       "!String", node->tag->bytelen)) {
+                printf("%s%s = qu_get_contents(node%d);\n",
+                    prefix, varname, ctx->node_level);
             } else if(!strncmp((char *)node->tag->data,
                       "!Bool", node->tag->bytelen)) {
+                printf("qu_get_boolean(node%d, &%s%s);\n",
+                    ctx->node_level, prefix, varname);
             } else {
                 assert (0); // Wrong type
             }
+            printf("}\n");
         } else {
             char nprefix[strlen(name) + strlen(prefix) + 2];
             strcpy(nprefix, prefix);
-            strcat(nprefix, name);
+            strcat(nprefix, varname);
             strcat(nprefix, ".");
+            printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
+                    ctx->node_level, ctx->node_level-1, name);
+
+            ctx->node_level += 1;
+            ctx->node_vars[ctx->node_level] = 0;
             qu_ast_node *key;
             CIRCLEQ_FOREACH(key, &node->children, lst) {
                 char *mname = qu_c_name(&ctx->parsing.pieces,
                                         qu_node_content(key));
-                int rc = print_default(ctx, key->value, mname, nprefix);
+                int rc = print_parser(ctx, key->value, qu_node_content(key),
+                                      mname, nprefix);
                 assert(rc >= 0);
             }
+            ctx->node_level -= 1;
+
+            printf("}\n");
         }
     }
     return 0;
@@ -165,13 +195,14 @@ int qu_output_source(qu_context_t *ctx) {
     printf("return -EINVAL;\n");
     printf("}\n");
     printf("\n");
-    printf("qu_ast_node *cnode;\n");
+    printf("qu_ast_node *node0 = ctx->document;\n");
 
+    ctx->node_level = 0;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
         char *mname = qu_node_content(key);
         if(!strcmp(mname, "__meta__"))
             continue;
-        int rc = print_parser(ctx, key->value, mname, "cfg->");
+        int rc = print_parser(ctx, key->value, mname, mname, "cfg->");
         assert(rc >= 0);
     }
 

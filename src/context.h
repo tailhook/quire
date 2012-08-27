@@ -11,6 +11,9 @@ typedef struct {
     qu_metadata_t meta;
     char *prefix;
     char *macroprefix;
+
+    int node_level;
+    char node_vars[16];
 } qu_context_t;
 
 #endif // _H_CONTEXT
