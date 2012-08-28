@@ -219,5 +219,12 @@ int qu_output_source(qu_context_t *ctx) {
 
     printf("return 0;\n");
     printf("}\n");
+    printf("\n");
+
+    printf("int %1$sfree(%1$smain_t *cfg) {\n", ctx->prefix);
+    printf("// TODO\n");
+    printf("return 0;");
+    printf("}\n");
+
     return 0;
 }

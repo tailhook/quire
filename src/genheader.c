@@ -77,6 +77,7 @@ int qu_output_header(qu_context_t *ctx) {
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv);\n",
         ctx->prefix);
+    printf("int %1$sfree(%1$smain_t *cfg);\n", ctx->prefix);
 
     printf("\n");
     printf("#endif  // _H_%s\n", ctx->macroprefix);

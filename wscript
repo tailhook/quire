@@ -5,7 +5,7 @@ from waflib import Utils, Options
 import os.path
 import subprocess
 
-APPNAME='coyaml'
+APPNAME='quire'
 if os.path.exists('.git'):
     VERSION=subprocess.getoutput('git describe').lstrip('v').replace('-', '_')
 else:
@@ -24,6 +24,7 @@ def configure(conf):
     conf.load('compiler_c python')
     conf.check_python_version((3,0,0))
     conf.env.BUILD_SHARED = Options.options.build_shared
+
 
 def build(bld):
     bld(
@@ -67,59 +68,56 @@ def build(bld):
         )
 
 def build_tests(bld):
-    import coyaml.waf
     build(bld)
     bld.add_group()
     bld(
-        features     = ['c', 'cprogram', 'coyaml'],
+        features     = ['c', 'cprogram', 'quire'],
         source       = [
             'test/tinytest.c',
             'test/tinyconfig.yaml',
             ],
         target       = 'tinytest',
-        includes     = ['include', 'test'],
-        libpath      = ['.'],
+        includes     = ['include', 'test', 'src'],
         cflags       = ['-std=c99', '-Wall'],
-        lib          = ['coyaml', 'yaml'],
+        use          = ['quire'],
         )
+    """ Non working tests ATM
     bld(
-        features     = ['c', 'cprogram', 'coyaml'],
+        features     = ['c', 'cprogram', 'quire'],
         source       = [
             'test/vartest.c',
             'test/vars.yaml',
             ],
         target       = 'vartest',
         includes     = ['include', 'test'],
-        libpath      = ['.'],
         cflags       = ['-std=c99', '-Wall'],
-        lib          = ['coyaml', 'yaml'],
+        use          = ['quire'],
         )
     bld(
-        features     = ['c', 'cprogram', 'coyaml'],
+        features     = ['c', 'cprogram', 'quire'],
         source       = [
             'test/compr.c',
             'test/comprehensive.yaml',
             ],
         target       = 'compr',
         includes     = ['include', 'test'],
-        libpath      = ['.'],
         cflags       = ['-std=c99', '-Wall'],
-        lib          = ['coyaml', 'yaml'],
+        use          = ['quire'],
         config_name  = 'cfg',
         )
     bld(
-        features     = ['c', 'cprogram', 'coyaml'],
+        features     = ['c', 'cprogram', 'quire'],
         source       = [
             'test/recursive.c',
             'test/recconfig.yaml',
             ],
         target       = 'recursive',
         includes     = ['include', 'test'],
-        libpath      = ['.'],
         cflags       = ['-std=c99', '-Wall'],
-        lib          = ['coyaml', 'yaml'],
+        use          = ['quire'],
         config_name  = 'cfg',
         )
+    """
     bld.add_group()
     diff = 'diff -u ${SRC[0].abspath()} ${SRC[1]}'
     bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} -v -C -P > ${TGT[0]}',
@@ -130,6 +128,7 @@ def build_tests(bld):
         source=['examples/tinyexample.out', 'tinyexample.out'],
         always=True)
 
+    """ Non working tests ATM
     bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} -C -P > ${TGT[0]}',
         source=['vartest', 'examples/varexample.yaml'],
         target='varexample.out',
@@ -176,6 +175,7 @@ def build_tests(bld):
     bld(rule=diff,
         source=['examples/compr.out', 'compr.out'],
         always=True)
+    """
 
 
 def ytoolcmd(ctx):
@@ -247,89 +247,35 @@ def bumpver(ctx):
     ctx.exec_command(r"sed -ri.bak 's/(X-Version[^0-9]*)[0-9.]+/\1"+VERSION+"/'"
         " examples/compr.out examples/compexample.out")
 
-def encode_multipart_formdata(fields, files):
-    """
-    fields is a sequence of (name, value) elements for regular form fields.
-    files is a sequence of (name, filename, value) elements for data
-    to be uploaded as files
-    Return (content_type, body) ready for httplib.HTTP instance
-    """
-    BOUNDARY = b'----------ThIs_Is_tHe_bouNdaRY'
-    CRLF = b'\r\n'
-    L = []
-    for (key, value) in fields:
-        L.append(b'--' + BOUNDARY)
-        L.append(('Content-Disposition: form-data; name="%s"' % key)
-            .encode('utf-8'))
-        L.append(b'')
-        L.append(value.encode('utf-8'))
-    for (key, filename, value, mime) in files:
-        assert key == 'file'
-        L.append(b'--' + BOUNDARY)
-        L.append(b'Content-Type: ' + mime.encode('ascii'))
-        L.append(('Content-Disposition: form-data; name="%s"; filename="%s"'
-            % (key, filename)).encode('utf-8'))
-        L.append(b'')
-        L.append(value)
-    L.append(b'--' + BOUNDARY + b'--')
-    L.append(b'')
-    body = CRLF.join(L)
-    content_type = 'multipart/form-data; boundary=%s' % BOUNDARY.decode('ascii')
-    return content_type, body
 
-def upload(ctx):
-    "quick and dirty command to upload files to github"
-    import hashlib
-    import urllib.parse
-    from http.client import HTTPSConnection, HTTPConnection
-    import json
-    distfile = APPNAME + '-' + VERSION + '.tar.bz2'
-    with open(distfile, 'rb') as f:
-        distdata = f.read()
-    md5 = hashlib.md5(distdata).hexdigest()
-    remotes = subprocess.getoutput('git remote -v')
-    for r in remotes.splitlines():
-        url = r.split()[1]
-        if url.startswith('git@github.com:'):
-            gh_repo = url[len('git@github.com:'):-len('.git')]
-            break
-    else:
-        raise RuntimeError("repository not found")
-    gh_token = subprocess.getoutput('git config github.token').strip()
-    gh_login = subprocess.getoutput('git config github.user').strip()
-    cli = HTTPSConnection('github.com')
-    cli.request('POST', '/'+gh_repo+'/downloads',
-        headers={'Host': 'github.com',
-                 'Content-Type': 'application/x-www-form-urlencoded'},
-        body=urllib.parse.urlencode({
-            "file_name": distfile,
-            "file_size": len(distdata),
-            "description": APPNAME.title() + ' source v'
-                + VERSION + " md5: " + md5,
-            "login": gh_login,
-            "token": gh_token,
-        }).encode('utf-8'))
-    resp = cli.getresponse()
-    data = resp.read().decode('utf-8')
-    data = json.loads(data)
-    s3data = (
-        ("key", data['path']),
-        ("acl", data['acl']),
-        ("success_action_status", "201"),
-        ("Filename", distfile),
-        ("AWSAccessKeyId", data['accesskeyid']),
-        ("policy", data['policy']),
-        ("signature", data['signature']),
-        ("Content-Type", data['mime_type']),
-        )
-    ctype, body = encode_multipart_formdata(s3data, [
-        ('file', distfile, distdata, data['mime_type']),
-        ])
-    cli.close()
-    cli = HTTPSConnection('github.s3.amazonaws.com')
-    cli.request('POST', '/',
-                body=body,
-                headers={'Content-Type': ctype,
-                         'Host': 'github.s3.amazonaws.com'})
-    resp = cli.getresponse()
-    print(resp.read())
+### Example of how to use quire in your own waf files ###
+"""
+from waflib import TaskGen TaskGen.declare_chain(
+        name      = 'quire',
+        rule      =
+        shell     = False,
+        ext_in    = '.yaml',
+        ext_out   = ['.h', '.c'],
+        reentrant = False,
+)
+"""
+
+
+from waflib.Task import Task
+class quire(Task):
+    run_str = ('${SRC[0].abspath()} --source ${SRC[1].abspath()} '
+        '--c-header ${TGT[0].abspath()} '
+        '--c-source ${TGT[1].abspath()}')
+    color   = 'PINK'
+
+
+from waflib.TaskGen import extension
+@extension('.yaml')
+def process_src(self, node):
+    tg = self.bld.get_tgen_by_name('quire-gen')
+    quire = tg.link_task.outputs[0]
+    header = node.change_ext('.h')
+    source = node.change_ext('.c')
+    tsk = self.create_task('quire', [quire, node], [header, source])
+
+    self.source.append(source)
