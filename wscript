@@ -24,6 +24,7 @@ def configure(conf):
     conf.load('compiler_c python')
     conf.check_python_version((3,0,0))
     conf.env.BUILD_SHARED = Options.options.build_shared
+    conf.find_program('astyle', mandatory=False)
 
 
 def build(bld):
@@ -38,6 +39,7 @@ def build(bld):
             'src/gensource.c',
             'src/options.c',
             'src/cutil.c',
+            'src/error.c',
             'objpath/objpath.c',
             ],
         target       = 'quire',
@@ -266,7 +268,10 @@ class quire(Task):
     run_str = ('${SRC[0].abspath()} --source ${SRC[1].abspath()} '
         '--c-header ${TGT[0].abspath()} '
         '--c-source ${TGT[1].abspath()}')
-    color   = 'PINK'
+
+
+class astyle(Task):
+    run_str = ('${ASTYLE} ${SRC}')
 
 
 from waflib.TaskGen import extension
@@ -276,6 +281,9 @@ def process_src(self, node):
     quire = tg.link_task.outputs[0]
     header = node.change_ext('.h')
     source = node.change_ext('.c')
-    tsk = self.create_task('quire', [quire, node], [header, source])
+    self.create_task('quire', [quire, node], [header, source])
+    if self.bld.env['ASTYLE']:
+        self.create_task('astyle', header)
+        self.create_task('astyle', source)
 
     self.source.append(source)

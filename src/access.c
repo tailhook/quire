@@ -85,3 +85,6 @@ int qu_get_boolean(qu_ast_node *node, int *value) {
     return -1;
 }
 
+qu_ast_node *qu_get_root(qu_parse_context *ctx) {
+    return ctx->document;
+}

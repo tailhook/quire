@@ -154,8 +154,6 @@ int qu_output_source(qu_context_t *ctx) {
     printf("#include <stdlib.h>\n");
     printf("\n");
     printf("#include \"%.*s.h\"\n", hlen, header);
-    printf("#include \"yparser.h\"\n");
-    printf("#include \"access.h\"\n");
     printf("\n");
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
         ctx->prefix);
@@ -188,20 +186,18 @@ int qu_output_source(qu_context_t *ctx) {
     printf("if(rc < 0)\n");
     printf("    return rc;\n");
 
-    printf("if(!ctx.error_kind) {\n");
+    printf("if(!qu_has_error(&ctx)) {\n");
     printf("rc = qu_parse(&ctx);\n");
     printf("if(rc < 0)\n");
     printf("    return rc;\n");
     printf("}\n");
 
-    printf("if(ctx.error_kind) {\n");
-    printf("fprintf(stderr, \"Error parsing file %%s:%%d: %%s\\n\",\n");
-    printf("\"fn.yaml\", ctx.error_token->start_line,\n");
-    printf("ctx.error_text);\n");
+    printf("if(qu_has_error(&ctx)) {\n");
+    printf("qu_print_error(&ctx, stderr);\n");
     printf("return -EINVAL;\n");
     printf("}\n");
     printf("\n");
-    printf("qu_ast_node *node0 = ctx.document;\n");
+    printf("qu_ast_node *node0 = qu_get_root(&ctx);\n");
 
     ctx->node_level = 1;
     ctx->node_vars[1] = 0;

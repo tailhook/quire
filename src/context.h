@@ -16,4 +16,7 @@ typedef struct {
     char node_vars[16];
 } qu_context_t;
 
+_Static_assert(sizeof(qu_context_t) < 4096,
+    "Context size is greater than defined in quire.h");
+
 #endif // _H_CONTEXT

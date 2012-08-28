@@ -82,12 +82,14 @@ typedef struct parse_context_s {
 } qu_parse_context;
 
 
+// PUBLIC API
+// Keep in sync with quire.h
+// Think about ABI compatibility
 void qu_init();
 int qu_context_init(qu_parse_context *ctx);
 int qu_load_file(qu_parse_context *ctx, char *filename);
 int qu_tokenize(qu_parse_context *ctx);
 int qu_parse(qu_parse_context *ctx);
-char *qu_node_content(qu_ast_node *node);
 int qu_context_free(qu_parse_context *ctx);
 
 

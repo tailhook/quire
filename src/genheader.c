@@ -6,6 +6,7 @@
 #include "yparser.h"
 #include "codes.h"
 #include "cutil.h"
+#include "access.h"
 
 
 struct scalar_type_s {
@@ -56,6 +57,8 @@ int qu_output_header(qu_context_t *ctx) {
     printf("/* This file is generated */\n");
     printf("#ifndef _H_%s\n", ctx->macroprefix);
     printf("#define _H_%s\n", ctx->macroprefix);
+    printf("\n");
+    printf("#include <quire.h>\n");
     printf("\n");
 
     // TODO describe array|mapping element structures
