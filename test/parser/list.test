@@ -3,13 +3,13 @@
 - fgh
 ...
 ---
-- command-line: ytool -E :0
+- command-line: quire-tool -E :0
   output: "abc"
-- command-line: ytool -E :1
+- command-line: quire-tool -E :1
   output: "def"
-- command-line: ytool -E :2
+- command-line: quire-tool -E :2
   output: "fgh"
-- command-line: ytool -E :3
+- command-line: quire-tool -E :3
   result: 1
-- command-line: ytool -E :4
+- command-line: quire-tool -E :4
   result: 1

@@ -7,22 +7,22 @@ vegetable: carrot
 berry: cherry
 ...
 ---
-- command-line: ytool -E /fruits/apple
+- command-line: quire-tool -E /fruits/apple
   output: "yes"
-- command-line: ytool -E /fruits/cherry
+- command-line: quire-tool -E /fruits/cherry
   output: "no"
-- command-line: ytool -E /food/apple
+- command-line: quire-tool -E /food/apple
   output: "yes"
-- command-line: ytool -E /food/cherry
+- command-line: quire-tool -E /food/cherry
   output: "no"
-- command-line: ytool -E /vegetable
+- command-line: quire-tool -E /vegetable
   output: "carrot"
-- command-line: ytool -E /fruits
+- command-line: quire-tool -E /fruits
   output: |
     apple: &yes yes
     banana: *yes
     cherry: no
-- command-line: ytool -E /food
+- command-line: quire-tool -E /food
   output: |
     apple: &yes yes
     banana: *yes

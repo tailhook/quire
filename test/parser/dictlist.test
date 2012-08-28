@@ -8,20 +8,20 @@ vegetable: carrot
 berry: cherry
 ...
 ---
-- command-line: ytool -E /fruits:0
+- command-line: quire-tool -E /fruits:0
   output: "apple"
-- command-line: ytool -E /fruits:1
+- command-line: quire-tool -E /fruits:1
   output: "banana"
-- command-line: ytool -E /fruits:2
+- command-line: quire-tool -E /fruits:2
   output: |
     cherry: no
     pear: yes
-- command-line: ytool -E /fruits
+- command-line: quire-tool -E /fruits
   output: |
     - apple
     # hello world
     - banana
     - cherry: no
       pear: yes
-- command-line: ytool -E /vegetable
+- command-line: quire-tool -E /vegetable
   output: "carrot"

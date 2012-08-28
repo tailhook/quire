@@ -3,21 +3,21 @@
 - {apple: yes, banana: yes, cherry: no}
 ...
 ---
-- command-line: ytool -E :0
+- command-line: quire-tool -E :0
   output: "abc"
-- command-line: ytool -E :2
+- command-line: quire-tool -E :2
   output: "{apple: yes, banana: yes, cherry: no}"
-- command-line: ytool -E :1
+- command-line: quire-tool -E :1
   output: "[test1, test2, test3]"
-- command-line: ytool -E :1:0
+- command-line: quire-tool -E :1:0
   output: "test1"
-- command-line: ytool -E :1:1
+- command-line: quire-tool -E :1:1
   output: "test2"
-- command-line: ytool -E :1:2
+- command-line: quire-tool -E :1:2
   output: "test3"
-- command-line: ytool -E :1:3
+- command-line: quire-tool -E :1:3
   result: 1
-- command-line: ytool -E :2/apple
+- command-line: quire-tool -E :2/apple
   output: "yes"
-- command-line: ytool -E :2/cherry
+- command-line: quire-tool -E :2/cherry
   output: "no"

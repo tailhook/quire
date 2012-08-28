@@ -1,5 +1,5 @@
 Hello world!
 ...
 ---
-- command-line: ytool -E ""
+- command-line: quire-tool -E ""
   output: "Hello world!"

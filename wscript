@@ -27,9 +27,8 @@ def configure(conf):
 
 def build(bld):
     bld(
-        features     = ['c', 'cprogram'],
+        features     = ['c', 'cstlib'],
         source       = [
-            'src/coyaml.c',
             'src/yparser.c',
             'src/metadata.c',
             'src/access.c',
@@ -40,9 +39,19 @@ def build(bld):
             'src/cutil.c',
             'objpath/objpath.c',
             ],
-        target       = 'cgen',
+        target       = 'quire',
         includes     = ['include', 'src', '.'],
         cflags       = ['-std=gnu99', '-Wall'],
+        )
+    bld(
+        features     = ['c', 'cprogram'],
+        source       = [
+            'src/coyaml.c',
+            ],
+        target       = 'quire-gen',
+        includes     = ['include', 'src', '.'],
+        cflags       = ['-std=gnu99', '-Wall'],
+        use          = 'quire',
         )
     bld(
         features     = ['c', 'cprogram'],
@@ -52,7 +61,7 @@ def build(bld):
             'src/yparser.c',
             'objpath/objpath.c',
             ],
-        target       = 'ytool',
+        target       = 'quire-tool',
         includes     = ['include', 'src', '.'],
         cflags       = ['-std=gnu99', '-Wall'],
         )
