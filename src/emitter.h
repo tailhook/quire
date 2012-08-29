@@ -1,7 +1,11 @@
-#ifndef QUIRE_MAIN_INCLUDED
-#define QUIRE_MAIN_INCLUDED
+#ifndef _H_EMITTER
+#define _H_EMITTER
 
-// Constants from emitter.h
+#include <stdio.h>
+
+// PUBLIC API
+// Keep in sync with quire.h
+// Think about ABI compatibility
 #define QU_EMIT_UNKNOWN     0
 #define QU_EMIT_MAP_START   1
 #define QU_EMIT_MAP_END     2
@@ -23,40 +27,31 @@
 #define QU_COMMENT_REWRAP   1
 #define QU_COMMENT_INDENT   2
 #define QU_COMMENT_NICE     (-1)
+// End of PUBLIC API
 
-typedef struct qu_config_head {
-    char data[128];
-} qu_config_head;
-
-typedef struct qu_parse_context {
-    char data[4096];
-} qu_parse_context;
 
 typedef struct qu_emit_context {
-    char data[512];
+    // Settings
+    int min_indent;
+    int width;
+    int canonical_tags;
+    int always_quote;
+    int always_flow;
+
+    // State
+    FILE *stream;
+    int flow_level;
+    int cur_indent;
+    char ident_levels[255];
 } qu_emit_context;
 
-typedef struct qu_ast_node qu_ast_node;
+_Static_assert(sizeof(qu_emit_context) < 512,
+    "Size of qu_emit_context is too large");
 
-// Methods from access.c
-qu_ast_node *qu_get_root(qu_parse_context *ctx);
-qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
-int qu_get_boolean(qu_ast_node *node, int *value);
-char *qu_node_content(qu_ast_node *node);
 
-// Methods from yparser.c
-void qu_init();
-int qu_context_init(qu_parse_context *ctx);
-int qu_load_file(qu_parse_context *ctx, char *filename);
-int qu_tokenize(qu_parse_context *ctx);
-int qu_parse(qu_parse_context *ctx);
-int qu_context_free(qu_parse_context *ctx);
-
-// Methods from error.c
-int qu_has_error(qu_parse_context *);
-int qu_print_error(qu_parse_context *, FILE *err);
-
-// Methods from emitter.c
+// PUBLIC API
+// Keep in sync with quire.h
+// Think about ABI compatibility
 int qu_emit_init(qu_emit_context *, FILE *stream);
 int qu_emit_free(qu_emit_context *);
 
@@ -68,6 +63,7 @@ int qu_emit_whitespace(qu_emit_context *, int kind, int count);
 int qu_emit_opcode(qu_emit_context *, char *tag, char *anchor,
     int code);
 int qu_emit_alias(qu_emit_context *, char *name);
+// End of PUBLIC API
 
 
-#endif // QUIRE_MAIN_INCLUDED
+#endif //_H_EMITTER

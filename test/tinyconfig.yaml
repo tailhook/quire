@@ -1,7 +1,7 @@
 
 __meta__:
   program-name: simplehttp
-  default-config: /etc/simplehttp.yaml
+  default-config: ../../examples/tinyexample.yaml #/etc/simplehttp.yaml
   description: >
     This is a non-working server to test some configuration file facilities
   has-arguments: yes

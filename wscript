@@ -40,6 +40,7 @@ def build(bld):
             'src/options.c',
             'src/cutil.c',
             'src/error.c',
+            'src/emitter.c',
             'objpath/objpath.c',
             ],
         target       = 'quire',
@@ -271,7 +272,7 @@ class quire(Task):
 
 
 class astyle(Task):
-    run_str = ('${ASTYLE} ${SRC}')
+    run_str = ('${ASTYLE} -Y ${SRC}')
 
 
 from waflib.TaskGen import extension

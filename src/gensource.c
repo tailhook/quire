@@ -177,24 +177,36 @@ int qu_output_source(qu_context_t *ctx) {
     printf("int rc;\n");
     printf("qu_parse_context ctx;\n");
     printf("rc = qu_context_init(&ctx);\n");
-    printf("if(rc < 0)\n");
-    printf("    return rc;\n");
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error creating context\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
+    printf("};\n");
     printf("rc = qu_load_file(&ctx, \"%s\");\n", ctx->meta.default_config);
-    printf("if(rc < 0)\n");
-    printf("    return rc;\n");
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error reading file\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
+    printf("};\n");
     printf("rc = qu_tokenize(&ctx);\n");
-    printf("if(rc < 0)\n");
-    printf("    return rc;\n");
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error tokenizing\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
+    printf("};\n");
 
     printf("if(!qu_has_error(&ctx)) {\n");
     printf("rc = qu_parse(&ctx);\n");
-    printf("if(rc < 0)\n");
-    printf("    return rc;\n");
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error parsing\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
+    printf("}\n");
     printf("}\n");
 
     printf("if(qu_has_error(&ctx)) {\n");
-    printf("qu_print_error(&ctx, stderr);\n");
-    printf("return -EINVAL;\n");
+    printf("    qu_print_error(&ctx, stderr);\n");
+    printf("    exit(126);\n");
     printf("}\n");
     printf("\n");
     printf("qu_ast_node *node0 = qu_get_root(&ctx);\n");
@@ -213,12 +225,29 @@ int qu_output_source(qu_context_t *ctx) {
     printf("// Free resources\n");
     printf("qu_context_free(&ctx);\n");
 
+    // Temporary
+    printf("%1$sprint(cfg, 0, stdout);\n", ctx->prefix);
+
     printf("return 0;\n");
     printf("}\n");
     printf("\n");
 
     printf("int %1$sfree(%1$smain_t *cfg) {\n", ctx->prefix);
     printf("// TODO\n");
+    printf("return 0;");
+    printf("}\n");
+    printf("\n");
+
+    printf("int %1$sprint(%1$smain_t *cfg, int flags, FILE *stream) {\n",
+        ctx->prefix);
+    printf("qu_emit_context ctx;\n");
+    printf("qu_emit_init(&ctx, stream);\n");
+    printf("\n");
+    printf("qu_emit_comment(&ctx, 0, \"Program name: %s\", -1);\n",
+        ctx->meta.program_name);
+    printf("qu_emit_whitespace(&ctx, QU_WS_ENDLINE, 1);\n");
+    printf("\n");
+    printf("qu_emit_free(&ctx);\n");
     printf("return 0;");
     printf("}\n");
 

@@ -1,3 +1,5 @@
+# Program name: simplehttp
+
 SimpleHTTPServer:
   port: 8000
   log-level: 8
