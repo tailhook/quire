@@ -123,7 +123,7 @@ def build_tests(bld):
     """
     bld.add_group()
     diff = 'diff -u ${SRC[0].abspath()} ${SRC[1]}'
-    bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} -v -C -P > ${TGT[0]}',
+    bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} -vv -C -P > ${TGT[0]}',
         source=['tinytest', 'examples/tinyexample.yaml'],
         target='tinyexample.out',
         always=True)

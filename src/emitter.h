@@ -9,8 +9,10 @@
 #define QU_EMIT_UNKNOWN     0
 #define QU_EMIT_MAP_START   1
 #define QU_EMIT_MAP_END     2
-#define QU_EMIT_SEQ_START   3
-#define QU_EMIT_SEQ_END     4
+#define QU_EMIT_MAP_KEY     3
+#define QU_EMIT_MAP_VALUE   4
+#define QU_EMIT_SEQ_START   5
+#define QU_EMIT_SEQ_END     6
 
 #define QU_WS_SPACE         0
 #define QU_WS_INDENT        1
@@ -42,7 +44,11 @@ typedef struct qu_emit_context {
     FILE *stream;
     int flow_level;
     int cur_indent;
-    char ident_levels[255];
+    int need_space;
+    int pending_newline;
+    int doc_start;
+    int line_start;
+    char indent_levels[255];
 } qu_emit_context;
 
 _Static_assert(sizeof(qu_emit_context) < 512,
@@ -53,15 +59,16 @@ _Static_assert(sizeof(qu_emit_context) < 512,
 // Keep in sync with quire.h
 // Think about ABI compatibility
 int qu_emit_init(qu_emit_context *, FILE *stream);
-int qu_emit_free(qu_emit_context *);
+int qu_emit_done(qu_emit_context *);
 
 int qu_emit_scalar(qu_emit_context *, char *tag, char *anchor,
     int style, char *data, int len);
+int qu_emit_printf(qu_emit_context *, char *tag, char *anchor,
+    int style, char *format, ...);
 int qu_emit_comment(qu_emit_context *, int flags, char *data, int len);
 int qu_emit_commentf(qu_emit_context *, int flags, char *format, ...);
 int qu_emit_whitespace(qu_emit_context *, int kind, int count);
-int qu_emit_opcode(qu_emit_context *, char *tag, char *anchor,
-    int code);
+int qu_emit_opcode(qu_emit_context *, char *tag, char *anchor, int code);
 int qu_emit_alias(qu_emit_context *, char *name);
 // End of PUBLIC API
 

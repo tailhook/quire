@@ -24,28 +24,26 @@ struct scalar_type_s {
 
 
 static int print_member(qu_context_t *ctx, qu_ast_node *node, char *name) {
-    if(node->kind == QU_NODE_MAPPING) {
-        if(node->tag) {
-            struct scalar_type_s *st = scalar_types;
-            for(;st->tag;++st) {
-                if(!strncmp((char *)node->tag->data, st->tag,
-                            node->tag->bytelen)) {
-                    printf("%s %s;\n", st->typ, name);
-                    return 0;
-                }
+    if(node->tag) {
+        struct scalar_type_s *st = scalar_types;
+        for(;st->tag;++st) {
+            if(!strncmp((char *)node->tag->data, st->tag,
+                        node->tag->bytelen)) {
+                printf("%s %s;\n", st->typ, name);
+                return 0;
             }
-            return -1;
-        } else {
-            printf("struct {\n");
-            qu_ast_node *key;
-            CIRCLEQ_FOREACH(key, &node->children, lst) {
-                char *mname = qu_c_name(&ctx->parsing.pieces,
-                                        qu_node_content(key));
-                int rc = print_member(ctx, key->value, mname);
-                assert(rc >= 0);
-            }
-            printf("} %s;\n", name);
         }
+        return -1;
+    } else if(node->kind == QU_NODE_MAPPING) {
+        printf("struct {\n");
+        qu_ast_node *key;
+        CIRCLEQ_FOREACH(key, &node->children, lst) {
+            char *mname = qu_c_name(&ctx->parsing.pieces,
+                                    qu_node_content(key));
+            int rc = print_member(ctx, key->value, mname);
+            assert(rc >= 0);
+        }
+        printf("} %s;\n", name);
     }
 
     return 0;

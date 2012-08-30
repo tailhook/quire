@@ -5,8 +5,10 @@
 #define QU_EMIT_UNKNOWN     0
 #define QU_EMIT_MAP_START   1
 #define QU_EMIT_MAP_END     2
-#define QU_EMIT_SEQ_START   3
-#define QU_EMIT_SEQ_END     4
+#define QU_EMIT_MAP_KEY     3
+#define QU_EMIT_MAP_VALUE   4
+#define QU_EMIT_SEQ_START   5
+#define QU_EMIT_SEQ_END     6
 
 #define QU_WS_SPACE         0
 #define QU_WS_INDENT        1
@@ -58,10 +60,12 @@ int qu_print_error(qu_parse_context *, FILE *err);
 
 // Methods from emitter.c
 int qu_emit_init(qu_emit_context *, FILE *stream);
-int qu_emit_free(qu_emit_context *);
+int qu_emit_done(qu_emit_context *);
 
 int qu_emit_scalar(qu_emit_context *, char *tag, char *anchor,
     int style, char *data, int len);
+int qu_emit_printf(qu_emit_context *, char *tag, char *anchor,
+    int style, char *format, ...);
 int qu_emit_comment(qu_emit_context *, int flags, char *data, int len);
 int qu_emit_commentf(qu_emit_context *, int flags, char *format, ...);
 int qu_emit_whitespace(qu_emit_context *, int kind, int count);
