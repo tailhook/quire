@@ -45,4 +45,10 @@ typedef enum qu_error_enum {
     YAML_CONTENT_ERROR
 } qu_error_t;
 
+typedef enum qu_member_enum {
+    QU_MEMBER_NONE,
+    QU_MEMBER_STRUCT,
+    QU_MEMBER_SCALAR,
+} qu_member_t;
+
 #endif // _H_CODES

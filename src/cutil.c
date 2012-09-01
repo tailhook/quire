@@ -42,6 +42,11 @@ char *reserved_words[] = {
 
 char *qu_c_name(struct obstack *ob, char *name) {
     obstack_blank(ob, 0);
+    qu_append_c_name(ob, name);
+    return obstack_finish(ob);
+}
+
+void qu_append_c_name(struct obstack *ob, char *name) {
     if(isdigit(*name))
         obstack_1grow(ob, '_');
     while(*name) {
@@ -58,5 +63,4 @@ char *qu_c_name(struct obstack *ob, char *name) {
             break;  // can't match keyword twice
         }
     obstack_1grow(ob, 0);
-    return obstack_finish(ob);
 }

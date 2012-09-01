@@ -548,6 +548,7 @@ static qu_ast_node *new_node(qu_parse_context *ctx) {
     node->left = NULL;
     node->right = NULL;
     node->value = NULL;
+    node->userdata = NULL;
     CIRCLEQ_INIT(&node->children);
     return node;
 }

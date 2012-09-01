@@ -31,7 +31,6 @@ typedef struct qu_node_s {
     CIRCLEQ_ENTRY(qu_node_s) lst;
     LIST_ENTRY(qu_node_s) anchors; // for anchors nodes
 
-
     int kind;
     struct parse_context_s *ctx;
     qu_token *anchor;
@@ -39,7 +38,7 @@ typedef struct qu_node_s {
     qu_token *start_token;
     qu_token *end_token;
 
-    char *content;  // for scalar nodes or aliases
+    char *content;  // for scalar nodes or aliases or mappings with "="
     int content_len;
 
     struct qu_node_s *target;  // for aliases
@@ -51,6 +50,8 @@ typedef struct qu_node_s {
     struct qu_node_s *value;  // for key nodes
 
     CIRCLEQ_HEAD(qu_ast_children, qu_node_s) children; // for container nodes
+
+    void *userdata;
 } qu_ast_node;
 
 typedef struct parse_context_s {
