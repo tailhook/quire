@@ -15,7 +15,7 @@ typedef struct qu_nodedata {
     qu_ast_node *expr_parent;
 
     TAILQ_ENTRY(qu_nodedata) cli_lst;
-    int has_cli;
+    char *cli_name;
 } qu_nodedata;
 
 typedef struct {

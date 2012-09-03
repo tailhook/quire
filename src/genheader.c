@@ -62,14 +62,33 @@ int qu_output_header(qu_context_t *ctx) {
 
     // TODO describe array|mapping element structures
 
-    printf("typedef struct %smain_s {\n", ctx->prefix);
+    printf("typedef struct %scli_s {\n", ctx->prefix);
+    qu_nodedata *data;
+    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
+        printf("int %s_set:1;\n", data->cli_name);
+    }
+    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
+        struct scalar_type_s *st = scalar_types;
+        for(;st->tag;++st) {
+            if(!strncmp((char *)data->node->tag->data, st->tag,
+                        data->node->tag->bytelen)) {
+                printf("%s %s;\n", st->typ, data->cli_name);
+                if(qu_map_get(data->node, "command-line-incr")
+                   || qu_map_get(data->node, "command-line-decr")) {
+                    printf("%s %s_delta;\n", st->typ, data->cli_name);
+                }
+            }
+        }
+    }
+    printf("} %scli_t;\n", ctx->prefix);
+    printf("\n");
 
+    printf("typedef struct %smain_s {\n", ctx->prefix);
     qu_ast_node *key;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
         int rc = print_member(ctx, key->value);
         assert(rc >= 0);
     }
-
     printf("} %smain_t;\n", ctx->prefix);
 
     printf("\n");  //end of types

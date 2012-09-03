@@ -505,6 +505,11 @@ int qu_tokenize(qu_parse_context *ctx) {
                     if(CHAR == ':' && NEXT_KLASS == CHAR_WHITESPACE) break;
                     if(KLASS == CHAR_WHITESPACE && NEXT_CHAR == '#') break;
                 }
+                // Let's strip trailing whitespace
+                while(PREV_CHAR == ' ' || PREV_CHAR == '\t') {
+                    --ctx->curpos;
+                    --ctx->ptr;
+                }
             } else {
                 SYNTAX_ERROR("Wrong character, only printable chars allowed");
             }

@@ -173,6 +173,68 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
 }
 
 
+int print_1opt(qu_ast_node *namenode, int arg, int num,
+               char *options, int *optlen) {
+    if(!namenode)
+        return 0;
+    int res = 0;
+    char *opt = qu_node_content(namenode);
+    if(opt) {
+        if(opt[1] == '-') { // long option
+            printf("{\"%s\", 1, NULL, %d},\n", opt+2, num);
+        } else {
+            options[(*optlen)++] = opt[1];
+            if(arg) {
+                options[(*optlen)++] = ':';
+            }
+        }
+        ++res;
+    } else if(namenode->kind == QU_NODE_SEQUENCE) {
+        qu_ast_node *single;
+        CIRCLEQ_FOREACH(single, &namenode->children, lst) {
+            opt = qu_node_content(single);
+            if(opt && opt[1] == '-') {  // long option
+                printf("{\"%s\", %d, NULL, %d},\n", opt+2, arg, num);
+            } else {
+                options[(*optlen)++] = opt[1];
+                if(arg) {
+                    options[(*optlen)++] = ':';
+                }
+            }
+            ++res;
+        }
+    }
+    return res;
+}
+
+int print_case(qu_ast_node *namenode, int num) {
+    if(!namenode)
+        return 0;
+    int res = 0;
+    char *opt = qu_node_content(namenode);
+    if(opt) {
+        if(opt[1] == '-') { // long option
+            printf("case %d:  // %s\n", num, opt);
+        } else {
+            printf("case '%c':  // %s\n", opt[1], opt);
+        }
+        ++res;
+    } else if(namenode->kind == QU_NODE_SEQUENCE) {
+        qu_ast_node *single;
+        CIRCLEQ_FOREACH(single, &namenode->children, lst) {
+            opt = qu_node_content(single);
+            if(opt && opt[1] == '-') {  // long option
+                printf("case %d:  // %s\n", num, opt);
+            } else {
+                printf("case '%c':  // %s\n", opt[1], opt);
+            }
+            ++res;
+        }
+    }
+    return res;
+}
+
+
 int qu_output_source(qu_context_t *ctx) {
     char *header = ctx->options.output_source;
     char *tmp = strrchr(header, '/');
@@ -191,31 +253,106 @@ int qu_output_source(qu_context_t *ctx) {
     printf("#include <stdio.h>\n");
     printf("#include <errno.h>\n");
     printf("#include <stdlib.h>\n");
+    printf("#include <getopt.h>\n");
+    printf("#include <string.h>\n");
     printf("\n");
     printf("#include \"%.*s.h\"\n", hlen, header);
+    printf("\n");
+
+    ///////////////  config_cli_parse
+
+    printf("int %1$scli_parse(%1$scli_t *cfg, int argc, char **argv) {\n",
+        ctx->prefix);
+    char options[128] = "hc:D:PC";
+    int optlen = strlen(options);
+    int optnum = 1000;
+    qu_nodedata *data;
+    printf("struct option options[] = {\n");
+    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
+        if(print_1opt(qu_map_get(data->node, "command-line"), 1, optnum,
+                   options, &optlen))
+            ++ optnum;
+        if(print_1opt(qu_map_get(data->node, "command-line-incr"), 0, optnum,
+                   options, &optlen))
+            ++ optnum;
+        if(print_1opt(qu_map_get(data->node, "command-line-decr"), 0, optnum,
+                   options, &optlen))
+            ++ optnum;
+        if(print_1opt(qu_map_get(data->node, "command-line-enable"), 0, optnum,
+                   options, &optlen))
+            ++ optnum;
+        if(print_1opt(qu_map_get(data->node, "command-line-disable"), 0,optnum,
+                   options, &optlen))
+            ++ optnum;
+    }
+    printf("};\n");
+    printf("char *optstr = \"%.*s\";\n", optlen, options);
+    printf("int c;\n");
+
+    optnum = 1000;
+    printf("while((c = getopt_long(argc, argv, "
+           "optstr, options, NULL)) != -1) {\n");
+    printf("switch(c) {\n");
+    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
+        if(print_case(qu_map_get(data->node, "command-line"), optnum)) {
+            ++ optnum;
+            printf("break;\n");
+        }
+        if(print_case(qu_map_get(data->node, "command-line-incr"), optnum)) {
+            ++ optnum;
+            printf("(*cfg)%s_delta += 1;\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
+            printf("break;\n");
+        }
+        if(print_case(qu_map_get(data->node, "command-line-decr"), optnum)) {
+            ++ optnum;
+            printf("(*cfg)%s_delta -= 1;\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
+            printf("break;\n");
+        }
+        if(print_case(qu_map_get(data->node, "command-line-enable"), optnum)) {
+            ++ optnum;
+            printf("(*cfg)%s = 1;\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
+            printf("break;\n");
+        }
+        if(print_case(qu_map_get(data->node, "command-line-disable"), optnum)){
+            ++ optnum;
+            printf("(*cfg)%s = 0;\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
+            printf("break;\n");
+        }
+    }
+    printf("case '?':\n");
+    printf("break;\n");
+    printf("}\n");
+    printf("}\n");
+
+    printf("return 0;\n");
+    printf("}\n");
     printf("\n");
 
     ///////////////  config_load
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
         ctx->prefix);
+    printf("qu_init();\n");
 
     printf("// Setting defaults\n");
     qu_ast_node *key;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
-        char *mname = qu_node_content(key);
-        if(!strcmp(mname, "__meta__"))
-            continue;
         int rc = print_default(ctx, key->value);
         assert(rc >= 0);
     }
 
     printf("\n");
     printf("// Parsing command-line options\n");
+    printf("%scli_t cli;\n", ctx->prefix);
+    printf("memset(&cli, 0, sizeof(%scli_t));\n", ctx->prefix);
+    printf("%scli_parse(&cli, argc, argv);\n", ctx->prefix);
 
     printf("\n");
     printf("// Parsing root elements\n");
-    printf("qu_init();\n");
     printf("int rc;\n");
     printf("qu_parse_context ctx;\n");
     printf("rc = qu_context_init(&ctx);\n");
@@ -275,7 +412,7 @@ int qu_output_source(qu_context_t *ctx) {
 
     printf("int %1$sfree(%1$smain_t *cfg) {\n", ctx->prefix);
     printf("// TODO\n");
-    printf("return 0;");
+    printf("return 0;\n");
     printf("}\n");
     printf("\n");
 
@@ -304,7 +441,7 @@ int qu_output_source(qu_context_t *ctx) {
     printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
 
     printf("qu_emit_done(&ctx);\n");
-    printf("return 0;");
+    printf("return 0;\n");
     printf("}\n");
 
     return 0;

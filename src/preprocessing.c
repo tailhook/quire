@@ -16,16 +16,17 @@ static int visitor(qu_context_t *ctx,
         return -ENOMEM;
     data->expression = expr;
     data->expr_parent = expr_parent;
+    data->node = node;
     node->userdata = data;
     if(node->tag) {
         data->kind = QU_MEMBER_SCALAR;
         if(node->kind == QU_NODE_MAPPING) {
-           if(qu_map_get(node, "command-line")
+            if(qu_map_get(node, "command-line")
                 || qu_map_get(node, "command-line-incr")
                 || qu_map_get(node, "command-line-decr")
                 || qu_map_get(node, "command-line-enable")
                 || qu_map_get(node, "command-line-disable")) {
-                data->has_cli = 1;
+                data->cli_name = strrchr(expr, '.')+1;
                 TAILQ_INSERT_TAIL(&ctx->cli_options, data, cli_lst);
             }
         }
