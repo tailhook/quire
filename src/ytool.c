@@ -198,7 +198,6 @@ void execute_action(char **argv, qu_ast_node *root) {
 int main(int argc, char **argv) {
     parse_options(argc, argv);
     assert(argc >= 2);
-    qu_init();
     qu_parse_context ctx;
     int rc;
     rc = qu_context_init(&ctx);

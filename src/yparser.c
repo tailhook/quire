@@ -13,52 +13,29 @@
 #include "access.h"
 #include "codes.h"
 
-char c_sequence_entry[] = "-";
-char c_mapping_key[] = "?";
-char c_mapping_value[] = ":";
-char c_collect_entry[] = ",";
-char c_sequence_start[] = "[";
-char c_sequence_end[] = "]";
-char c_mapping_start[] = "{";
-char c_mapping_end[] = "}";
-char c_comment[] = "#";
-char c_anchor[] = "&";
-char c_alias[] = "*";
-char c_tag[] = "!";
-char c_literal[] = "|";
-char c_folded[] = ">";
-char c_single_quote[] = "'";
-char c_double_quote[] = "\"";
-char c_directive[] = "%";
-char c_reserved[] = "@`";
-char c_indicator[] = "-?:,[]{}#&*!|>'\"%@`";
-char c_flow_indicator[] = ",[]{}";
-char b_line_feed[] = "\n";
-char b_carriage_return[] = "\r";
-char b_char[] = "\n\r";
-char c_printable[] = "\t\r\n !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-char nb_char[] = "\t !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-// nb_char = c-printable - b-char
-// b_break = CRLF | CR | LF
-char s_space[] = " ";
-char s_tab[] = "\t";
-char s_white[] = " \t";
-char ns_char[] = "!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-char ns_plain_flow_char[] = "!\"#$%&\'()*+-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
-// ns_char = nb_char - s_white
-char ns_dec_digit[] = "0123456789";
-char ns_hex_digit[] = "0123456789ABCDEFabcdef";
-char ns_ascii_letter[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-char ns_word_char[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-";
-char ns_uri_char[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$,_.!~*'()[]";
-char ns_tag_char[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.~*'()";
+
+enum char_klass {
+    CHAR_UNKNOWN,
+    CHAR_INDICATOR,
+    CHAR_WHITESPACE,
+    CHAR_DIGIT,
+};
+
+enum char_flag {
+    CHAR_PRINTABLE=1,
+    CHAR_FLOW_INDICATOR=2,
+    CHAR_URI=4,
+    CHAR_TAG=8,
+    CHAR_PLAIN=16,
+    CHAR_PLAIN_FLOW=32,
+};
 
 typedef struct {
     char klass;
     char flags;
 } charinfo;
 
-charinfo chars[256];
+#include "chars.c"
 
 char *token_to_str[] = {
     // Keep in sync with enum in yparser.h
@@ -90,21 +67,6 @@ char *token_to_str[] = {
 
 
 
-typedef enum char_klass {
-    CHAR_UNKNOWN,
-    CHAR_INDICATOR,
-    CHAR_WHITESPACE,
-    CHAR_DIGIT,
-} char_klass;
-
-typedef enum char_flag {
-    CHAR_PRINTABLE=1,
-    CHAR_FLOW_INDICATOR=2,
-    CHAR_URI=4,
-    CHAR_TAG=8,
-    CHAR_PLAIN=16,
-    CHAR_PLAIN_FLOW=32,
-} char_flag;
 
 static void safeprint(FILE *stream, unsigned char *data, int len) {
     for(unsigned char *c = data, *end = data + len; c < end; ++c) {
@@ -127,35 +89,6 @@ static void print_token(qu_token *tok, FILE *stream) {
         token_to_str[tok->kind], tok->indent);
     safeprint(stream, tok->data, tok->bytelen);
     fprintf(stream, "''\n");
-}
-
-void qu_init() {
-    chars['\t'].flags |= CHAR_PRINTABLE;
-    chars['\r'].flags |= CHAR_PRINTABLE;
-    chars['\n'].flags |= CHAR_PRINTABLE;
-    for(int i = 0x20; i <= 0x7E; ++i)
-        chars[i].flags |= CHAR_PRINTABLE;
-    for(int i = 0x80; i <= 0xFF; ++i)  // UTF-8 encoded chars
-        chars[i].flags |= CHAR_PRINTABLE|CHAR_PLAIN;
-    for(int i = 0; i < sizeof(c_flow_indicator)-1; ++i)
-        chars[(int)c_flow_indicator[i]].flags |= CHAR_FLOW_INDICATOR;
-    for(int i = 0; i < sizeof(ns_tag_char)-1; ++i)
-        chars[(int)ns_tag_char[i]].flags |= CHAR_TAG;
-    for(int i = 0; i < sizeof(ns_uri_char)-1; ++i)
-        chars[(int)ns_uri_char[i]].flags |= CHAR_URI;
-    for(int i = 0; i < sizeof(ns_plain_flow_char)-1; ++i)
-        chars[(int)ns_plain_flow_char[i]].flags |= CHAR_PLAIN_FLOW;
-    for(int i = 0; i < sizeof(ns_char)-1; ++i)
-        chars[(int)ns_char[i]].flags |= CHAR_PLAIN;
-    for(int i = 0; i < sizeof(c_indicator)-1; ++i)
-        chars[(int)c_indicator[i]].klass = CHAR_INDICATOR;
-    chars[' '].klass = CHAR_WHITESPACE;
-    chars['\t'].klass = CHAR_WHITESPACE;
-    chars['\r'].klass = CHAR_WHITESPACE;
-    chars['\n'].klass = CHAR_WHITESPACE;
-    for(int i = '0'; i <= '9'; ++i) {
-        chars[i].klass = CHAR_DIGIT;
-    }
 }
 
 

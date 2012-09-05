@@ -336,7 +336,6 @@ int qu_output_source(qu_context_t *ctx) {
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
         ctx->prefix);
-    printf("qu_init();\n");
 
     printf("// Setting defaults\n");
     qu_ast_node *key;

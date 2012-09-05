@@ -13,6 +13,7 @@
 
 #define std_assert(val) if((val) == -1) {\
     fprintf(stderr, "coyaml: %s", strerror(errno));\
+    exit(1); \
     }
 
 
@@ -20,7 +21,6 @@ int main(int argc, char **argv) {
     qu_context_t ctx;
     memset(&ctx, 0, sizeof(ctx));
     quire_parse_options(&ctx.options, argc, argv);
-    qu_init();
     std_assert(qu_context_init(&ctx.parsing));
     std_assert(qu_load_file(&ctx.parsing, ctx.options.source_file));
     std_assert(qu_tokenize(&ctx.parsing));
