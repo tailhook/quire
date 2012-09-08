@@ -62,6 +62,6 @@ int main(int argc, char **argv) {
         ftruncate(1, ftell(stdout));
     }
 
-    std_assert(qu_context_free(&ctx.parsing));
+    qu_context_free(&ctx.parsing);
     return 0;
 }

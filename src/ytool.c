@@ -233,7 +233,6 @@ int main(int argc, char **argv) {
         }
     }
     execute_action(argv + optind, ctx.document);
-    rc = qu_context_free(&ctx);
-    assert(rc != -1);
+    qu_context_free(&ctx);
     return 0;
 }

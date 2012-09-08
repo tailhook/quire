@@ -3,6 +3,7 @@
 
 #include <obstack.h>
 #include <sys/queue.h>
+#include <setjmp.h>
 
 
 #define MAX_FLOW_STACK 128
@@ -56,6 +57,8 @@ typedef struct qu_node_s {
 
 typedef struct parse_context_s {
     struct obstack pieces;
+    jmp_buf errjmp;
+    int has_jmp;
     char *filename;
     unsigned char *buf;
     int buflen;
@@ -86,11 +89,15 @@ typedef struct parse_context_s {
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-int qu_context_init(qu_parse_context *ctx);
-int qu_load_file(qu_parse_context *ctx, char *filename);
-int qu_tokenize(qu_parse_context *ctx);
-int qu_parse(qu_parse_context *ctx);
-int qu_context_free(qu_parse_context *ctx);
+int qu_context_init(qu_parse_context *ctx)
+    __attribute__((warn_unused_result));
+int qu_load_file(qu_parse_context *ctx, char *filename)
+    __attribute__((warn_unused_result));
+int qu_tokenize(qu_parse_context *ctx)
+    __attribute__((warn_unused_result));
+int qu_parse(qu_parse_context *ctx)
+    __attribute__((warn_unused_result));
+void qu_context_free(qu_parse_context *ctx);
 
 
 #endif // _H_YPARSER

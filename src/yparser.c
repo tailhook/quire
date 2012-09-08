@@ -12,6 +12,7 @@
 #include "yparser.h"
 #include "access.h"
 #include "codes.h"
+#include "util.h"
 
 
 enum char_klass {
@@ -92,20 +93,35 @@ static void print_token(qu_token *tok, FILE *stream) {
 }
 
 
-void *obstack_chunk_alloc(int size) {
+static void *parser_chunk_alloc(qu_parse_context *ctx, int size) {
     void *res = malloc(size);
-    assert(res);
-    // TODO(tailhook) implement longjump here
+    if(unlikely(!res)) {
+        if(unlikely(!ctx->has_jmp)) {
+            fprintf(stderr, "Memory allocation failed without jmp context\n");
+            abort();
+        } else {
+            longjmp(ctx->errjmp, -ENOMEM);
+        }
+    }
     return res;
 }
 
-void obstack_chunk_free(void *ptr) {
+static void obstack_chunk_free(qu_parse_context *ctx, void *ptr) {
     free(ptr);
 }
 
 
 int qu_context_init(qu_parse_context *ctx) {
-    obstack_init(&ctx->pieces);
+    int rc;
+    ctx->has_jmp = 1;
+    if(!(rc = setjmp(ctx->errjmp))) {
+        obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
+            parser_chunk_alloc, obstack_chunk_free, ctx);
+    } else {
+        ctx->has_jmp = 0;
+        return rc;
+    }
+    ctx->has_jmp = 0;
     CIRCLEQ_INIT(&ctx->tokens);
     LIST_INIT(&ctx->anchors);
     ctx->buf = NULL;
@@ -114,50 +130,50 @@ int qu_context_init(qu_parse_context *ctx) {
 }
 
 int qu_load_file(qu_parse_context *ctx, char *filename) {
-    int eno;
-    unsigned char *data = NULL;
-    int fd = open(filename, O_RDONLY);
-    if(fd < 0) return -1;
-    struct stat stinfo;
-    int rc = fstat(fd, &stinfo);
-    if(rc < 0) goto error;
-    data = malloc(stinfo.st_size+1);
-    if(!data) goto error;
-    int so_far = 0;
-    while(so_far < stinfo.st_size) {
-        rc = read(fd, data + so_far, stinfo.st_size - so_far);
-        if(rc == -1) {
-            if(errno == EINTR) continue;
-            goto error;
+    int rc, eno;
+    ctx->has_jmp = 1;
+    if(!(rc = setjmp(ctx->errjmp))) {
+        unsigned char *data = NULL;
+        int fd = open(filename, O_RDONLY);
+        if(fd < 0)
+            return -errno;
+        struct stat stinfo;
+        rc = fstat(fd, &stinfo);
+        if(rc < 0) {
+            eno = errno;
+            close(fd);
+            return -eno;
         }
-        if(!rc) {
-            // WARNING: file truncated
-            break;
+        data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
+        int so_far = 0;
+        while(so_far < stinfo.st_size) {
+            rc = read(fd, data + so_far, stinfo.st_size - so_far);
+            if(rc == -1) {
+                eno = errno;
+                if(eno == EINTR) continue;
+                close(fd);
+                return -eno;
+            }
+            if(!rc) {
+                // WARNING: file truncated
+                break;
+            }
+            so_far += rc;
         }
-        so_far += rc;
+        close(fd);
+        ctx->filename = obstack_copy0(&ctx->pieces,
+            filename, strlen(filename));
+        ctx->buf = data;
+        ctx->buf[so_far] = 0;
+        ctx->buflen = so_far;
+        return 0;
+    } else {
+        return rc;
     }
-    rc = close(fd);
-    if(rc < 0) return -1;
-    ctx->filename = obstack_copy0(&ctx->pieces, filename, strlen(filename));
-    ctx->buf = data;
-    ctx->buf[so_far] = 0;
-    ctx->buflen = so_far;
-    return 0;
-
-error:
-    free(data);
-    eno = errno;
-    close(fd);
-    errno = eno;
-    return -1;
 }
 
-int qu_context_free(qu_parse_context *ctx) {
+void qu_context_free(qu_parse_context *ctx) {
     obstack_free(&ctx->pieces, NULL);
-    if(ctx->buf) {
-        free(ctx->buf);
-    }
-    return 0;
 }
 
 static qu_token *init_token(qu_parse_context *ctx) {
