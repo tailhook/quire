@@ -65,7 +65,7 @@ int qu_output_header(qu_context_t *ctx) {
     printf("typedef struct %scli_s {\n", ctx->prefix);
     qu_nodedata *data;
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
-        printf("int %s_set:1;\n", data->cli_name);
+        printf("unsigned %s_set:1;\n", data->cli_name);
     }
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         struct scalar_type_s *st = scalar_types;
@@ -76,6 +76,7 @@ int qu_output_header(qu_context_t *ctx) {
                 if(qu_map_get(data->node, "command-line-incr")
                    || qu_map_get(data->node, "command-line-decr")) {
                     printf("%s %s_delta;\n", st->typ, data->cli_name);
+                    printf("unsigned %s_delta_set;\n", data->cli_name);
                 }
             }
         }

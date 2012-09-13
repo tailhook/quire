@@ -301,13 +301,15 @@ int qu_output_source(qu_context_t *ctx) {
         if(print_case(qu_map_get(data->node, "command-line-incr"), optnum)) {
             ++ optnum;
             printf("(*cfg)%s_delta += 1;\n", strrchr(data->expression, '.'));
-            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s_delta_set = 1;\n",
+                strrchr(data->expression, '.'));
             printf("break;\n");
         }
         if(print_case(qu_map_get(data->node, "command-line-decr"), optnum)) {
             ++ optnum;
             printf("(*cfg)%s_delta -= 1;\n", strrchr(data->expression, '.'));
-            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s_delta_set = 1;\n",
+                strrchr(data->expression, '.'));
             printf("break;\n");
         }
         if(print_case(qu_map_get(data->node, "command-line-enable"), optnum)) {
@@ -332,6 +334,46 @@ int qu_output_source(qu_context_t *ctx) {
     printf("}\n");
     printf("\n");
 
+    printf("int %1$scli_apply(%1$smain_t *cfg, %1$scli_t *cli) {\n",
+        ctx->prefix);
+    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
+        int ci = !!qu_map_get(data->node, "command-line");
+        int ce = !!qu_map_get(data->node, "command-line-enable");
+        int cd = !!qu_map_get(data->node, "command-line-disable");
+        if(ci || ce || cd) {
+            printf("if((*cli)%s_set) {\n", strrchr(data->expression, '.'));
+            printf("(*cfg)%s = (*cli)%s;\n", data->expression,
+                   strrchr(data->expression, '.'));
+            // TODO(tailhook) set length for strings
+            printf("}\n");
+        }
+        int cinc = !!qu_map_get(data->node, "command-line-incr");
+        int cdec = !!qu_map_get(data->node, "command-line-decr");
+        if(cinc || cdec) {
+            printf("if((*cli)%s_delta_set) {\n",
+                strrchr(data->expression, '.'));
+            printf("(*cfg)%s += (*cli)%s_delta;\n", data->expression,
+                   strrchr(data->expression, '.'));
+            qu_ast_node *max = qu_map_get(data->node, "max");
+            if(max) {
+                // TODO(tailhook) check what kind of a beast the `max` is
+                printf("if((*cfg)%1$s > %2$s) (*cfg)%1$s = %2$s;",
+                    data->expression, qu_node_content(max));
+            }
+            qu_ast_node *min = qu_map_get(data->node, "min");
+            if(min) {
+                // TODO(tailhook) check what kind of a beast the `min` is
+                printf("if((*cfg)%1$s < %2$s) (*cfg)%1$s = %2$s;",
+                    data->expression, qu_node_content(min));
+            }
+            // TODO(tailhook) check constraints
+            printf("}\n");
+        }
+    }
+
+    printf("return 0;\n");
+    printf("}\n");
+    printf("\n");
     ///////////////  config_load
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
@@ -395,6 +437,13 @@ int qu_output_source(qu_context_t *ctx) {
         int rc = print_parser(ctx, key->value, qu_node_content(key));
         assert(rc >= 0);
     }
+
+    printf("rc = %scli_apply(cfg, &cli);\n", ctx->prefix);
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error applying command-line args\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
+    printf("}\n");
 
     printf("\n");
     printf("// Free resources\n");
