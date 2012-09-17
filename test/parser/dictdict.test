@@ -2,7 +2,10 @@ fruits:
     apple: yes
     banana: yes
     cherry: no
-vegetable: carrot
+vegetables:
+    carrot: yes
+    milk: >
+        kinda not
 berry: cherry
 ...
 ---
@@ -10,7 +13,18 @@ berry: cherry
   output: "yes"
 - command-line: quire-tool -E /fruits/cherry
   output: "no"
-- command-line: quire-tool -E /vegetable
-  output: "carrot"
+- command-line: quire-tool -E /vegetables
+  output: |
+    carrot: yes
+    milk: >
+        kinda not
+- command-line: quire-tool -E /vegetables/carrot
+  output: "yes"
+- command-line: quire-tool -E /vegetables/milk
+  output: |
+    >
+        kinda not
 - command-line: quire-tool -E /fruits
   output: "apple: yes\nbanana: yes\ncherry: no\n"
+- command-line: quire-tool -E /berry
+  output: "cherry"

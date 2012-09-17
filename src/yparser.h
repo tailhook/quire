@@ -17,6 +17,7 @@ typedef struct qu_token_s {
 
     char *filename;
     int indent;  // indentation, -1 if middle of the line or flow context
+    int expect_indent;
     int start_line;
     int start_char;
     int end_line;
@@ -75,6 +76,9 @@ typedef struct parse_context_s {
     int flow_num;
     char flow_stack[MAX_FLOW_STACK];
 
+    int cur_mapping;
+    int cur_sequence;
+
     qu_token *cur_token;
     qu_token *cur_anchor;
     qu_token *cur_tag;
@@ -89,14 +93,7 @@ typedef struct parse_context_s {
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-int qu_context_init(qu_parse_context *ctx)
-    __attribute__((warn_unused_result));
-int qu_load_file(qu_parse_context *ctx, char *filename)
-    __attribute__((warn_unused_result));
-int qu_tokenize(qu_parse_context *ctx)
-    __attribute__((warn_unused_result));
-int qu_parse(qu_parse_context *ctx)
-    __attribute__((warn_unused_result));
+int qu_file_parse(qu_parse_context *ctx, char *filename);
 void qu_context_free(qu_parse_context *ctx);
 
 

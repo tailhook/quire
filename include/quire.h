@@ -47,13 +47,7 @@ int qu_get_boolean(qu_ast_node *node, int *value);
 char *qu_node_content(qu_ast_node *node);
 
 // Methods from yparser.c
-int qu_context_init(qu_parse_context *ctx)
-    __attribute__((warn_unused_result));
-int qu_load_file(qu_parse_context *ctx, char *filename)
-    __attribute__((warn_unused_result));
-int qu_tokenize(qu_parse_context *ctx)
-    __attribute__((warn_unused_result));
-int qu_parse(qu_parse_context *ctx)
+int qu_file_parse(qu_parse_context *ctx, char *filename)
     __attribute__((warn_unused_result));
 void qu_context_free(qu_parse_context *ctx);
 

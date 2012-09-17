@@ -10,6 +10,7 @@
 #include "preprocessing.h"
 #include "genheader.h"
 #include "gensource.h"
+#include "error.h"
 
 #define std_assert(val) if((val) == -1) {\
     fprintf(stderr, "coyaml: %s", strerror(errno));\
@@ -21,23 +22,17 @@ int main(int argc, char **argv) {
     qu_context_t ctx;
     memset(&ctx, 0, sizeof(ctx));
     quire_parse_options(&ctx.options, argc, argv);
-    std_assert(qu_context_init(&ctx.parsing));
-    std_assert(qu_load_file(&ctx.parsing, ctx.options.source_file));
-    std_assert(qu_tokenize(&ctx.parsing));
-    if(ctx.parsing.error_kind) {
-        fprintf(stderr, "Error parsing file %s:%d: %s\n",
-            ctx.parsing.filename, ctx.parsing.error_token->start_line,
-            ctx.parsing.error_text);
-        exit(1);
-    } else {
-        std_assert(qu_parse(&ctx.parsing));
-        if(ctx.parsing.error_kind) {
-            fprintf(stderr, "Error parsing file %s:%d: %s\n",
-                ctx.parsing.filename, ctx.parsing.error_token->start_line,
-                ctx.parsing.error_text);
-            exit(1);
-        }
+    int rc = qu_file_parse(&ctx.parsing, ctx.options.source_file);
+    if(rc > 0) {
+        qu_print_error(&ctx.parsing, stderr);
+        qu_context_free(&ctx.parsing);
+        return 1;
+    } else if(rc < 0) {
+        fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
+            ctx.options.source_file, strerror(-rc));
+        return 1;
     }
+    assert(ctx.parsing.document);
     std_assert(qu_config_preprocess(&ctx));
 
     if(ctx.options.output_header) {

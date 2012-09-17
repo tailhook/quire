@@ -111,65 +111,50 @@ static void obstack_chunk_free(qu_parse_context *ctx, void *ptr) {
 }
 
 
-int qu_context_init(qu_parse_context *ctx) {
-    int rc;
-    ctx->has_jmp = 1;
-    if(!(rc = setjmp(ctx->errjmp))) {
-        obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
-            parser_chunk_alloc, obstack_chunk_free, ctx);
-    } else {
-        ctx->has_jmp = 0;
-        return rc;
-    }
-    ctx->has_jmp = 0;
+void _qu_context_init(qu_parse_context *ctx) {
+    obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
+        parser_chunk_alloc, obstack_chunk_free, ctx);
     CIRCLEQ_INIT(&ctx->tokens);
     LIST_INIT(&ctx->anchors);
     ctx->buf = NULL;
     ctx->error_kind = 0;
-    return 0;
 }
 
-int qu_load_file(qu_parse_context *ctx, char *filename) {
+void _qu_load_file(qu_parse_context *ctx, char *filename) {
+    ctx->filename = obstack_copy0(&ctx->pieces,
+        filename, strlen(filename));
     int rc, eno;
-    ctx->has_jmp = 1;
-    if(!(rc = setjmp(ctx->errjmp))) {
-        unsigned char *data = NULL;
-        int fd = open(filename, O_RDONLY);
-        if(fd < 0)
-            return -errno;
-        struct stat stinfo;
-        rc = fstat(fd, &stinfo);
-        if(rc < 0) {
-            eno = errno;
-            close(fd);
-            return -eno;
-        }
-        data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
-        int so_far = 0;
-        while(so_far < stinfo.st_size) {
-            rc = read(fd, data + so_far, stinfo.st_size - so_far);
-            if(rc == -1) {
-                eno = errno;
-                if(eno == EINTR) continue;
-                close(fd);
-                return -eno;
-            }
-            if(!rc) {
-                // WARNING: file truncated
-                break;
-            }
-            so_far += rc;
-        }
+    unsigned char *data = NULL;
+    int fd = open(filename, O_RDONLY);
+    if(fd < 0)
+        longjmp(ctx->errjmp, -errno);
+    struct stat stinfo;
+    rc = fstat(fd, &stinfo);
+    if(rc < 0) {
+        eno = errno;
         close(fd);
-        ctx->filename = obstack_copy0(&ctx->pieces,
-            filename, strlen(filename));
-        ctx->buf = data;
-        ctx->buf[so_far] = 0;
-        ctx->buflen = so_far;
-        return 0;
-    } else {
-        return rc;
+        longjmp(ctx->errjmp, -eno);
     }
+    data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
+    int so_far = 0;
+    while(so_far < stinfo.st_size) {
+        rc = read(fd, data + so_far, stinfo.st_size - so_far);
+        if(rc == -1) {
+            eno = errno;
+            if(eno == EINTR) continue;
+            close(fd);
+            longjmp(ctx->errjmp, -eno);
+        }
+        if(!rc) {
+            // WARNING: file truncated
+            break;
+        }
+        so_far += rc;
+    }
+    close(fd);
+    ctx->buf = data;
+    ctx->buf[so_far] = 0;
+    ctx->buflen = so_far;
 }
 
 void qu_context_free(qu_parse_context *ctx) {
@@ -193,7 +178,7 @@ static qu_token *init_token(qu_parse_context *ctx) {
     return ctok;
 }
 
-int qu_tokenize(qu_parse_context *ctx) {
+void _qu_tokenize(qu_parse_context *ctx) {
 
 #define KLASS (chars[(int)CHAR].klass)
 #define FLAGS (chars[(int)CHAR].flags)
@@ -208,7 +193,7 @@ int qu_tokenize(qu_parse_context *ctx) {
     ctx->error_kind = YAML_SCANNER_ERROR; \
     ctx->error_text = "Premature end of file"; \
     ctx->error_token = ctok; \
-    return 0; \
+    longjmp(ctx->errjmp, 1); \
     }
 #define SYNTAX_ERROR(message) {\
     ctok->kind = QU_TOK_ERROR; \
@@ -217,7 +202,7 @@ int qu_tokenize(qu_parse_context *ctx) {
     ctx->error_kind = YAML_SCANNER_ERROR; \
     ctx->error_text = message; \
     ctx->error_token = ctok; \
-    return 0; \
+    longjmp(ctx->errjmp, 1); \
     }
 
 #define CONSUME_WHILE(cond) LOOP { if(!(cond)) break; }
@@ -249,7 +234,7 @@ int qu_tokenize(qu_parse_context *ctx) {
                         ctx->error_text = "Sequence entry dash sign is only"
                                           " allowed at the start of line";
                         ctx->error_token = ctok;
-                        return 0;
+                        longjmp(ctx->errjmp, 1);
                     }
                     ctx->indent += 1;
                     ctok->indent = ctx->indent;
@@ -292,7 +277,7 @@ int qu_tokenize(qu_parse_context *ctx) {
                 ctx->error_kind = YAML_SCANNER_ERROR;
                 ctx->error_text = "Characters '@' and '`' are reserved";
                 ctx->error_token = ctok;
-                return 0;
+                longjmp(ctx->errjmp, 1);
             case '"':
                 FORCE_NEXT;
                 ctok->kind = QU_TOK_DOUBLESTRING;
@@ -320,6 +305,7 @@ int qu_tokenize(qu_parse_context *ctx) {
             case '!':
                 ctok->kind = QU_TOK_TAG;
                 FORCE_NEXT;
+                if(CHAR == '!') FORCE_NEXT;
                 if(CHAR == '<') {
                     FORCE_NEXT;
                     LOOP {
@@ -373,6 +359,7 @@ int qu_tokenize(qu_parse_context *ctx) {
                         ctx->ptr = linestart;
                         ctx->curpos = 1;
                         ctx->linestart = 1;
+                        ctx->indent = 0;
                         break;
                     } else {
                     }
@@ -475,7 +462,6 @@ int qu_tokenize(qu_parse_context *ctx) {
         qu_token *ctok = init_token(ctx);
         ctok->kind = QU_TOK_DOC_END;
     }
-    return 0;
 
 #undef NEXT
 #undef SYNTAX_ERROR
@@ -556,8 +542,10 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
                 return node;
             }
         }
-        // TODO(tailhook) put error message here
-        return NULL;
+        ctx->error_text = "Anchor target not found";
+        ctx->error_token = CTOK;
+        ctx->error_kind = YAML_CONTENT_ERROR;
+        longjmp(ctx->errjmp, 1);
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
@@ -597,7 +585,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
                     ctx->error_text = obstack_finish(&ctx->pieces);
                     ctx->error_token = knode->start_token;
                     ctx->error_kind = YAML_CONTENT_ERROR;
-                    return NULL;
+                    longjmp(ctx->errjmp, 1);
                 } else {
                     *targ = knode;
                 }
@@ -605,14 +593,22 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             CIRCLEQ_INSERT_TAIL(&node->children, knode, lst);
             NEXT; NEXT;
             qu_ast_node *vnode = parse_flow_node(ctx);
-            if(!vnode)
-                return NULL;
+            if(!vnode) {
+                ctx->error_text = "Unexpected token";
+                ctx->error_token = CTOK;
+                ctx->error_kind = YAML_CONTENT_ERROR;
+                longjmp(ctx->errjmp, 1);
+            }
             knode->value = vnode;
 
             if(CTOK->kind == QU_TOK_FLOW_MAP_END)
                 break;
-            if(CTOK->kind != QU_TOK_FLOW_ENTRY)
-                return NULL;
+            if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
+                ctx->error_text = "Unexpected token";
+                ctx->error_token = CTOK;
+                ctx->error_kind = YAML_CONTENT_ERROR;
+                longjmp(ctx->errjmp, 1);
+            }
             NEXT;
         }
         node->end_token = CTOK;
@@ -629,18 +625,29 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
             if(CTOK->kind == QU_TOK_FLOW_SEQ_END)
                 break;
-            if(CTOK->kind != QU_TOK_FLOW_ENTRY)
-                return NULL;
+            if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
+                ctx->error_text = "Unexpected token";
+                ctx->error_token = CTOK;
+                ctx->error_kind = YAML_CONTENT_ERROR;
+                longjmp(ctx->errjmp, 1);
+            }
             NEXT;
         }
         node->end_token = CTOK;
         NEXT;
         return node;
     }
-    return NULL;
+    if(CTOK->kind == QU_TOK_DOC_END) {
+        return new_text_node(ctx, NULL);
+    }
+    ctx->error_text = "Unknown syntax";
+    ctx->error_token = CTOK;
+    ctx->error_kind = YAML_CONTENT_ERROR;
+    longjmp(ctx->errjmp, 1);
 }
 
-qu_ast_node *parse_node(qu_parse_context *ctx) {
+qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
+    //printf("PARSE_NODE "); print_token(CTOK, stdout);
     if(CTOK->kind == QU_TOK_ALIAS) {
         qu_ast_node *node = new_node(ctx);
         node->start_token = CTOK;
@@ -657,8 +664,10 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
                 return node;
             }
         }
-        // TODO(tailhook) put error message here
-        return NULL;
+        ctx->error_text = "Anchor target not found";
+        ctx->error_token = CTOK;
+        ctx->error_kind = YAML_CONTENT_ERROR;
+        longjmp(ctx->errjmp, 1);
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
@@ -679,39 +688,44 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
         if(NTOK
             && NTOK->kind == QU_TOK_MAPPING_VALUE
             && NTOK->start_line == CTOK->start_line) {
+            //printf("STARTING MAP "); print_token(CTOK, stdout);
+            if(CTOK->indent <= ctx->cur_mapping)
+                return new_text_node(ctx, NULL);  // null node
+            //printf("OK\n");
             // MAPPING
             qu_ast_node *node = new_node(ctx);
             node->start_token = CTOK;
             node->kind = QU_NODE_MAPPING;
             int mapping_indent = CTOK->indent;
+            int oldmap = ctx->cur_mapping;
+            ctx->cur_mapping = CTOK->indent;
             while(CTOK && QU_TOK_SCALAR(CTOK)
                 && NTOK->kind == QU_TOK_MAPPING_VALUE
                 && NTOK->start_line == CTOK->start_line
                 && CTOK->indent == mapping_indent) {
+                //printf("MAP KEY "); print_token(CTOK, stdout);
                 qu_ast_node *knode = new_text_node(ctx, CTOK);
                 char *cont = qu_node_content(knode);
                 if(cont) {  // duplicate key check
                     qu_ast_node **targ = qu_find_node(&node->tree, cont);
                     if(*targ) {
-                        obstack_blank(&ctx->pieces, 0);
-                        obstack_grow(&ctx->pieces, "Duplicate key \"", 15);
-                        obstack_grow(&ctx->pieces, cont, strlen(cont));
-                        obstack_grow0(&ctx->pieces, "\"", 1);
-                        ctx->error_text = obstack_finish(&ctx->pieces);
+                        ctx->error_text = "Duplicate key in mapping";
                         ctx->error_token = knode->start_token;
                         ctx->error_kind = YAML_CONTENT_ERROR;
-                        return NULL;
+                        longjmp(ctx->errjmp, 1);
                     } else {
                         *targ = knode;
                     }
                 }
                 CIRCLEQ_INSERT_TAIL(&node->children, knode, lst);
                 NEXT; NEXT;
-                qu_ast_node *vnode = parse_node(ctx);
+                qu_ast_node *vnode = parse_node(ctx, mapping_indent);
                 if(!vnode)
-                    return NULL;
+                    longjmp(ctx->errjmp, 1);
                 knode->value = vnode;
             }
+            //printf("END MAP\n");
+            ctx->cur_mapping = oldmap;
             node->end_token = CIRCLEQ_PREV(CTOK, lst);
             return node;
         } else { // SCALAR
@@ -721,17 +735,22 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
         }
     }
     if(CTOK->kind == QU_TOK_SEQUENCE_ENTRY) {
+        if(CTOK->indent <= ctx->cur_sequence)
+            return new_text_node(ctx, NULL);  // null node
         qu_ast_node *node = new_node(ctx);
         node->kind = QU_NODE_SEQUENCE;
         node->start_token = CTOK;
         int sequence_indent = CTOK->indent;
+        int oldseq = ctx->cur_sequence;
+        ctx->cur_sequence = sequence_indent;
         while(CTOK
               && CTOK->kind == QU_TOK_SEQUENCE_ENTRY
               && CTOK->indent == sequence_indent) {
             NEXT;
-            qu_ast_node *child = parse_node(ctx);
+            qu_ast_node *child = parse_node(ctx, sequence_indent);
             CIRCLEQ_INSERT_TAIL(&node->children, child, lst);
         }
+        ctx->cur_sequence = oldseq;
         node->end_token = CIRCLEQ_PREV(CTOK, lst);
         return node;
     }
@@ -739,33 +758,33 @@ qu_ast_node *parse_node(qu_parse_context *ctx) {
 }
 
 
-int qu_parse(qu_parse_context *ctx) {
+void _qu_parse(qu_parse_context *ctx) {
 
     ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
     ctx->cur_anchor = NULL;
     ctx->cur_tag = NULL;
+    ctx->cur_sequence = -1;
+    ctx->cur_mapping = -1;
     SKIP;
     while(CTOK && CTOK->kind == QU_TOK_DIRECTIVE) {
         // TODO(tailhook) parse directives
         NEXT;
     }
-    if(!CTOK) return 0;
+    if(!CTOK) return;
     if(CTOK->kind == QU_TOK_DOC_START) NEXT;
-    if(CTOK->kind == QU_TOK_DOC_END) return 0;
+    if(CTOK->kind == QU_TOK_DOC_END) return;
 
-    ctx->document = parse_node(ctx);
+    ctx->document = parse_node(ctx, -1);
 
-    if(ctx->error_kind)
-        return 0;
+    assert(!ctx->error_kind);  // long jump is done
 
     if(CTOK->kind != QU_TOK_DOC_END) {
         ctx->error_token = CTOK;
         ctx->error_kind = YAML_PARSER_ERROR;
         ctx->error_text = "Unexpected token";
-        return 0;
+        longjmp(ctx->errjmp, 1);
     }
 
-    return 0;
 }
 
 
@@ -774,6 +793,22 @@ void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
     CIRCLEQ_FOREACH(tok, &ctx->tokens, lst) {
         print_token(tok, stream);
     }
+}
+
+int qu_file_parse(qu_parse_context *ctx, char *filename) {
+    int rc;
+    ctx->has_jmp = 1;
+    if(!(rc = setjmp(ctx->errjmp))) {
+        _qu_context_init(ctx);
+        _qu_load_file(ctx, filename);
+        _qu_tokenize(ctx);
+        qu_print_tokens(ctx, stderr);
+        _qu_parse(ctx);
+    } else {
+        ctx->has_jmp = 0;
+        return rc;
+    }
+    return 0;
 }
 
 

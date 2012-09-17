@@ -15,6 +15,7 @@ struct scalar_type_s {
 } scalar_types[] = {
     {"!Int", "long"},
     {"!UInt", "unsigned long"},
+    {"!Float", "double"},
     {"!File", "char*"},
     {"!Dir", "char*"},
     {"!String", "char*"},
@@ -36,6 +37,8 @@ static int print_member(qu_context_t *ctx, qu_ast_node *node) {
                 return 0;
             }
         }
+        fprintf(stderr, "Wrong tag \"%.*s\"\n",
+                node->tag->bytelen, node->tag->data);
         return -1;
     } else if(data->kind == QU_MEMBER_STRUCT) {
         printf("struct {\n");
@@ -63,6 +66,7 @@ int qu_output_header(qu_context_t *ctx) {
     // TODO describe array|mapping element structures
 
     printf("typedef struct %scli_s {\n", ctx->prefix);
+    printf("char *filename;\n");
     qu_nodedata *data;
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         printf("unsigned %s_set:1;\n", data->cli_name);

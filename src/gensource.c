@@ -33,6 +33,10 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
             printf("(*cfg)%s = %lu;\n", data->expression,
                 strtoul(qu_node_content(def), NULL, 0));
         } else if(!strncmp((char *)node->tag->data,
+                  "!Float", node->tag->bytelen)) {
+            printf("(*cfg)%s = %.17f;\n", data->expression,
+                strtof(qu_node_content(def), NULL));
+        } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
@@ -84,6 +88,10 @@ static int print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
         } else if(!strncmp((char *)node->tag->data,
                   "!UInt", node->tag->bytelen)) {
             printf("(*cfg)%s = strtoul(qu_node_content(node%d), NULL, 0);\n",
+                data->expression, ctx->node_level);
+        } else if(!strncmp((char *)node->tag->data,
+                  "!Float", node->tag->bytelen)) {
+            printf("(*cfg)%s = strtof(qu_node_content(node%d), NULL);\n",
                 data->expression, ctx->node_level);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
@@ -138,6 +146,10 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
         } else if(!strncmp((char *)node->tag->data,
                   "!UInt", node->tag->bytelen)) {
             printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%lu\", (*cfg)%s);\n",
+                data->expression);
+        } else if(!strncmp((char *)node->tag->data,
+                  "!Float", node->tag->bytelen)) {
+            printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%.17f\", (*cfg)%s);\n",
                 data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
@@ -268,6 +280,7 @@ int qu_output_source(qu_context_t *ctx) {
     int optnum = 1000;
     qu_nodedata *data;
     printf("struct option options[] = {\n");
+    printf("{\"config\", 1, NULL, 'c'},\n");
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         if(print_1opt(qu_map_get(data->node, "command-line"), 1, optnum,
                    options, &optlen))
@@ -293,6 +306,9 @@ int qu_output_source(qu_context_t *ctx) {
     printf("while((c = getopt_long(argc, argv, "
            "optstr, options, NULL)) != -1) {\n");
     printf("switch(c) {\n");
+    printf("case 'c':\n");
+    printf("cfg->filename = optarg;\n");
+    printf("break;\n");
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         if(print_case(qu_map_get(data->node, "command-line"), optnum)) {
             ++ optnum;
@@ -396,35 +412,14 @@ int qu_output_source(qu_context_t *ctx) {
     printf("// Parsing root elements\n");
     printf("int rc;\n");
     printf("qu_parse_context ctx;\n");
-    printf("rc = qu_context_init(&ctx);\n");
+    printf("rc = qu_file_parse(&ctx, cli.filename);\n");
     printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error creating context\");\n",
-        ctx->meta.program_name);
-    printf("    exit(127);\n");
-    printf("};\n");
-    printf("rc = qu_load_file(&ctx, \"%s\");\n", ctx->meta.default_config);
-    printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error reading file\");\n",
-        ctx->meta.program_name);
-    printf("    exit(127);\n");
-    printf("};\n");
-    printf("rc = qu_tokenize(&ctx);\n");
-    printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error tokenizing\");\n",
+    printf("    perror(\"%s: libquire: Error parsing_file\");\n",
         ctx->meta.program_name);
     printf("    exit(127);\n");
     printf("};\n");
 
-    printf("if(!qu_has_error(&ctx)) {\n");
-    printf("rc = qu_parse(&ctx);\n");
-    printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error parsing\");\n",
-        ctx->meta.program_name);
-    printf("    exit(127);\n");
-    printf("}\n");
-    printf("}\n");
-
-    printf("if(qu_has_error(&ctx)) {\n");
+    printf("if(rc > 0) {\n");
     printf("    qu_print_error(&ctx, stderr);\n");
     printf("    exit(126);\n");
     printf("}\n");

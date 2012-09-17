@@ -1,0 +1,12 @@
+fruit:
+vegetable: carrot
+berry: !!str
+animal: shark
+...
+---
+- command-line: quire-tool -E /fruit
+  output: ""
+- command-line: quire-tool -E /vegetable
+  output: "carrot"
+- command-line: quire-tool -E /berry
+  output: ""

@@ -62,6 +62,7 @@ def build(bld):
         source       = [
             'src/ytool.c',
             'src/access.c',
+            'src/error.c',
             'src/yparser.c',
             'objpath/objpath.c',
             ],
@@ -84,7 +85,6 @@ def build_tests(bld):
         cflags       = ['-std=c99', '-Wall'],
         use          = ['quire'],
         )
-    """ Non working tests ATM
     bld(
         features     = ['c', 'cprogram', 'quire'],
         source       = [
@@ -96,6 +96,7 @@ def build_tests(bld):
         cflags       = ['-std=c99', '-Wall'],
         use          = ['quire'],
         )
+    """ Non working tests ATM
     bld(
         features     = ['c', 'cprogram', 'quire'],
         source       = [
@@ -131,7 +132,6 @@ def build_tests(bld):
         source=['examples/tinyexample.out', 'tinyexample.out'],
         always=True)
 
-    """ Non working tests ATM
     bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} -C -P > ${TGT[0]}',
         source=['vartest', 'examples/varexample.yaml'],
         target='varexample.out',
@@ -140,6 +140,7 @@ def build_tests(bld):
         source=['examples/varexample.out', 'varexample.out'],
         always=True)
 
+    """ Non working tests ATM
     bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} --config-var clivar=CLI -C -P > ${TGT[0]}',
         source=['compr', 'examples/compexample.yaml'],
         target='compexample.out.ws',

@@ -7,8 +7,12 @@
 
 
 char *qu_node_content(qu_ast_node *node) {
+    if(node->kind == QU_NODE_ALIAS)
+        return qu_node_content(node->target);
     if(node->kind != QU_NODE_SCALAR)
         return NULL;
+    if(!node->start_token)
+        return "";
     if(node->content)
         return node->content;
     if(node->start_token == node->end_token
@@ -54,6 +58,8 @@ qu_ast_node **qu_find_node(qu_ast_node **root, char *value) {
 }
 
 qu_ast_node *qu_map_get(qu_ast_node *node, char *key) {
+    if(node->kind == QU_NODE_ALIAS)
+        return qu_map_get(node->target, key);
     if(node->kind != QU_NODE_MAPPING)
         return NULL;
     qu_ast_node *knode = *qu_find_node(&node->tree, key);

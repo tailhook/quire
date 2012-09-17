@@ -7,6 +7,7 @@
 #include <sys/queue.h>
 
 #include "yparser.h"
+#include "error.h"
 #include "access.h"
 #include "codes.h"
 #include "objpath/objpath.h"
@@ -200,37 +201,14 @@ int main(int argc, char **argv) {
     assert(argc >= 2);
     qu_parse_context ctx;
     int rc;
-    rc = qu_context_init(&ctx);
-    assert(rc != -1);
-    rc = qu_load_file(&ctx, options.filename);
-    assert(rc != -1);
-    rc = qu_tokenize(&ctx);
-    assert(rc != -1);
-    char *errfn = ctx.filename;
-    if(options.error_basename) {
-        errfn = strrchr(ctx.filename, '/');
-        if(errfn) {
-            errfn += 1;
-        } else {
-            errfn = ctx.filename;
-        }
-    }
-    if(ctx.error_kind) {
-        fprintf(stderr, "Error parsing file %s:%d: %s\n",
-            errfn, ctx.error_token->start_line,
-            ctx.error_text);
+    rc = qu_file_parse(&ctx, options.filename);
+    if(rc == 1) {
+        qu_print_error(&ctx, stderr);
         return 1;
-    } else {
-        //qu_print_tokens(&ctx, stdout);
-        //printf("-----------------\n");
-        rc = qu_parse(&ctx);
-        assert(rc != -1);
-        if(ctx.error_kind) {
-            fprintf(stderr, "Error parsing file %s:%d: %s\n",
-                errfn, ctx.error_token->start_line,
-                ctx.error_text);
-            return 1;
-        }
+    } else if(rc < 0) {
+        fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
+            options.filename, strerror(-rc));
+        return 1;
     }
     execute_action(argv + optind, ctx.document);
     qu_context_free(&ctx);
