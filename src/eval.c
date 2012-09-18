@@ -3,26 +3,16 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <stdio.h>
 
-#include "parser.h"
 #include "vars.h"
 
 #define SYNTAX_ERROR(cond) if(!(cond)) { \
-    fprintf(stderr, "COYAML: Syntax error in config file ``%s'' " \
-        "at line %ld column %ld\n", \
-    info->current_file->filename, info->event.start_mark.line+1, \
-    info->event.start_mark.column); \
-    errno = ECOYAML_SYNTAX_ERROR; \
-    return -1; }
+    longjmp(info->errjmp, 1); \
+    }
 #define SYNTAX_ERROR2_NULL(message, ...) if(TRUE) { \
-    fprintf(stderr, "COYAML: Syntax error in config file ``%s'' " \
-        "at line %ld column %ld: " message "\n", \
-    info->current_file->filename, info->event.start_mark.line+1, \
-    info->event.start_mark.column, ##__VA_ARGS__); \
-    errno = ECOYAML_SYNTAX_ERROR; \
-    return NULL; }
-#define COYAML_DEBUG(message, ...) if(info->debug) { \
-    fprintf(stderr, "COYAML: " message "\n", ##__VA_ARGS__); }
+    longjmp(info->errjmp, 1); \
+    }
 
 typedef enum {
     VAR_INT,
@@ -59,7 +49,7 @@ typedef enum {
 } token_t;
 
 typedef struct eval_context_s {
-    coyaml_parseinfo_t *info;
+    qu_parse_context *info;
     char *data;
     char *token;
     char *next;
@@ -101,24 +91,14 @@ static struct unit_s {
     {NULL, 0},
     };
 
-static char *find_var(coyaml_parseinfo_t *info, char *name, int nlen) {
+static char *find_var(qu_parse_context *info, char *name, int nlen) {
     char *data;
     int dlen;
     char cname[nlen+1];
     memcpy(cname, name, nlen);
     cname[nlen] = 0;
-    COYAML_DEBUG("Searching for ``$%s''", cname);
-    if(!coyaml_get_string(info->context, cname, &data, &dlen)) {
+    if(!qu_get_string(info, cname, &data, &dlen)) {
         return data;
-    }
-    for(coyaml_anchor_t *a = info->anchor_first; a; a = a->next) {
-        if(!strncmp(name, a->name, nlen) && strlen(a->name) == nlen) {
-            if(a->events[0].type != YAML_SCALAR_EVENT) {
-                SYNTAX_ERROR2_NULL("You can only substitute a scalar variable,"
-                    " use ``*'' to dereference complex anchors");
-            }
-            return (char *)a->events[0].data.scalar.value;
-        }
     }
     return NULL;
 }
@@ -339,7 +319,7 @@ static variable_t *eval_sum(eval_context_t *ctx) {
     return left;
 }
 
-static variable_t *evaluate(coyaml_parseinfo_t *info, char *data, int dlen) {
+static variable_t *evaluate(qu_parse_context *info, char *data, int dlen) {
     eval_context_t eval = {
         info: info,
         data: data,
@@ -358,55 +338,47 @@ static variable_t *evaluate(coyaml_parseinfo_t *info, char *data, int dlen) {
     return res;
 }
 
-int coyaml_eval_int(coyaml_parseinfo_t *info,
+void qu_eval_int(qu_parse_context *info,
     char *value, size_t vlen, long *result) {
-    if(info->parse_vars && strchr(value, '$')) {
+    if(strchr(value, '$')) {
         char *data;
         int dlen;
-        if(coyaml_eval_str(info, value, vlen, &data, &dlen)) {
-            return -1;
-        }
+        qu_eval_str(info, value, vlen, &data, &dlen);
         char *end = parse_long(data, result);
-        obstack_free(&info->head->pieces, data);
+        obstack_free(&info->pieces, data);
         SYNTAX_ERROR(end == data + dlen);
-        return 0;
     }
     char *end = parse_long(value, result);
     SYNTAX_ERROR(end == value + vlen);
-    return 0;
 }
 
-int coyaml_eval_float(coyaml_parseinfo_t *info,
+void qu_eval_float(qu_parse_context *info,
     char *value, size_t vlen, double *result) {
-    if(info->parse_vars && strchr(value, '$')) {
+    if(strchr(value, '$')) {
         char *data;
         int dlen;
-        if(coyaml_eval_str(info, value, vlen, &data, &dlen)) {
-            return -1;
-        }
+        qu_eval_str(info, value, vlen, &data, &dlen);
         char *end = parse_double(data, result);
-        obstack_free(&info->head->pieces, data);
+        obstack_free(&info->pieces, data);
         SYNTAX_ERROR(end == data + dlen);
-        return 0;
     }
     char *end = parse_double(value, result);
     SYNTAX_ERROR(end == value + vlen);
-    return 0;
 }
 
-int coyaml_eval_str(coyaml_parseinfo_t *info,
+void qu_eval_str(qu_parse_context *info,
     char *data, size_t dlen, char **result, int *rlen) {
-    if(info->parse_vars && strchr(data, '$')) {
-        obstack_blank(&info->head->pieces, 0);
+    if(strchr(data, '$')) {
+        obstack_blank(&info->pieces, 0);
         for(char *c = data; *c;) {
             if(*c != '$' && *c != '\\') {
-                obstack_1grow(&info->head->pieces, *c);
+                obstack_1grow(&info->pieces, *c);
                 ++c;
                 continue;
             }
             if(*c == '\\') {
                 SYNTAX_ERROR(*++c);
-                obstack_1grow(&info->head->pieces, *c);
+                obstack_1grow(&info->pieces, *c);
                 ++c;
                 continue;
             }
@@ -425,30 +397,29 @@ int coyaml_eval_str(coyaml_parseinfo_t *info,
                     free(var);
                     SYNTAX_ERROR(0);
                 }
-                obstack_grow(&info->head->pieces,
+                obstack_grow(&info->pieces,
                     var->data.str.value, var->data.str.length);
                 free(var);
             } else {
                 while(*c && (isalnum(*c) || *c == '_')) ++c;
                 nlen = c - name;
                 if(nlen == 0) {
-                    obstack_1grow(&info->head->pieces, '$');
+                    obstack_1grow(&info->pieces, '$');
                     continue;
                 }
                 char *value = find_var(info, name, nlen);
                 if(value) {
-                    obstack_grow(&info->head->pieces, value, strlen(value));
+                    obstack_grow(&info->pieces, value, strlen(value));
                 } else {
-                    COYAML_DEBUG("Not found variable ``%.*s''", nlen, name);
+                    //COYAML_DEBUG("Not found variable ``%.*s''", nlen, name);
                 }
             }
         }
-        obstack_1grow(&info->head->pieces, 0);
-        *rlen = obstack_object_size(&info->head->pieces)-1;
-        *result = obstack_finish(&info->head->pieces);
+        obstack_1grow(&info->pieces, 0);
+        *rlen = obstack_object_size(&info->pieces)-1;
+        *result = obstack_finish(&info->pieces);
     } else {
-        *result = obstack_copy0(&info->head->pieces, data, dlen);
+        *result = obstack_copy0(&info->pieces, data, dlen);
         *rlen = dlen;
     }
-    return 0;
 }

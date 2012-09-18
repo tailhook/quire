@@ -42,6 +42,7 @@ def build(bld):
             'src/error.c',
             'src/emitter.c',
             'src/vars.c',
+            'src/eval.c',
             'src/access.c',
             'objpath/objpath.c',
             ],
