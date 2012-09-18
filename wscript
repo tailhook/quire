@@ -41,6 +41,8 @@ def build(bld):
             'src/cutil.c',
             'src/error.c',
             'src/emitter.c',
+            'src/vars.c',
+            'src/access.c',
             'objpath/objpath.c',
             ],
         target       = 'quire',
@@ -61,14 +63,12 @@ def build(bld):
         features     = ['c', 'cprogram'],
         source       = [
             'src/ytool.c',
-            'src/access.c',
-            'src/error.c',
-            'src/yparser.c',
             'objpath/objpath.c',
             ],
         target       = 'quire-tool',
         includes     = ['include', 'src', '.'],
         cflags       = ['-std=gnu99', '-Wall'],
+        use          = 'quire',
         )
 
 def build_tests(bld):

@@ -115,9 +115,9 @@ void _qu_context_init(qu_parse_context *ctx) {
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
     CIRCLEQ_INIT(&ctx->tokens);
-    LIST_INIT(&ctx->anchors);
     ctx->buf = NULL;
     ctx->error_kind = 0;
+    ctx->variables = NULL;
 }
 
 void _qu_load_file(qu_parse_context *ctx, char *filename) {
@@ -473,7 +473,8 @@ static qu_ast_node *new_node(qu_parse_context *ctx) {
     node->ctx = ctx;
     node->anchor = ctx->cur_anchor;
     if(ctx->cur_anchor) {
-        LIST_INSERT_HEAD(&ctx->anchors, node, anchors);
+        _qu_insert_anchor(ctx,
+            node->anchor->data+1, node->anchor->bytelen-1, node);
         ctx->cur_anchor = NULL;
     }
     node->tag = ctx->cur_tag;
@@ -531,21 +532,18 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         node->start_token = CTOK;
         node->end_token = CTOK;
         node->kind = QU_NODE_ALIAS;
-        qu_ast_node *target;
-        LIST_FOREACH(target, &ctx->anchors, anchors) {
-            if(target->anchor->bytelen == CTOK->bytelen
-                && !strncmp((char *)target->anchor->data+1,  // "&" char
-                            (char *)CTOK->data+1,  // "*" char
-                            CTOK->bytelen-1)) {
-                node->target = target;
-                NEXT;
-                return node;
-            }
+        qu_ast_node *target = _qu_find_anchor(ctx,
+            CTOK->data+1, CTOK->bytelen-1);
+        if(target) {
+            node->target = target;
+            NEXT;
+            return node;
+        } else {
+            ctx->error_text = "Anchor target not found";
+            ctx->error_token = CTOK;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            longjmp(ctx->errjmp, 1);
         }
-        ctx->error_text = "Anchor target not found";
-        ctx->error_token = CTOK;
-        ctx->error_kind = YAML_CONTENT_ERROR;
-        longjmp(ctx->errjmp, 1);
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
@@ -653,21 +651,18 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
         node->start_token = CTOK;
         node->end_token = CTOK;
         node->kind = QU_NODE_ALIAS;
-        qu_ast_node *target;
-        LIST_FOREACH(target, &ctx->anchors, anchors) {
-            if(target->anchor->bytelen == CTOK->bytelen
-                && !strncmp((char *)target->anchor->data+1,  // "&" char
-                            (char *)CTOK->data+1,  // "*" char
-                            CTOK->bytelen-1)) {
-                node->target = target;
-                NEXT;
-                return node;
-            }
+        qu_ast_node *target = _qu_find_anchor(ctx,
+            CTOK->data+1, CTOK->bytelen-1);
+        if(target) {
+            node->target = target;
+            NEXT;
+            return node;
+        } else {
+            ctx->error_text = "Anchor target not found";
+            ctx->error_token = CTOK;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            longjmp(ctx->errjmp, 1);
         }
-        ctx->error_text = "Anchor target not found";
-        ctx->error_token = CTOK;
-        ctx->error_kind = YAML_CONTENT_ERROR;
-        longjmp(ctx->errjmp, 1);
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
@@ -802,7 +797,7 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
         _qu_context_init(ctx);
         _qu_load_file(ctx, filename);
         _qu_tokenize(ctx);
-        qu_print_tokens(ctx, stderr);
+        //qu_print_tokens(ctx, stderr);
         _qu_parse(ctx);
     } else {
         ctx->has_jmp = 0;

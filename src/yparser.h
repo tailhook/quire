@@ -1,3 +1,4 @@
+#include <vars.h>
 #ifndef _H_YPARSER
 #define _H_YPARSER
 
@@ -31,7 +32,6 @@ typedef struct qu_token_s {
 
 typedef struct qu_node_s {
     CIRCLEQ_ENTRY(qu_node_s) lst;
-    LIST_ENTRY(qu_node_s) anchors; // for anchors nodes
 
     int kind;
     struct parse_context_s *ctx;
@@ -66,7 +66,7 @@ typedef struct parse_context_s {
 
     CIRCLEQ_HEAD(qu_token_list, qu_token_s) tokens;
     qu_ast_node *document;
-    LIST_HEAD(qu_anchor_list, qu_node_s) anchors;
+    qu_variable_t *variables;
 
     int linestart; // boolean flag if we are still at indentation
     int curline;
