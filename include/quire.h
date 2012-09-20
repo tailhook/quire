@@ -63,7 +63,7 @@ void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
 void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
     double *result);
 void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
-    char **result, int *rlen);
+    char **result, size_t *rlen);
 
 // Methods from error.c
 int qu_has_error(qu_parse_context *);

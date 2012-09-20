@@ -344,7 +344,7 @@ void _qu_eval_int(qu_parse_context *info, char *value,
 {
     if(interp && strchr(value, '$')) {
         char *data;
-        int dlen;
+        size_t dlen;
         _qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_int(data, result);
         obstack_free(&info->pieces, data);
@@ -361,10 +361,9 @@ void _qu_eval_float(qu_parse_context *info, char *value,
 {
     if(interp && strchr(value, '$')) {
         char *data;
-        int dlen;
+        size_t dlen;
         _qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_double(data, result);
-        printf("DONE ``%s'' %f\n", data, *result);
         obstack_free(&info->pieces, data);
         SYNTAX_ERROR(end == data + dlen);
         return;
@@ -375,7 +374,7 @@ void _qu_eval_float(qu_parse_context *info, char *value,
 }
 
 void _qu_eval_str(qu_parse_context *info,
-    char *data, int interp, char **result, int *rlen) {
+    char *data, int interp, char **result, size_t *rlen) {
     if(interp && strchr(data, '$')) {
         obstack_blank(&info->pieces, 0);
         for(char *c = data; *c;) {
@@ -446,7 +445,7 @@ void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
         _qu_eval_float(ctx, content, flags & QU_FLAGS_VARS, result);
 }
 void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
-    char **result, int *rlen) {
+    char **result, size_t *rlen) {
     char *content = qu_node_content(node);
     if(content)
         _qu_eval_str(ctx, content, flags & QU_FLAGS_VARS, result, rlen);

@@ -33,6 +33,10 @@ static int print_member(qu_context_t *ctx, qu_ast_node *node) {
             if(!strncmp((char *)node->tag->data, st->tag,
                         node->tag->bytelen)) {
                 printf("%s %s;\n", st->typ, strrchr(data->expression, '.')+1);
+                if(!strcmp(st->typ, "char*")) {
+                    printf("size_t %s_len;\n",
+                        strrchr(data->expression, '.')+1);
+                }
                 return 0;
             }
         }

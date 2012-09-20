@@ -29,10 +29,6 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
             printf("(*cfg)%s = %ld;\n", data->expression,
                 strtol(qu_node_content(def), NULL, 0));
         } else if(!strncmp((char *)node->tag->data,
-                  "!UInt", node->tag->bytelen)) {
-            printf("(*cfg)%s = %lu;\n", data->expression,
-                strtoul(qu_node_content(def), NULL, 0));
-        } else if(!strncmp((char *)node->tag->data,
                   "!Float", node->tag->bytelen)) {
             printf("(*cfg)%s = %.17f;\n", data->expression,
                 strtof(qu_node_content(def), NULL));
@@ -41,16 +37,22 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
                 qu_node_content(def));
+            printf("(*cfg)%s_len = %lu;\n", data->expression,
+                strlen(qu_node_content(def)));
         } else if(!strncmp((char *)node->tag->data,
                   "!Dir", node->tag->bytelen)) {
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
                 qu_node_content(def));
+            printf("(*cfg)%s_len = %lu;\n", data->expression,
+                strlen(qu_node_content(def)));
         } else if(!strncmp((char *)node->tag->data,
                   "!String", node->tag->bytelen)) {
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
                 qu_node_content(def));
+            printf("(*cfg)%s_len = %lu;\n", data->expression,
+                strlen(qu_node_content(def)));
         } else if(!strncmp((char *)node->tag->data,
                   "!Bool", node->tag->bytelen)) {
             int val;
@@ -91,20 +93,24 @@ static int print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
-            printf("(*cfg)%s = qu_node_content(node%d);\n",
-                data->expression, ctx->node_level);
+            printf("qu_node_to_str(&ctx, node%1$d, cli.cfg_flags, "
+                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
-            printf("(*cfg)%s = qu_node_content(node%d);\n",
-                data->expression, ctx->node_level);
+            printf("qu_node_to_str(&ctx, node%1$d, cli.cfg_flags, "
+                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Dir", node->tag->bytelen)) {
-            printf("(*cfg)%s = qu_node_content(node%d);\n",
-                data->expression, ctx->node_level);
+            printf("qu_node_to_str(&ctx, node%1$d, cli.cfg_flags, "
+                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!String", node->tag->bytelen)) {
-            printf("(*cfg)%s = qu_node_content(node%d);\n",
-                data->expression, ctx->node_level);
+            printf("qu_node_to_str(&ctx, node%1$d, cli.cfg_flags, "
+                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Bool", node->tag->bytelen)) {
             printf("qu_get_boolean(node%d, &(*cfg)%s);\n",
