@@ -1,13 +1,28 @@
 #ifndef _H_EVAL
 #define _H_EVAL
 
-#include "yparser.h"
+#include <stdint.h>
 
-void qu_eval_int(qu_parse_context *info,
-    char *value, size_t vlen, long *result);
-void qu_eval_float(qu_parse_context *info,
-    char *value, size_t vlen, double *result);
-void qu_eval_str(qu_parse_context *info,
-    char *value, size_t vlen, char **result, int *rlen);
+#include "yparser.h"
+#include "context.h"
+
+void _qu_eval_int(qu_parse_context *info,
+    char *value, int interp, long *result);
+void _qu_eval_float(qu_parse_context *info,
+    char *value, int interp, double *result);
+void _qu_eval_str(qu_parse_context *info,
+    char *value, int interp, char **result, int *rlen);
+
+// PUBLIC API
+// Keep in sync with quire.h
+// Think about ABI compatibility
+#define QU_FLAGS_VARS       1
+
+void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    long *result);
+void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    double *result);
+void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    char **result, int *rlen);
 
 #endif // _H_EVAL

@@ -83,16 +83,12 @@ static int print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
         printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
             ctx->node_level, ctx->node_level-1, name);
         if(!strncmp((char *)node->tag->data, "!Int", node->tag->bytelen)) {
-            printf("(*cfg)%s = strtol(qu_node_content(node%d), NULL, 0);\n",
-                data->expression, ctx->node_level);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!UInt", node->tag->bytelen)) {
-            printf("(*cfg)%s = strtoul(qu_node_content(node%d), NULL, 0);\n",
-                data->expression, ctx->node_level);
+            printf("qu_node_to_int(&ctx, node%d, cli.cfg_flags, &(*cfg)%s);\n",
+                ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Float", node->tag->bytelen)) {
-            printf("(*cfg)%s = strtof(qu_node_content(node%d), NULL);\n",
-                data->expression, ctx->node_level);
+            printf("qu_node_to_float(&ctx, node%d, cli.cfg_flags, &(*cfg)%s);\n",
+                ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
             printf("(*cfg)%s = qu_node_content(node%d);\n",
@@ -149,7 +145,7 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
                 data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Float", node->tag->bytelen)) {
-            printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%.17f\", (*cfg)%s);\n",
+            printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%.17g\", (*cfg)%s);\n",
                 data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
@@ -267,6 +263,7 @@ int qu_output_source(qu_context_t *ctx) {
     printf("#include <stdlib.h>\n");
     printf("#include <getopt.h>\n");
     printf("#include <string.h>\n");
+    printf("#include <stdint.h>\n");
     printf("\n");
     printf("#include \"%.*s.h\"\n", hlen, header);
     printf("\n");
@@ -301,13 +298,17 @@ int qu_output_source(qu_context_t *ctx) {
     printf("};\n");
     printf("char *optstr = \"%.*s\";\n", optlen, options);
     printf("int c;\n");
+    printf("\n");
+    printf("cfg->cfg_filename = \"%s\";\n", ctx->meta.default_config);
+    printf("cfg->cfg_flags = QU_FLAGS_VARS;\n");
+    printf("cfg->cfg_mode = QU_MODE_NORMAL;\n");
 
     optnum = 1000;
     printf("while((c = getopt_long(argc, argv, "
            "optstr, options, NULL)) != -1) {\n");
     printf("switch(c) {\n");
     printf("case 'c':\n");
-    printf("cfg->filename = optarg;\n");
+    printf("cfg->cfg_filename = optarg;\n");
     printf("break;\n");
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         if(print_case(qu_map_get(data->node, "command-line"), optnum)) {
@@ -409,10 +410,10 @@ int qu_output_source(qu_context_t *ctx) {
     printf("%scli_parse(&cli, argc, argv);\n", ctx->prefix);
 
     printf("\n");
-    printf("// Parsing root elements\n");
+    printf("// Prepare the AST\n");
     printf("int rc;\n");
     printf("qu_parse_context ctx;\n");
-    printf("rc = qu_file_parse(&ctx, cli.filename);\n");
+    printf("rc = qu_file_parse(&ctx, cli.cfg_filename);\n");
     printf("if(rc < 0) {\n");
     printf("    perror(\"%s: libquire: Error parsing_file\");\n",
         ctx->meta.program_name);
@@ -426,6 +427,7 @@ int qu_output_source(qu_context_t *ctx) {
     printf("\n");
     printf("qu_ast_node *node0 = qu_get_root(&ctx);\n");
 
+    printf("// Parsing root elements\n");
     ctx->node_level = 1;
     ctx->node_vars[1] = 0;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
@@ -433,6 +435,7 @@ int qu_output_source(qu_context_t *ctx) {
         assert(rc >= 0);
     }
 
+    printf("// Overlay command-line options on top\n");
     printf("rc = %scli_apply(cfg, &cli);\n", ctx->prefix);
     printf("if(rc < 0) {\n");
     printf("    perror(\"%s: libquire: Error applying command-line args\");\n",

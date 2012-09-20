@@ -9,9 +9,6 @@ Data:
   int1: !Int 0
   int2: !Int 0
   int3: !Int 0
-  uint1: !UInt 0
-  uint2: !UInt 0
-  uint3: !UInt 0
   float1: !Float 0
   float2: !Float 0
   float3: !Float 0

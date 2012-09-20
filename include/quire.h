@@ -1,6 +1,8 @@
 #ifndef QUIRE_MAIN_INCLUDED
 #define QUIRE_MAIN_INCLUDED
 
+#include <stdint.h>
+
 // Constants from emitter.h
 #define QU_EMIT_UNKNOWN     0
 #define QU_EMIT_MAP_START   1
@@ -26,6 +28,10 @@
 #define QU_COMMENT_INDENT   2
 #define QU_COMMENT_NICE     (-1)
 
+#define QU_FLAGS_VARS       1
+
+#define QU_MODE_NORMAL      1
+
 typedef struct qu_config_head {
     char data[128];
 } qu_config_head;
@@ -50,6 +56,14 @@ char *qu_node_content(qu_ast_node *node);
 int qu_file_parse(qu_parse_context *ctx, char *filename)
     __attribute__((warn_unused_result));
 void qu_context_free(qu_parse_context *ctx);
+
+// Methods from eval.c
+void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    long *result);
+void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    double *result);
+void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    char **result, int *rlen);
 
 // Methods from error.c
 int qu_has_error(qu_parse_context *);

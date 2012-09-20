@@ -14,7 +14,6 @@ struct scalar_type_s {
     char *typ;
 } scalar_types[] = {
     {"!Int", "long"},
-    {"!UInt", "unsigned long"},
     {"!Float", "double"},
     {"!File", "char*"},
     {"!Dir", "char*"},
@@ -66,7 +65,9 @@ int qu_output_header(qu_context_t *ctx) {
     // TODO describe array|mapping element structures
 
     printf("typedef struct %scli_s {\n", ctx->prefix);
-    printf("char *filename;\n");
+    printf("char *cfg_filename;\n");
+    printf("uint64_t cfg_flags;\n");
+    printf("int cfg_mode;\n");
     qu_nodedata *data;
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         printf("unsigned %s_set:1;\n", data->cli_name);

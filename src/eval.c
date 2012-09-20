@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "vars.h"
+#include "access.h"
 
 #define SYNTAX_ERROR(cond) if(!(cond)) { \
     longjmp(info->errjmp, 1); \
@@ -141,7 +142,7 @@ static void next_tok(eval_context_t *ctx) {
     }
 }
 
-static char *parse_long(char *value, long *result) {
+static char *parse_int(char *value, long *result) {
     char *end;
     long val = strtol(value, (char **)&end, 0);
     if(*end) {
@@ -338,37 +339,44 @@ static variable_t *evaluate(qu_parse_context *info, char *data, int dlen) {
     return res;
 }
 
-void qu_eval_int(qu_parse_context *info,
-    char *value, size_t vlen, long *result) {
-    if(strchr(value, '$')) {
+void _qu_eval_int(qu_parse_context *info, char *value,
+    int interp, long *result)
+{
+    if(interp && strchr(value, '$')) {
         char *data;
         int dlen;
-        qu_eval_str(info, value, vlen, &data, &dlen);
-        char *end = parse_long(data, result);
+        _qu_eval_str(info, value, interp, &data, &dlen);
+        char *end = parse_int(data, result);
         obstack_free(&info->pieces, data);
         SYNTAX_ERROR(end == data + dlen);
+        return;
     }
-    char *end = parse_long(value, result);
+    char *end = parse_int(value, result);
+    int vlen = strlen(value);
     SYNTAX_ERROR(end == value + vlen);
 }
 
-void qu_eval_float(qu_parse_context *info,
-    char *value, size_t vlen, double *result) {
-    if(strchr(value, '$')) {
+void _qu_eval_float(qu_parse_context *info, char *value,
+    int interp, double *result)
+{
+    if(interp && strchr(value, '$')) {
         char *data;
         int dlen;
-        qu_eval_str(info, value, vlen, &data, &dlen);
+        _qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_double(data, result);
+        printf("DONE ``%s'' %f\n", data, *result);
         obstack_free(&info->pieces, data);
         SYNTAX_ERROR(end == data + dlen);
+        return;
     }
     char *end = parse_double(value, result);
+    int vlen = strlen(value);
     SYNTAX_ERROR(end == value + vlen);
 }
 
-void qu_eval_str(qu_parse_context *info,
-    char *data, size_t dlen, char **result, int *rlen) {
-    if(strchr(data, '$')) {
+void _qu_eval_str(qu_parse_context *info,
+    char *data, int interp, char **result, int *rlen) {
+    if(interp && strchr(data, '$')) {
         obstack_blank(&info->pieces, 0);
         for(char *c = data; *c;) {
             if(*c != '$' && *c != '\\') {
@@ -419,7 +427,27 @@ void qu_eval_str(qu_parse_context *info,
         *rlen = obstack_object_size(&info->pieces)-1;
         *result = obstack_finish(&info->pieces);
     } else {
-        *result = obstack_copy0(&info->pieces, data, dlen);
-        *rlen = dlen;
+        *rlen = strlen(data);
+        *result = obstack_copy0(&info->pieces, data, *rlen);
     }
+}
+
+
+void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    long *result) {
+    char *content = qu_node_content(node);
+    if(content)
+        _qu_eval_int(ctx, content, flags & QU_FLAGS_VARS, result);
+}
+void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    double *result) {
+    char *content = qu_node_content(node);
+    if(content)
+        _qu_eval_float(ctx, content, flags & QU_FLAGS_VARS, result);
+}
+void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+    char **result, int *rlen) {
+    char *content = qu_node_content(node);
+    if(content)
+        _qu_eval_str(ctx, content, flags & QU_FLAGS_VARS, result, rlen);
 }

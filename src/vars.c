@@ -1,8 +1,10 @@
-#include "yparser.h"
-#include "vars.h"
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+
+#include "yparser.h"
+#include "vars.h"
+#include "access.h"
 
 static int find_value(qu_variable_t *var, char *name, int nlen,
     qu_variable_t **node) {
@@ -91,6 +93,10 @@ int qu_get_string(qu_parse_context *ctx, char *name,
     int val = find_value(ctx->variables, name, strlen(name), &var);
     if(!val) {
         switch(var->type) {
+            case QU_VAR_ANCHOR:
+                *data = qu_node_content(var->data.anchor.node);
+                *dlen = strlen(*data);
+                return 0;
             case QU_VAR_STRING:
                 *data = var->data.string.value;
                 *dlen = var->data.string.value_len;
