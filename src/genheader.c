@@ -20,32 +20,33 @@ static char *typenames[] = {
     [QU_TYP_DIR] = "char *",
     [QU_TYP_STRING] = "char *",
     [QU_TYP_BOOL] = "int",
-    [QU_TYP_STRUCT] = NULL
+    [QU_TYP_CUSTOM] = NULL,
+    [QU_TYP_ARRAY] = NULL,
+    [QU_TYP_MAP] = NULL,
     };
 
 
-static int print_member(qu_context_t *ctx, qu_ast_node *node) {
+static void print_member(qu_context_t *ctx, qu_ast_node *node) {
     qu_nodedata *data = node->userdata;
     if(!data)
-        return 0;
+        return;
     if(data->kind == QU_MEMBER_SCALAR) {
         char *memname = strrchr(data->expression, '.')+1;
         printf("%s %s;\n", typenames[data->type], memname);
         if(STRING_TYPE(data->type)) {
             printf("size_t %s_len;\n", memname);
         }
-        return 0;
+        return;
     } else if(data->kind == QU_MEMBER_STRUCT) {
         printf("struct {\n");
         qu_ast_node *key;
         CIRCLEQ_FOREACH(key, &node->children, lst) {
-            int rc = print_member(ctx, key->value);
-            assert(rc >= 0);
+            print_member(ctx, key->value);
         }
         printf("} %s;\n", strrchr(data->expression, '.')+1);
+        return;
     }
-
-    return 0;
+    // TODO(tailhook) print other members
 }
 
 
@@ -69,6 +70,8 @@ int qu_output_header(qu_context_t *ctx) {
         printf("unsigned %s_set:1;\n", data->cli_name);
     }
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
+        if(data->kind != QU_MEMBER_SCALAR)
+            assert(0);  // non scalar command-line not supported
         printf("%s %s;\n", typenames[data->type], data->cli_name);
         if(qu_map_get(data->node, "command-line-incr")
            || qu_map_get(data->node, "command-line-decr")) {
@@ -83,8 +86,7 @@ int qu_output_header(qu_context_t *ctx) {
     printf("typedef struct %smain_s {\n", ctx->prefix);
     qu_ast_node *key;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
-        int rc = print_member(ctx, key->value);
-        assert(rc >= 0);
+        print_member(ctx, key->value);
     }
     printf("} %smain_t;\n", ctx->prefix);
 

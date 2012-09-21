@@ -1,6 +1,17 @@
 #ifndef _H_CODES
 #define _H_CODES
 
+#define QU_TYP_UNKNOWN  0
+#define QU_TYP_INT      1
+#define QU_TYP_FLOAT    2
+#define QU_TYP_FILE     3
+#define QU_TYP_DIR      4
+#define QU_TYP_STRING   5
+#define QU_TYP_BOOL     6
+#define QU_TYP_ARRAY    7
+#define QU_TYP_MAP      8
+#define QU_TYP_CUSTOM   9
+
 typedef enum qu_token_kind_enum {
     // Keep in sync with strings in yparser.c
     QU_TOK_ERROR,
@@ -49,6 +60,8 @@ typedef enum qu_member_enum {
     QU_MEMBER_NONE,
     QU_MEMBER_STRUCT,
     QU_MEMBER_SCALAR,
+    QU_MEMBER_ARRAY,
+    QU_MEMBER_CUSTOM,
 } qu_member_t;
 
 #endif // _H_CODES

@@ -25,41 +25,43 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
             def = node;
         }
 
-        if(!strncmp((char *)node->tag->data, "!Int", node->tag->bytelen)) {
+        switch(data->type) {
+        case QU_TYP_INT:
             printf("(*cfg)%s = %ld;\n", data->expression,
                 strtol(qu_node_content(def), NULL, 0));
-        } else if(!strncmp((char *)node->tag->data,
-                  "!Float", node->tag->bytelen)) {
+            break;
+        case QU_TYP_FLOAT:
             printf("(*cfg)%s = %.17f;\n", data->expression,
                 strtof(qu_node_content(def), NULL));
-        } else if(!strncmp((char *)node->tag->data,
-                  "!File", node->tag->bytelen)) {
+            break;
+        case QU_TYP_FILE:
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
                 qu_node_content(def));
             printf("(*cfg)%s_len = %lu;\n", data->expression,
                 strlen(qu_node_content(def)));
-        } else if(!strncmp((char *)node->tag->data,
-                  "!Dir", node->tag->bytelen)) {
+            break;
+        case QU_TYP_DIR:
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
                 qu_node_content(def));
             printf("(*cfg)%s_len = %lu;\n", data->expression,
                 strlen(qu_node_content(def)));
-        } else if(!strncmp((char *)node->tag->data,
-                  "!String", node->tag->bytelen)) {
+            break;
+        case QU_TYP_STRING:
             // TODO(tailhook) escape apropriately
             printf("(*cfg)%s = \"%s\";\n", data->expression,
                 qu_node_content(def));
             printf("(*cfg)%s_len = %lu;\n", data->expression,
                 strlen(qu_node_content(def)));
-        } else if(!strncmp((char *)node->tag->data,
-                  "!Bool", node->tag->bytelen)) {
+            break;
+        case QU_TYP_BOOL: {
             int val;
             rc = qu_get_boolean(def, &val);
             assert (rc != -1);
             printf("(*cfg)%s = %d;\n", data->expression, val ? 1 : 0);
-        } else {
+            } break;
+        default:
             assert (0); // Wrong type
         }
     } else if(data->kind == QU_MEMBER_STRUCT) {

@@ -34,15 +34,34 @@ static int visitor(qu_context_t *ctx,
         else if(tlen == 5 && !strncmp(tdata, "!Bool", 5))
             data->type = QU_TYP_BOOL;
         else if(tlen == 7 && !strncmp(tdata, "!Struct", 7))
-            data->type = QU_TYP_STRUCT;
+            data->type = QU_TYP_CUSTOM;
+        else if(tlen == 6 && !strncmp(tdata, "!Array", 6))
+            data->type = QU_TYP_ARRAY;
+        else if(tlen == 8 && !strncmp(tdata, "!Mapping", 8))
+            data->type = QU_TYP_MAP;
         else {
             ctx->parsing.error_text = "Unknown type tag";
             ctx->parsing.error_token = node->tag;
             ctx->parsing.error_kind = YAML_CONTENT_ERROR;
             longjmp(ctx->parsing.errjmp, 1);
         }
-
-        data->kind = QU_MEMBER_SCALAR;
+        switch(data->type) {
+        case QU_TYP_INT:
+        case QU_TYP_FLOAT:
+        case QU_TYP_FILE:
+        case QU_TYP_DIR:
+        case QU_TYP_STRING:
+        case QU_TYP_BOOL:
+            data->kind = QU_MEMBER_SCALAR;
+            break;
+        case QU_TYP_ARRAY:
+        case QU_TYP_MAP:
+            data->kind = QU_MEMBER_ARRAY;
+            break;
+        case QU_TYP_CUSTOM:
+            data->kind = QU_MEMBER_CUSTOM;
+            break;
+        }
         if(node->kind == QU_NODE_MAPPING) {
             if(qu_map_get(node, "command-line")
                 || qu_map_get(node, "command-line-incr")
