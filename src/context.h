@@ -10,6 +10,7 @@
 
 typedef struct qu_nodedata {
     int kind;
+    int type;
     qu_ast_node *node;
     char *expression;
     qu_ast_node *expr_parent;
@@ -18,7 +19,7 @@ typedef struct qu_nodedata {
     char *cli_name;
 } qu_nodedata;
 
-typedef struct {
+typedef struct qu_context_s {
     qu_parse_context parsing;
     qu_options_t options;
     qu_metadata_t meta;

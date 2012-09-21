@@ -97,7 +97,6 @@ def build_tests(bld):
         cflags       = ['-std=c99', '-Wall'],
         use          = ['quire'],
         )
-    """ Non working tests ATM
     bld(
         features     = ['c', 'cprogram', 'quire'],
         source       = [
@@ -110,6 +109,7 @@ def build_tests(bld):
         use          = ['quire'],
         config_name  = 'cfg',
         )
+    """ Non working tests ATM
     bld(
         features     = ['c', 'cprogram', 'quire'],
         source       = [
@@ -141,7 +141,6 @@ def build_tests(bld):
         source=['examples/varexample.out', 'varexample.out'],
         always=True)
 
-    """ Non working tests ATM
     bld(rule='./${SRC[0]} -c ${SRC[1].abspath()} --config-var clivar=CLI -C -P > ${TGT[0]}',
         source=['compr', 'examples/compexample.yaml'],
         target='compexample.out.ws',
@@ -154,6 +153,7 @@ def build_tests(bld):
         source=['examples/compexample.out', 'compexample.out'],
         always=True)
 
+    """ Non working tests ATM
     bld(rule='COMPR_LOGLEVEL=7 ./${SRC[0]} -c ${SRC[1].abspath()} --config-var clivar=CLI -C -PP > ${TGT[0]}',
         source=['compr', 'examples/compexample.yaml'],
         target='compexample.out.ws1',

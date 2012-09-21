@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
     memset(&ctx, 0, sizeof(ctx));
     quire_parse_options(&ctx.options, argc, argv);
     int rc = qu_file_parse(&ctx.parsing, ctx.options.source_file);
+    if(rc == 0)
+        rc = qu_config_preprocess(&ctx);
     if(rc > 0) {
         qu_print_error(&ctx.parsing, stderr);
         qu_context_free(&ctx.parsing);
@@ -32,8 +34,6 @@ int main(int argc, char **argv) {
             ctx.options.source_file, strerror(-rc));
         return 1;
     }
-    assert(ctx.parsing.document);
-    std_assert(qu_config_preprocess(&ctx));
 
     if(ctx.options.output_header) {
         fflush(stdout);

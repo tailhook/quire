@@ -803,6 +803,7 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
         ctx->has_jmp = 0;
         return rc;
     }
+    ctx->has_jmp = 0;
     return 0;
 }
 

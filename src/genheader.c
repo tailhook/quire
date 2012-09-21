@@ -8,18 +8,19 @@
 #include "cutil.h"
 #include "access.h"
 
+#define STRING_TYPE(typ) ((typ) == QU_TYP_FILE \
+                          || (typ) == QU_TYP_DIR \
+                          || (typ) == QU_TYP_STRING)
 
-struct scalar_type_s {
-    char *tag;
-    char *typ;
-} scalar_types[] = {
-    {"!Int", "long"},
-    {"!Float", "double"},
-    {"!File", "char*"},
-    {"!Dir", "char*"},
-    {"!String", "char*"},
-    {"!Bool", "int"},
-    {NULL, NULL}
+
+static char *typenames[] = {
+    [QU_TYP_INT] = "long",
+    [QU_TYP_FLOAT] = "double",
+    [QU_TYP_FILE] = "char *",
+    [QU_TYP_DIR] = "char *",
+    [QU_TYP_STRING] = "char *",
+    [QU_TYP_BOOL] = "int",
+    [QU_TYP_STRUCT] = NULL
     };
 
 
@@ -28,21 +29,12 @@ static int print_member(qu_context_t *ctx, qu_ast_node *node) {
     if(!data)
         return 0;
     if(data->kind == QU_MEMBER_SCALAR) {
-        struct scalar_type_s *st = scalar_types;
-        for(;st->tag;++st) {
-            if(!strncmp((char *)node->tag->data, st->tag,
-                        node->tag->bytelen)) {
-                printf("%s %s;\n", st->typ, strrchr(data->expression, '.')+1);
-                if(!strcmp(st->typ, "char*")) {
-                    printf("size_t %s_len;\n",
-                        strrchr(data->expression, '.')+1);
-                }
-                return 0;
-            }
+        char *memname = strrchr(data->expression, '.')+1;
+        printf("%s %s;\n", typenames[data->type], memname);
+        if(STRING_TYPE(data->type)) {
+            printf("size_t %s_len;\n", memname);
         }
-        fprintf(stderr, "Wrong tag \"%.*s\"\n",
-                node->tag->bytelen, node->tag->data);
-        return -1;
+        return 0;
     } else if(data->kind == QU_MEMBER_STRUCT) {
         printf("struct {\n");
         qu_ast_node *key;
@@ -77,17 +69,12 @@ int qu_output_header(qu_context_t *ctx) {
         printf("unsigned %s_set:1;\n", data->cli_name);
     }
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
-        struct scalar_type_s *st = scalar_types;
-        for(;st->tag;++st) {
-            if(!strncmp((char *)data->node->tag->data, st->tag,
-                        data->node->tag->bytelen)) {
-                printf("%s %s;\n", st->typ, data->cli_name);
-                if(qu_map_get(data->node, "command-line-incr")
-                   || qu_map_get(data->node, "command-line-decr")) {
-                    printf("%s %s_delta;\n", st->typ, data->cli_name);
-                    printf("unsigned %s_delta_set;\n", data->cli_name);
-                }
-            }
+        printf("%s %s;\n", typenames[data->type], data->cli_name);
+        if(qu_map_get(data->node, "command-line-incr")
+           || qu_map_get(data->node, "command-line-decr")) {
+            printf("%s %s_delta;\n", typenames[data->type],
+                data->cli_name);
+            printf("unsigned %s_delta_set;\n", data->cli_name);
         }
     }
     printf("} %scli_t;\n", ctx->prefix);

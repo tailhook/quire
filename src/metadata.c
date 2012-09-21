@@ -2,8 +2,13 @@
 
 #include "metadata.h"
 #include "access.h"
+#include "context.h"
+#include "codes.h"
 
-int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
+void _qu_parse_metadata(qu_context_t *bigctx) {
+    qu_parse_context *ctx = &bigctx->parsing;
+    qu_ast_node *root = ctx->document;
+    qu_metadata_t *meta = &bigctx->meta;
     meta->program_name = NULL;
     meta->default_config = NULL;
     meta->description = NULL;
@@ -11,7 +16,7 @@ int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     meta->mixed_arguments = 0;
     qu_ast_node *mnode = qu_map_get(root, "__meta__");
     if(!mnode)
-        return 0;
+        return;
 
     qu_ast_node *tnode;
     char *tdata;
@@ -20,8 +25,10 @@ int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     if(tnode) {
         tdata = qu_node_content(tnode);
         if(!tdata) {
-            fprintf(stderr, "__meta__.program-name must be scalar");
-            return -1;
+            ctx->error_token = tnode->start_token;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            ctx->error_text = "__meta__.program-name must be scalar";
+            longjmp(ctx->errjmp, 1);
         }
         meta->program_name = tdata;
     }
@@ -30,8 +37,10 @@ int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     if(tnode) {
         tdata = qu_node_content(tnode);
         if(!tdata) {
-            fprintf(stderr, "__meta__.default-config[ must be scalar");
-            return -1;
+            ctx->error_token = tnode->start_token;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            ctx->error_text = "__meta__.default-config must be scalar";
+            longjmp(ctx->errjmp, 1);
         }
         meta->default_config = tdata;
     }
@@ -40,8 +49,10 @@ int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     if(tnode) {
         tdata = qu_node_content(tnode);
         if(!tdata) {
-            fprintf(stderr, "__meta__.description must be scalar");
-            return -1;
+            ctx->error_token = tnode->start_token;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            ctx->error_text = "__meta__.description must be scalar";
+            longjmp(ctx->errjmp, 1);
         }
         meta->description = tdata;
     }
@@ -50,8 +61,10 @@ int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     if(tnode) {
         int value;
         if(qu_get_boolean(tnode, &value) == -1) {
-            fprintf(stderr, "__meta__.has-arguments must be boolean");
-            return -1;
+            ctx->error_token = tnode->start_token;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            ctx->error_text = "__meta__.has-arguments must be boolean";
+            longjmp(ctx->errjmp, 1);
         }
         meta->has_arguments = value;
     }
@@ -60,16 +73,19 @@ int qu_parse_metadata(qu_ast_node *root, qu_metadata_t *meta) {
     if(tnode) {
         int value;
         if(qu_get_boolean(tnode, &value) == -1) {
-            fprintf(stderr, "__meta__.mixed-arguments must be boolean");
-            return -1;
+            ctx->error_token = tnode->start_token;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            ctx->error_text = "__meta__.mixed-arguments must be boolean";
+            longjmp(ctx->errjmp, 1);
         }
         if(value && !meta->has_arguments) {
-            fprintf(stderr, "__meta__.mixed-arguments without has-arguments"
+            ctx->error_token = tnode->start_token;
+            ctx->error_kind = YAML_CONTENT_ERROR;
+            ctx->error_text = ("__meta__.mixed-arguments without has-arguments"
                 " is useless");
-            return -1;
+            longjmp(ctx->errjmp, 1);
         }
         meta->mixed_arguments = value;
     }
 
-    return 0;
 }

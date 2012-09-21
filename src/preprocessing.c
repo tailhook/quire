@@ -19,6 +19,29 @@ static int visitor(qu_context_t *ctx,
     data->node = node;
     node->userdata = data;
     if(node->tag) {
+        int tlen = node->tag->bytelen;
+        char *tdata = (char *)node->tag->data;
+        if(tlen == 4 && !strncmp(tdata, "!Int", 4))
+            data->type = QU_TYP_INT;
+        else if(tlen == 6 && !strncmp(tdata, "!Float", 6))
+            data->type = QU_TYP_FLOAT;
+        else if(tlen == 5 && !strncmp(tdata, "!File", 5))
+            data->type = QU_TYP_FILE;
+        else if(tlen == 4 && !strncmp(tdata, "!Dir", 4))
+            data->type = QU_TYP_DIR;
+        else if(tlen == 7 && !strncmp(tdata, "!String", 7))
+            data->type = QU_TYP_STRING;
+        else if(tlen == 5 && !strncmp(tdata, "!Bool", 5))
+            data->type = QU_TYP_BOOL;
+        else if(tlen == 7 && !strncmp(tdata, "!Struct", 7))
+            data->type = QU_TYP_STRUCT;
+        else {
+            ctx->parsing.error_text = "Unknown type tag";
+            ctx->parsing.error_token = node->tag;
+            ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+            longjmp(ctx->parsing.errjmp, 1);
+        }
+
         data->kind = QU_MEMBER_SCALAR;
         if(node->kind == QU_NODE_MAPPING) {
             if(qu_map_get(node, "command-line")
@@ -50,19 +73,26 @@ static int visitor(qu_context_t *ctx,
 
 
 int qu_config_preprocess(qu_context_t *ctx) {
+    int rc;
+    ctx->parsing.has_jmp = 1;
+    if(!(rc = setjmp(ctx->parsing.errjmp))) {
 
-    int rc = qu_parse_metadata(ctx->parsing.document, &ctx->meta);
-    if(rc < 0)
+        _qu_parse_metadata(ctx);
+
+        ctx->prefix = ctx->options.prefix;
+        int len = strlen(ctx->prefix);
+        ctx->macroprefix = obstack_copy0(&ctx->parsing.pieces,
+            ctx->prefix, len);
+        for(int i = 0; i < len; ++i)
+            ctx->macroprefix[i] = toupper(ctx->macroprefix[i]);
+
+        TAILQ_INIT(&ctx->cli_options);
+        visitor(ctx, ctx->parsing.document, "", NULL);
+
+    } else {
+        ctx->parsing.has_jmp = 0;
         return rc;
-
-    ctx->prefix = ctx->options.prefix;
-    int len = strlen(ctx->prefix);
-    ctx->macroprefix = obstack_copy0(&ctx->parsing.pieces, ctx->prefix, len);
-    for(int i = 0; i < len; ++i)
-        ctx->macroprefix[i] = toupper(ctx->macroprefix[i]);
-
-    TAILQ_INIT(&ctx->cli_options);
-    visitor(ctx, ctx->parsing.document, "", NULL);
-
+    }
+    ctx->parsing.has_jmp = 0;
     return 0;
 }
