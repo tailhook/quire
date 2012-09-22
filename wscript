@@ -82,7 +82,7 @@ def build_tests(bld):
             'test/tinyconfig.yaml',
             ],
         target       = 'tinytest',
-        includes     = ['include', 'test', 'src'],
+        includes     = ['include', 'test'],
         cflags       = ['-std=c99', '-Wall'],
         use          = ['quire'],
         )

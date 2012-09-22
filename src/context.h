@@ -7,7 +7,6 @@
 #include "metadata.h"
 #include "yparser.h"
 
-
 typedef struct qu_nodedata {
     int kind;
     int type;
@@ -18,6 +17,7 @@ typedef struct qu_nodedata {
     TAILQ_ENTRY(qu_nodedata) cli_lst;
     char *cli_name;
 } qu_nodedata;
+
 
 typedef struct qu_context_s {
     qu_parse_context parsing;

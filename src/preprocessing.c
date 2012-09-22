@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include "preprocessing.h"
 #include "codes.h"
@@ -107,6 +108,13 @@ int qu_config_preprocess(qu_context_t *ctx) {
 
         TAILQ_INIT(&ctx->cli_options);
         visitor(ctx, ctx->parsing.document, "", NULL);
+        qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
+        if(types) {
+            qu_ast_node *key;
+            CIRCLEQ_FOREACH(key, &types->children, lst) {
+                visitor(ctx, key->value, "", NULL);
+            }
+        }
 
     } else {
         ctx->parsing.has_jmp = 0;

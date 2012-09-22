@@ -83,6 +83,21 @@ int qu_output_header(qu_context_t *ctx) {
     printf("} %scli_t;\n", ctx->prefix);
     printf("\n");
 
+    qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
+    if(types) {
+        qu_ast_node *typ;
+        CIRCLEQ_FOREACH(typ, &types->children, lst) {
+            printf("typedef struct %s%s_s {\n",
+                ctx->prefix, qu_node_content(typ));
+            qu_ast_node *key;
+            CIRCLEQ_FOREACH(key, &typ->value->children, lst) {
+                print_member(ctx, key->value);
+            }
+            printf("} %s%s_t;\n", ctx->prefix, qu_node_content(typ));
+            printf("\n");
+        }
+    }
+
     printf("typedef struct %smain_s {\n", ctx->prefix);
     qu_ast_node *key;
     CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
