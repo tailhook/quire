@@ -13,6 +13,7 @@
 #define QU_EMIT_MAP_VALUE   4
 #define QU_EMIT_SEQ_START   5
 #define QU_EMIT_SEQ_END     6
+#define QU_EMIT_SEQ_ITEM    7
 
 #define QU_WS_SPACE         0
 #define QU_WS_INDENT        1

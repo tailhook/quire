@@ -27,8 +27,31 @@ int qu_emit_init(qu_emit_context *ctx, FILE *stream) {
 }
 
 int qu_emit_done(qu_emit_context *ctx) {
-    if(!ctx->line_start)
-        putc('\n', ctx->stream);
+    if(!ctx->line_start) {
+        fputc('\n', ctx->stream);
+    }
+    fflush(ctx->stream);
+    return 0;
+}
+
+static int _space_check(qu_emit_context *ctx) {
+    if(!ctx->pending_newline) {
+        fputc('\n', ctx->stream);
+        ctx->pending_newline = -1;
+        ctx->line_start = 1;
+        ctx->need_space = 0;
+    } else if(ctx->need_space) {
+        fputc(' ', ctx->stream);
+        ctx->line_start = 0;
+        ctx->need_space = 0;
+    }
+    if(ctx->line_start) {
+        for(int i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
+            fputc(' ', ctx->stream);
+        }
+        ctx->line_start = 0;
+        ctx->doc_start = 0;
+    }
     return 0;
 }
 
@@ -81,13 +104,22 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
         case QU_EMIT_MAP_END:
             break;
         case QU_EMIT_MAP_KEY:
-            printf("?");
+            _space_check(ctx);
+            fprintf(ctx->stream, "?");
             ctx->need_space = 1;
             ctx->pending_newline = 1;
             ctx->line_start = 0;
             break;
         case QU_EMIT_MAP_VALUE:
-            printf(":");
+            _space_check(ctx);
+            fprintf(ctx->stream, ":");
+            ctx->need_space = 1;
+            ctx->pending_newline = 1;
+            ctx->line_start = 0;
+            break;
+        case QU_EMIT_SEQ_ITEM:
+            _space_check(ctx);
+            fprintf(ctx->stream, "-");
             ctx->need_space = 1;
             ctx->pending_newline = 1;
             ctx->line_start = 0;
@@ -114,33 +146,28 @@ int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
 
 int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     char *format, ...) {
-    if(!ctx->pending_newline) {
-        putc('\n', ctx->stream);
-        ctx->pending_newline = -1;
-        ctx->line_start = 1;
-    } else if(ctx->need_space) {
-        putc(' ', ctx->stream);
-        ctx->line_start = 0;
-    }
-    if(ctx->line_start) {
-        for(int i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
-            putc(' ', ctx->stream);
-        }
-        ctx->line_start = 0;
-        ctx->doc_start = 0;
-    }
+    _space_check(ctx);
 
     switch(kind) {
         case QU_STYLE_AUTO:  // TODO(tailhook) scan scalar
         case QU_STYLE_PLAIN: {
             va_list args;
             va_start(args, format);
-            vprintf(format, args);
+            vfprintf(ctx->stream, format, args);
             va_end(args);
             }; break;
         default:
             assert(0);
     }
     ctx->pending_newline -= 1;
+    ctx->line_start = 0;
+    return 0;
+}
+
+int qu_emit_alias(qu_emit_context *ctx, char *name) {
+    _space_check(ctx);
+    fprintf(ctx->stream, name);
+    ctx->pending_newline -= 1;
+    ctx->line_start = 0;
     return 0;
 }

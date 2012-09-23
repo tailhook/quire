@@ -200,7 +200,7 @@ def ytoolcmd(ctx):
                             ": returned", status, "instead", item['result'])
                         error = 1
                 if 'output' in item:
-                    if outp != item['output']:
+                    if outp.rstrip() != item['output'].rstrip():
                         print(file, 'FAILED:', item['command-line'],
                             ': output is wrong, diff follows')
                         for line in difflib.ndiff(item['output'].splitlines(),

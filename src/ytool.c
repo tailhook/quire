@@ -10,6 +10,7 @@
 #include "error.h"
 #include "access.h"
 #include "codes.h"
+#include "emitter.h"
 #include "objpath/objpath.h"
 
 char short_options[] = "Ehf:v";
@@ -80,45 +81,47 @@ void parse_options(int argc, char **argv) {
     }
 }
 
-void serialize_yaml(FILE *out, qu_ast_node *node) {
-    // temp code, until real serialization implemented
-    qu_ast_node *snode = node;
-    qu_ast_node *enode = node;
-    if(snode && enode) {
-        qu_token *start = snode->start_token;
-        qu_token *end = enode->end_token;
-        int first_indent = 1;
-        int ind = start->indent;
-        while(start && start != end) {
-            if(start->kind == QU_TOK_INDENT) {
-                // The following smells like a hack, but works
-                if(start->start_line == start->end_line) {
-                    int curind = ind - start->start_char;
-                    if(curind < 0)
-                        curind = 0;
-                    if(curind < start->bytelen) {
-                        fwrite(start->data, start->bytelen - curind, 1, out);
-                    }
-                } else {
-                    int curind = ind;
-                    if(curind > start->end_char) {
-                        curind = start->end_char;
-                    }
-                    fwrite(start->data, start->bytelen - curind, 1, out);
-                }
-            } else {
-                if(start->start_char-1 < ind) {
-                    assert(first_indent);
-                    ind = start->start_char-1;
-                }
-                first_indent = 0;
-                fwrite(start->data, start->bytelen, 1, out);
-            }
-            start = CIRCLEQ_NEXT(start, lst);
+static void _emit_node(qu_emit_context *ctx, qu_ast_node *node) {
+    switch(node->kind) {
+    case QU_NODE_MAPPING: {
+        qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);
+        qu_map_member *item;
+        TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
+            _emit_node(ctx, item->key);
+            qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);
+            _emit_node(ctx, item->value);
         }
-        fwrite(start->data, start->bytelen, 1, out);
-        fprintf(out, "\n");
+        qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);
+        } break;
+    case QU_NODE_SEQUENCE: {
+        qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_START);
+        qu_seq_member *item;
+        TAILQ_FOREACH(item, &node->val.seq_index.items, lst) {
+            qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_ITEM);
+            _emit_node(ctx, item->value);
+        }
+        qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_END);
+        } break;
+    case QU_NODE_SCALAR:
+        qu_emit_scalar(ctx, NULL, NULL, QU_STYLE_PLAIN,
+                       qu_node_content(node), -1);
+        break;
+    case QU_NODE_ALIAS: {
+        char alias[node->start_token->bytelen+1];
+        alias[node->start_token->bytelen] = 0;
+        memcpy(alias, node->start_token->data, node->start_token->bytelen);
+        qu_emit_alias(ctx, alias);
+        } break;
+    default:
+        assert(0);
     }
+}
+
+void serialize_yaml(FILE *out, qu_ast_node *node) {
+    qu_emit_context ctx;
+    qu_emit_init(&ctx, out);
+    _emit_node(&ctx, node);
+    qu_emit_done(&ctx);
 }
 
 int extract(char *path, qu_ast_node *root) {
