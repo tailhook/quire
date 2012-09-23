@@ -39,9 +39,9 @@ static void print_member(qu_context_t *ctx, qu_ast_node *node) {
         return;
     } else if(data->kind == QU_MEMBER_STRUCT) {
         printf("struct {\n");
-        qu_ast_node *key;
-        CIRCLEQ_FOREACH(key, &node->children, lst) {
-            print_member(ctx, key->value);
+        qu_map_member *item;
+        TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
+            print_member(ctx, item->value);
         }
         printf("} %s;\n", strrchr(data->expression, '.')+1);
         return;
@@ -85,23 +85,23 @@ int qu_output_header(qu_context_t *ctx) {
 
     qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
     if(types) {
-        qu_ast_node *typ;
-        CIRCLEQ_FOREACH(typ, &types->children, lst) {
+        qu_map_member *typ;
+        TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
             printf("typedef struct %s%s_s {\n",
-                ctx->prefix, qu_node_content(typ));
-            qu_ast_node *key;
-            CIRCLEQ_FOREACH(key, &typ->value->children, lst) {
-                print_member(ctx, key->value);
+                ctx->prefix, qu_node_content(typ->key));
+            qu_map_member *item;
+            TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
+                print_member(ctx, item->value);
             }
-            printf("} %s%s_t;\n", ctx->prefix, qu_node_content(typ));
+            printf("} %s%s_t;\n", ctx->prefix, qu_node_content(typ->key));
             printf("\n");
         }
     }
 
     printf("typedef struct %smain_s {\n", ctx->prefix);
-    qu_ast_node *key;
-    CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
-        print_member(ctx, key->value);
+    qu_map_member *item;
+    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+        print_member(ctx, item->value);
     }
     printf("} %smain_t;\n", ctx->prefix);
 

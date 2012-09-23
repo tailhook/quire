@@ -75,9 +75,9 @@ static int visitor(qu_context_t *ctx,
         }
     } else if(node->kind == QU_NODE_MAPPING) {
         data->kind = QU_MEMBER_STRUCT;
-        qu_ast_node *key;
-        CIRCLEQ_FOREACH(key, &node->children, lst) {
-            char *mname = qu_node_content(key);
+        qu_map_member *item;
+        TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
+            char *mname = qu_node_content(item->key);
             if(!*mname || *mname == '_')
                 continue;
             obstack_blank(&ctx->parsing.pieces, 0);
@@ -85,12 +85,11 @@ static int visitor(qu_context_t *ctx,
             obstack_grow(&ctx->parsing.pieces, ".", 1);
             qu_append_c_name(&ctx->parsing.pieces, mname);
             char *nexpr = (char *)obstack_finish(&ctx->parsing.pieces);
-            visitor(ctx, key->value, nexpr, expr_parent);
+            visitor(ctx, item->value, nexpr, expr_parent);
         }
     }
     return 0;
 }
-
 
 int qu_config_preprocess(qu_context_t *ctx) {
     int rc;
@@ -110,9 +109,15 @@ int qu_config_preprocess(qu_context_t *ctx) {
         visitor(ctx, ctx->parsing.document, "", NULL);
         qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
         if(types) {
-            qu_ast_node *key;
-            CIRCLEQ_FOREACH(key, &types->children, lst) {
-                visitor(ctx, key->value, "", NULL);
+            if(types->kind != QU_NODE_MAPPING) {
+                ctx->parsing.error_text = "__types__ must be mapping";
+                ctx->parsing.error_token = types->start_token;
+                ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                longjmp(ctx->parsing.errjmp, 1);
+            }
+            qu_map_member *item;
+            TAILQ_FOREACH(item, &types->val.map_index.items, lst) {
+                visitor(ctx, item->value, "", NULL);
             }
         }
 

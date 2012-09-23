@@ -4,7 +4,7 @@
 #include "yparser.h"
 
 
-qu_ast_node **qu_find_node(qu_ast_node **root, char *value);
+qu_map_member **qu_find_node(qu_map_member **root, char *value);
 
 
 // PUBLIC API

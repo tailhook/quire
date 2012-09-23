@@ -84,10 +84,6 @@ void serialize_yaml(FILE *out, qu_ast_node *node) {
     // temp code, until real serialization implemented
     qu_ast_node *snode = node;
     qu_ast_node *enode = node;
-    while(snode && !snode->start_token)
-        snode = CIRCLEQ_FIRST(&snode->children);
-    while(enode && !enode->end_token)
-        enode = CIRCLEQ_LAST(&enode->children);
     if(snode && enode) {
         qu_token *start = snode->start_token;
         qu_token *end = enode->end_token;
@@ -139,7 +135,7 @@ int extract(char *path, qu_ast_node *root) {
     int opcode;
     while(objpath_next(ctx, &opcode, &val, (void **)&cur, (void **)&iter)) {
         if(cur->kind == QU_NODE_ALIAS)
-            cur = cur->target;
+            cur = cur->val.alias_target;
         switch(opcode) {
         case OBJPATH_KEY:
             if(cur->kind != QU_NODE_MAPPING)
@@ -148,26 +144,28 @@ int extract(char *path, qu_ast_node *root) {
             if(cur)
                 goto success;
             goto fail;
-        case OBJPATH_INDEX:
+        case OBJPATH_INDEX: {
             if(cur->kind != QU_NODE_SEQUENCE)
                 goto fail;
-            CIRCLEQ_FOREACH(iter, &cur->children, lst) {
+            qu_seq_member *item;
+            TAILQ_FOREACH(item, &cur->val.seq_index.items, lst) {
                 if(!val.index--) {
-                    cur = iter;
+                    cur = item->value;
                     goto success;
                 }
             }
-            goto fail;
-
+            } goto fail;
         case OBJPATH_ELEMENTS:
             if(cur->kind != QU_NODE_SEQUENCE)
                 goto fail;
-            iter = CIRCLEQ_FIRST(&cur->children);
+            assert(0); // not implemented
+            //iter = TAILQ_FIRST(&cur->val.seq_);
             if(!iter)
                 goto fail;
             goto success;
         case OBJPATH_NEXTELEMENT:
-            iter = CIRCLEQ_NEXT(iter, lst);
+            assert(0); // not implemented
+            //iter = CIRCLEQ_NEXT(iter, lst);
             if(!iter)
                 goto fail;
             goto success;

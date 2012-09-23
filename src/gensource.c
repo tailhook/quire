@@ -65,9 +65,9 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
             assert (0); // Wrong type
         }
     } else if(data->kind == QU_MEMBER_STRUCT) {
-        qu_ast_node *key;
-        CIRCLEQ_FOREACH(key, &node->children, lst) {
-            int rc = print_default(ctx, key->value);
+        qu_map_member *item;
+        TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
+            int rc = print_default(ctx, item->value);
             assert(rc >= 0);
         }
     }
@@ -75,10 +75,10 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
 }
 
 
-static int print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
+static void print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
     qu_nodedata *data = node->userdata;
     if(!data)
-        return 0;
+        return;
     if(!ctx->node_vars[ctx->node_level]) {
         ctx->node_vars[ctx->node_level] = 1;
         printf("qu_ast_node *node%d;\n", ctx->node_level);
@@ -127,16 +127,14 @@ static int print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
 
         ctx->node_level += 1;
         ctx->node_vars[ctx->node_level] = 0;
-        qu_ast_node *key;
-        CIRCLEQ_FOREACH(key, &node->children, lst) {
-            int rc = print_parser(ctx, key->value, qu_node_content(key));
-            assert(rc >= 0);
+        qu_map_member *item;
+        TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
+            print_parser(ctx, item->value, qu_node_content(item->key));
         }
         ctx->node_level -= 1;
 
         printf("}\n");
     }
-    return 0;
 }
 
 int print_printer(qu_context_t *ctx, qu_ast_node *node) {
@@ -176,12 +174,13 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
         }
     } else if(node->kind == QU_NODE_MAPPING) {
         printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
-        qu_ast_node *key;
-        CIRCLEQ_FOREACH(key, &node->children, lst) {
+        qu_map_member *item;
+        TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
             printf("qu_emit_scalar(&ctx, NULL, NULL, "
-                   "QU_STYLE_PLAIN, \"%s\", -1);\n", qu_node_content(key));
+                   "QU_STYLE_PLAIN, \"%s\", -1);\n",
+                   qu_node_content(item->key));
             printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
-            print_printer(ctx, key->value);
+            print_printer(ctx, item->value);
         }
         printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
     }
@@ -206,9 +205,9 @@ int print_1opt(qu_ast_node *namenode, int arg, int num,
         }
         ++res;
     } else if(namenode->kind == QU_NODE_SEQUENCE) {
-        qu_ast_node *single;
-        CIRCLEQ_FOREACH(single, &namenode->children, lst) {
-            opt = qu_node_content(single);
+        qu_seq_member *item;
+        TAILQ_FOREACH(item, &namenode->val.seq_index.items, lst) {
+            opt = qu_node_content(item->value);
             if(opt && opt[1] == '-') {  // long option
                 printf("{\"%s\", %d, NULL, %d},\n", opt+2, arg, num);
             } else {
@@ -236,9 +235,9 @@ int print_case(qu_ast_node *namenode, int num) {
         }
         ++res;
     } else if(namenode->kind == QU_NODE_SEQUENCE) {
-        qu_ast_node *single;
-        CIRCLEQ_FOREACH(single, &namenode->children, lst) {
-            opt = qu_node_content(single);
+        qu_seq_member *item;
+        TAILQ_FOREACH(item, &namenode->val.seq_index.items, lst) {
+            opt = qu_node_content(item->value);
             if(opt && opt[1] == '-') {  // long option
                 printf("case %d:  // %s\n", num, opt);
             } else {
@@ -405,10 +404,9 @@ int qu_output_source(qu_context_t *ctx) {
         ctx->prefix);
 
     printf("// Setting defaults\n");
-    qu_ast_node *key;
-    CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
-        int rc = print_default(ctx, key->value);
-        assert(rc >= 0);
+    qu_map_member *item;
+    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+        print_default(ctx, item->value);
     }
 
     printf("\n");
@@ -438,9 +436,8 @@ int qu_output_source(qu_context_t *ctx) {
     printf("// Parsing root elements\n");
     ctx->node_level = 1;
     ctx->node_vars[1] = 0;
-    CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
-        int rc = print_parser(ctx, key->value, qu_node_content(key));
-        assert(rc >= 0);
+    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+        print_parser(ctx, item->value, qu_node_content(item->key));
     }
 
     printf("// Overlay command-line options on top\n");
@@ -483,14 +480,14 @@ int qu_output_source(qu_context_t *ctx) {
     printf("\n");
 
     printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
-    CIRCLEQ_FOREACH(key, &ctx->parsing.document->children, lst) {
-        char *mname = qu_node_content(key);
+    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+        char *mname = qu_node_content(item->key);
         if(!strcmp(mname, "__meta__"))
             continue;
         printf("qu_emit_scalar(&ctx, NULL, NULL, "
                "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
         printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
-        print_printer(ctx, key->value);
+        print_printer(ctx, item->value);
     }
     printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
 

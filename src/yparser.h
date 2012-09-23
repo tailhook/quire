@@ -6,11 +6,14 @@
 #include <sys/queue.h>
 #include <setjmp.h>
 
+struct qu_parse_context_s;
+
+#include "maputil.h"
+
 
 #define MAX_FLOW_STACK 128
 #define MAX_NODE_STACK 256
 
-struct qu_parse_context_s;
 
 typedef struct qu_token_s {
     CIRCLEQ_ENTRY(qu_token_s) lst;
@@ -31,8 +34,6 @@ typedef struct qu_token_s {
 } qu_token;
 
 typedef struct qu_node_s {
-    CIRCLEQ_ENTRY(qu_node_s) lst;
-
     int kind;
     struct parse_context_s *ctx;
     qu_token *anchor;
@@ -43,15 +44,11 @@ typedef struct qu_node_s {
     char *content;  // for scalar nodes or aliases or mappings with "="
     int content_len;
 
-    struct qu_node_s *target;  // for aliases
-
-    // for mappings
-    struct qu_node_s *tree;
-    struct qu_node_s *left;
-    struct qu_node_s *right;
-    struct qu_node_s *value;  // for key nodes
-
-    CIRCLEQ_HEAD(qu_ast_children, qu_node_s) children; // for container nodes
+    union {
+        struct qu_node_s *alias_target;
+        qu_map_index map_index;
+        qu_seq_index seq_index;
+    } val;
 
     void *userdata;
 } qu_ast_node;
