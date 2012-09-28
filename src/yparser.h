@@ -35,7 +35,7 @@ typedef struct qu_token_s {
 
 typedef struct qu_node_s {
     int kind;
-    struct parse_context_s *ctx;
+    struct qu_parse_context_s *ctx;
     qu_token *anchor;
     qu_token *tag;
     qu_token *start_token;
@@ -53,7 +53,7 @@ typedef struct qu_node_s {
     void *userdata;
 } qu_ast_node;
 
-typedef struct parse_context_s {
+typedef struct qu_parse_context_s {
     struct obstack pieces;
     jmp_buf errjmp;
     int has_jmp;

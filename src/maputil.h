@@ -4,7 +4,6 @@
 #include <sys/queue.h>
 #include "yparser.h"
 
-
 typedef struct qu_map_member {
     struct qu_map_member *left;
     struct qu_map_member *right;
@@ -27,9 +26,6 @@ typedef struct qu_seq_index {
     TAILQ_HEAD(qu_seq_list, qu_seq_member) items;
 } qu_seq_index;
 
-#define QU_MFLAG_MAPMERGE 1
-#define QU_MFLAG_LISTMERGE 2
-#define QU_MFLAG_RESOLVEALIAS 4
 void _qu_merge_maps(struct qu_parse_context_s *ctx, int flags);
 
 #endif  // _H_MAPUTIL

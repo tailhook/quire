@@ -20,9 +20,9 @@ SimpleHTTPServer:
     X-Test2: *ok
     X-Anchor: *var
     X-Var: $var
-    X-Var: bla
 
     <<:
+      X-Var: bla
       X-Subst: hello$var
       X-Subst2: hello${var}world
       <<: [*vars1, *vars2]

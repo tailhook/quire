@@ -44,6 +44,8 @@ def build(bld):
             'src/vars.c',
             'src/eval.c',
             'src/access.c',
+            'src/maputil.c',
+            'src/wrappers.c',
             'objpath/objpath.c',
             ],
         target       = 'quire',

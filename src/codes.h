@@ -1,6 +1,7 @@
 #ifndef _H_CODES
 #define _H_CODES
 
+// Value types
 #define QU_TYP_UNKNOWN  0
 #define QU_TYP_INT      1
 #define QU_TYP_FLOAT    2
@@ -11,6 +12,11 @@
 #define QU_TYP_ARRAY    7
 #define QU_TYP_MAP      8
 #define QU_TYP_CUSTOM   9
+
+// Map merge flags
+#define QU_MFLAG_MAPMERGE 1
+#define QU_MFLAG_SEQMERGE 2
+#define QU_MFLAG_RESOLVEALIAS 4
 
 typedef enum qu_token_kind_enum {
     // Keep in sync with strings in yparser.c

@@ -85,5 +85,11 @@ int qu_emit_opcode(qu_emit_context *, char *tag, char *anchor,
     int code);
 int qu_emit_alias(qu_emit_context *, char *name);
 
+// Methods & constants from maputil.c
+#define QU_MFLAG_MAPMERGE 1
+#define QU_MFLAG_SEQMERGE 2
+#define QU_MFLAG_RESOLVEALIAS 4
+int qu_merge_maps(qu_parse_context *ctx, int flags);
+
 
 #endif // QUIRE_MAIN_INCLUDED

@@ -11,6 +11,8 @@
 #include "genheader.h"
 #include "gensource.h"
 #include "error.h"
+#include "wrappers.h"
+#include "codes.h"
 
 #define std_assert(val) if((val) == -1) {\
     fprintf(stderr, "coyaml: %s", strerror(errno));\
@@ -23,6 +25,10 @@ int main(int argc, char **argv) {
     memset(&ctx, 0, sizeof(ctx));
     quire_parse_options(&ctx.options, argc, argv);
     int rc = qu_file_parse(&ctx.parsing, ctx.options.source_file);
+    if(rc == 0) {
+        rc = qu_merge_maps(&ctx.parsing, QU_MFLAG_MAPMERGE
+            |QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);
+    }
     if(rc == 0)
         rc = qu_config_preprocess(&ctx);
     if(rc > 0) {

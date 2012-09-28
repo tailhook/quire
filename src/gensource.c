@@ -302,6 +302,7 @@ int qu_output_source(qu_context_t *ctx) {
                    options, &optlen))
             ++ optnum;
     }
+    printf("{NULL, 1, NULL, 0}\n");
     printf("};\n");
     printf("char *optstr = \"%.*s\";\n", optlen, options);
     printf("int c;\n");
@@ -429,6 +430,14 @@ int qu_output_source(qu_context_t *ctx) {
     printf("if(rc > 0) {\n");
     printf("    qu_print_error(&ctx, stderr);\n");
     printf("    exit(126);\n");
+    printf("}\n");
+    printf("\n");
+    printf("rc = qu_merge_maps(&ctx, QU_MFLAG_MAPMERGE"
+        "|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);\n");
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error parsing_file\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
     printf("}\n");
     printf("\n");
     printf("qu_ast_node *node0 = qu_get_root(&ctx);\n");

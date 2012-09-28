@@ -86,6 +86,7 @@ int convert_listenaddr(coyaml_parseinfo_t *info, char *value,
 }
 
 int main(int argc, char **argv) {
+    /*
     coyaml_context_t *ctx = cfg_context(NULL, &config);
     if(!ctx) {
         perror(argv[0]);
@@ -104,6 +105,7 @@ int main(int argc, char **argv) {
     }
     CFG_STRING_STRING_LOOP(item, config.SimpleHTTPServer.extra_headers) {
         printf("HEADER: \"%s\": \"%s\"\n", item->key, item->value);
-    }
+    }*/
+    cfg_load(&config, argc, argv);
     cfg_free(&config);
 }
