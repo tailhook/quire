@@ -142,45 +142,46 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
     if(!data)
         return 0;
     if(data->kind == QU_MEMBER_SCALAR) {
-        if(!strncmp((char *)node->tag->data, "!Int", node->tag->bytelen)) {
+        switch(data->type) {
+        case QU_TYP_INT:
             printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%ld\", (*cfg)%s);\n",
                 data->expression);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!UInt", node->tag->bytelen)) {
-            printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%lu\", (*cfg)%s);\n",
-                data->expression);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!Float", node->tag->bytelen)) {
+            break;
+        case QU_TYP_FLOAT:
             printf("qu_emit_printf(&ctx, NULL, NULL, 0, \"%%.17g\", (*cfg)%s);\n",
                 data->expression);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!File", node->tag->bytelen)) {
+            break;
+        case QU_TYP_FILE:
             printf("qu_emit_scalar(&ctx, NULL, NULL, 0, (*cfg)%s, -1);\n",
                 data->expression);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!Dir", node->tag->bytelen)) {
+            break;
+        case QU_TYP_DIR:
             printf("qu_emit_scalar(&ctx, NULL, NULL, 0, (*cfg)%s, -1);\n",
                 data->expression);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!String", node->tag->bytelen)) {
+            break;
+        case QU_TYP_STRING:
             printf("qu_emit_scalar(&ctx, NULL, NULL, 0, (*cfg)%s, -1);\n",
                 data->expression);
-        } else if(!strncmp((char *)node->tag->data,
-                  "!Bool", node->tag->bytelen)) {
+            break;
+        case QU_TYP_BOOL:
             printf("qu_emit_scalar(&ctx, NULL, NULL, 0, "
                    "(*cfg)%s ? \"yes\" : \"no\", -1);\n", data->expression);
-        } else {
-            assert (0); // Wrong type
+            break;
+        default:
+            assert(0);
         }
     } else if(node->kind == QU_NODE_MAPPING) {
         printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
         qu_map_member *item;
         TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
-            printf("qu_emit_scalar(&ctx, NULL, NULL, "
-                   "QU_STYLE_PLAIN, \"%s\", -1);\n",
-                   qu_node_content(item->key));
-            printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
-            print_printer(ctx, item->value);
+            if(item->value->userdata) {
+                printf("qu_emit_scalar(&ctx, NULL, NULL, "
+                       "QU_STYLE_PLAIN, \"%s\", -1);\n",
+                       qu_node_content(item->key));
+                printf("qu_emit_opcode(&ctx, "
+                       "NULL, NULL, QU_EMIT_MAP_VALUE);\n");
+                print_printer(ctx, item->value);
+            }
         }
         printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
     }
@@ -490,13 +491,13 @@ int qu_output_source(qu_context_t *ctx) {
 
     printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
-        char *mname = qu_node_content(item->key);
-        if(!strcmp(mname, "__meta__"))
-            continue;
-        printf("qu_emit_scalar(&ctx, NULL, NULL, "
-               "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
-        printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
-        print_printer(ctx, item->value);
+        if(item->value->userdata) {
+            char *mname = qu_node_content(item->key);
+            printf("qu_emit_scalar(&ctx, NULL, NULL, "
+                   "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
+            printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
+            print_printer(ctx, item->value);
+        }
     }
     printf("qu_emit_opcode(&ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
 
