@@ -8,6 +8,30 @@ vegetable: carrot
 berry: cherry
 ...
 ---
+
+# original formatting
+
+- command-line: quire-tool -Ek /fruits:0
+  output: "apple"
+- command-line: quire-tool -Ek /fruits:1
+  output: "banana"
+- command-line: quire-tool -Ek /fruits:2
+  output: |
+    cherry: no
+    pear: yes
+- command-line: quire-tool -Ek /fruits
+  output: |
+    - apple
+    # hello world
+    - banana
+    - cherry: no
+      pear: yes
+- command-line: quire-tool -Ek /vegetable
+  output: "carrot"
+
+
+# reformatted
+
 - command-line: quire-tool -E /fruits:0
   output: "apple"
 - command-line: quire-tool -E /fruits:1
@@ -19,9 +43,9 @@ berry: cherry
 - command-line: quire-tool -E /fruits
   output: |
     - apple
-    # hello world
     - banana
-    - cherry: no
+    -
+      cherry: no
       pear: yes
 - command-line: quire-tool -E /vegetable
   output: "carrot"

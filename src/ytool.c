@@ -13,11 +13,11 @@
 #include "emitter.h"
 #include "objpath/objpath.h"
 
-char short_options[] = "Ehf:v";
+char short_options[] = "Ehf:vk";
 struct option long_options[] = {
     {"extract", 0, NULL, 'E'},
     {"verbose", 0, NULL, 'v'},
-    {"expand", 0, NULL, 'e'},
+    {"keep-formatting", 0, NULL, 'k'},
     {"error-basename", 0, NULL, 'r'},
     {"help", 0, NULL, 'h'},
     {"filename", 1, NULL, 'f'},
@@ -31,6 +31,7 @@ struct {
     int verbosity;
     char *filename;
     int error_basename;
+    int keep_formatting;
 } options;
 
 
@@ -46,6 +47,9 @@ void print_usage(FILE *stream) {
         "Options:\n"
         "  -v, --verbose\n"
         "            Be more verbose (always print keys)\n"
+        "  -k, --keep-formatting\n"
+        "            Keep formatting of original file "
+                    "(incl. comments and anchors)\n"
         "  -f, --input FILE\n"
         "            Input filename (stdin by default)\n"
         "\n"
@@ -63,6 +67,9 @@ void parse_options(int argc, char **argv) {
             break;
         case 'r':
             options.error_basename = 1;
+            break;
+        case 'k':
+            options.keep_formatting = 1;
             break;
         case 'v':
             options.verbosity += 1;
@@ -117,11 +124,52 @@ static void _emit_node(qu_emit_context *ctx, qu_ast_node *node) {
     }
 }
 
-void serialize_yaml(FILE *out, qu_ast_node *node) {
+void emit_yaml(FILE *out, qu_ast_node *node) {
     qu_emit_context ctx;
     qu_emit_init(&ctx, out);
     _emit_node(&ctx, node);
     qu_emit_done(&ctx);
+}
+
+void serialize_yaml(FILE *out, qu_ast_node *node) {
+    // temp code, until real serialization implemented
+    qu_ast_node *snode = node;
+    qu_ast_node *enode = node;
+    if(snode && enode) {
+        qu_token *start = snode->start_token;
+        qu_token *end = enode->end_token;
+        int first_indent = 1;
+        int ind = start->indent;
+        while(start && start != end) {
+            if(start->kind == QU_TOK_INDENT) {
+                // The following smells like a hack, but works
+                if(start->start_line == start->end_line) {
+                    int curind = ind - start->start_char;
+                    if(curind < 0)
+                        curind = 0;
+                    if(curind < start->bytelen) {
+                        fwrite(start->data, start->bytelen - curind, 1, out);
+                    }
+                } else {
+                    int curind = ind;
+                    if(curind > start->end_char) {
+                        curind = start->end_char;
+                    }
+                    fwrite(start->data, start->bytelen - curind, 1, out);
+                }
+            } else {
+                if(start->start_char-1 < ind) {
+                    assert(first_indent);
+                    ind = start->start_char-1;
+                }
+                first_indent = 0;
+                fwrite(start->data, start->bytelen, 1, out);
+            }
+            start = CIRCLEQ_NEXT(start, lst);
+        }
+        fwrite(start->data, start->bytelen, 1, out);
+        fprintf(out, "\n");
+    }
 }
 
 int extract(char *path, qu_ast_node *root) {
@@ -174,7 +222,11 @@ int extract(char *path, qu_ast_node *root) {
             goto success;
 
         case OBJPATH_FINAL:
-            serialize_yaml(stdout, cur);
+            if(options.keep_formatting) {
+                serialize_yaml(stdout, cur);
+            } else {
+                emit_yaml(stdout, cur);
+            }
             res = 0;  // at least one element found
             goto success;
         }
