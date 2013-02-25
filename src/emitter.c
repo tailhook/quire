@@ -23,6 +23,8 @@ int qu_emit_init(qu_emit_context *ctx, FILE *stream) {
     ctx->line_start = 1;
     ctx->need_space = 0;
     ctx->pending_newline = -1;
+    ctx->map_start = 0;
+    ctx->seq_start = 0;
     return 0;
 }
 
@@ -100,10 +102,20 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
                     ctx->pending_newline = 0;
                 }
             }
+            ctx->map_start = 1;
             break;
         case QU_EMIT_MAP_END:
+            if(ctx->map_start) {
+                _space_check(ctx);
+                fprintf(ctx->stream, "{}");
+                ctx->need_space = 1;
+                ctx->pending_newline = 1;
+                ctx->line_start = 0;
+            }
             break;
         case QU_EMIT_MAP_KEY:
+            ctx->map_start = 0;
+            ctx->seq_start = 0;
             _space_check(ctx);
             fprintf(ctx->stream, "?");
             ctx->need_space = 1;
@@ -118,6 +130,8 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
             ctx->line_start = 0;
             break;
         case QU_EMIT_SEQ_ITEM:
+            ctx->map_start = 0;
+            ctx->seq_start = 0;
             _space_check(ctx);
             fprintf(ctx->stream, "-");
             ctx->need_space = 1;
@@ -125,8 +139,16 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
             ctx->line_start = 0;
             break;
         case QU_EMIT_SEQ_START:
+            ctx->seq_start = 1;
             break;
         case QU_EMIT_SEQ_END:
+            if(ctx->seq_start) {
+                _space_check(ctx);
+                fprintf(ctx->stream, "[]");
+                ctx->need_space = 1;
+                ctx->pending_newline = 1;
+                ctx->line_start = 0;
+            }
             break;
         default:
             assert(0);
@@ -147,6 +169,8 @@ int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
 int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     char *format, ...) {
     _space_check(ctx);
+    ctx->map_start = 0;
+    ctx->seq_start = 0;
 
     switch(kind) {
         case QU_STYLE_AUTO:  // TODO(tailhook) scan scalar

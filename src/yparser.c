@@ -561,7 +561,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         node->kind = QU_NODE_MAPPING;
         TAILQ_INIT(&node->val.map_index.items);
         NEXT;
-        while(1) {
+        while(CTOK->kind != QU_TOK_FLOW_MAP_END) {
             qu_ast_node *knode = new_text_node(ctx, CTOK);
             char *cont = qu_node_content(knode);
             qu_map_member **targ;
@@ -614,7 +614,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         node->start_token = CTOK;
         TAILQ_INIT(&node->val.seq_index.items);
         NEXT;
-        while(1) {
+        while(CTOK->kind != QU_TOK_FLOW_SEQ_END) {
             qu_ast_node *child = parse_flow_node(ctx);
             qu_seq_member *mem = obstack_alloc(&ctx->pieces,
                                                sizeof(qu_map_member));

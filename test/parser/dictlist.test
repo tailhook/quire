@@ -6,6 +6,7 @@ fruits:
       pear: yes
 vegetable: carrot
 berry: cherry
+gadgets: []
 ...
 ---
 
@@ -28,6 +29,8 @@ berry: cherry
       pear: yes
 - command-line: quire-tool -Ek /vegetable
   output: "carrot"
+- command-line: quire-tool -Ek /gadgets
+  output: "[]"
 
 
 # reformatted
@@ -49,3 +52,5 @@ berry: cherry
       pear: yes
 - command-line: quire-tool -E /vegetable
   output: "carrot"
+- command-line: quire-tool -E /gadgets
+  output: "[]"

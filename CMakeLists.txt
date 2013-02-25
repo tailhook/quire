@@ -37,6 +37,8 @@ TARGET_LINK_LIBRARIES(quire-tool quire)
 
 GET_TARGET_PROPERTY(QUIRE_GEN quire-gen LOCATION)
 
+# MACROS FOR TESTS
+
 MACRO(ADD_TEST_BINARY name)
     ADD_EXECUTABLE(${name} test/${name}.c ${name}-config.c)
     ADD_CUSTOM_COMMAND(
@@ -60,6 +62,10 @@ MACRO(ADD_TOOL_TEST name)
         ${CMAKE_SOURCE_DIR}/test/parser/${name}.test)
 ENDMACRO(ADD_TOOL_TEST)
 
+INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
+
+# TESTS FOR QUIRE-GEN
+
 ADD_TEST_BINARY(tinytest)
 ADD_TEST(tinytest ${CMAKE_SOURCE_DIR}/test_quire_gen
     ${CMAKE_BINARY_DIR}/tinytest
@@ -73,30 +79,32 @@ ADD_TEST(vartest ${CMAKE_SOURCE_DIR}/test_quire_gen
     ${CMAKE_SOURCE_DIR}/examples/varexample.out
     -c ${CMAKE_SOURCE_DIR}/examples/varexample.yaml -C -P)
 ADD_TEST_BINARY(comprehensive)
-ADD_TEST(comprtest ${CMAKE_SOURCE_DIR}/test_quire_gen
-    ${CMAKE_BINARY_DIR}/comprehensive
-    ${CMAKE_BINARY_DIR}/compexample.out
-    ${CMAKE_SOURCE_DIR}/examples/compexample.out
-    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -P
-    --config-var clivar=CLI)
-ADD_TEST(comprtest_comments ${CMAKE_SOURCE_DIR}/test_quire_gen
-    ${CMAKE_BINARY_DIR}/comprehensive
-    ${CMAKE_BINARY_DIR}/compexample_comments.out
-    ${CMAKE_SOURCE_DIR}/examples/compexample_comments.out
-    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -PP
-    --config-var clivar=CLI)
-ADD_TEST(comprtest_2 ${CMAKE_SOURCE_DIR}/test_quire_gen
-    ${CMAKE_BINARY_DIR}/comprehensive
-    ${CMAKE_BINARY_DIR}/compr.out
-    ${CMAKE_SOURCE_DIR}/examples/compr.out
-    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -PP
-    --config-var clivar=CLI)
+#ADD_TEST(comprtest ${CMAKE_SOURCE_DIR}/test_quire_gen
+#    ${CMAKE_BINARY_DIR}/comprehensive
+#    ${CMAKE_BINARY_DIR}/compexample.out
+#    ${CMAKE_SOURCE_DIR}/examples/compexample.out
+#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -P
+#    --config-var clivar=CLI)
+#ADD_TEST(comprtest_comments ${CMAKE_SOURCE_DIR}/test_quire_gen
+#    ${CMAKE_BINARY_DIR}/comprehensive
+#    ${CMAKE_BINARY_DIR}/compexample_comments.out
+#    ${CMAKE_SOURCE_DIR}/examples/compexample_comments.out
+#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -PP
+#    --config-var clivar=CLI)
+#ADD_TEST(comprtest_2 ${CMAKE_SOURCE_DIR}/test_quire_gen
+#    ${CMAKE_BINARY_DIR}/comprehensive
+#    ${CMAKE_BINARY_DIR}/compr.out
+#    ${CMAKE_SOURCE_DIR}/examples/compr.out
+#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -PP
+#    --config-var clivar=CLI)
 ADD_TEST_BINARY(recursive)
-ADD_TEST(recursive ${CMAKE_SOURCE_DIR}/test_quire_gen
-    ${CMAKE_BINARY_DIR}/recurcive
-    ${CMAKE_BINARY_DIR}/recexample.out
-    ${CMAKE_SOURCE_DIR}/examples/recexample.out
-    -c ${CMAKE_SOURCE_DIR}/examples/recexample.yaml -C -P)
+#ADD_TEST(recursive ${CMAKE_SOURCE_DIR}/test_quire_gen
+#    ${CMAKE_BINARY_DIR}/recurcive
+#    ${CMAKE_BINARY_DIR}/recexample.out
+#    ${CMAKE_SOURCE_DIR}/examples/recexample.out
+#    -c ${CMAKE_SOURCE_DIR}/examples/recexample.yaml -C -P)
+
+# TESTS FOR QUIRE-TOOL
 
 ADD_TOOL_TEST(anchors)
 ADD_TOOL_TEST(dictdict)
@@ -109,4 +117,3 @@ ADD_TOOL_TEST(list)
 ADD_TOOL_TEST(listlist)
 ADD_TOOL_TEST(scalar)
 
-INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
