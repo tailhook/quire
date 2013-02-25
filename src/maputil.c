@@ -20,6 +20,7 @@ static void merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
         copy->value = item->value;
         *tmp = copy;
         TAILQ_INSERT_AFTER(&idx->items, after, copy, lst);
+        after = copy;
     }
 }
 
