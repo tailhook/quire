@@ -45,6 +45,10 @@ static void print_member(qu_context_t *ctx, qu_ast_node *node) {
         }
         printf("} %s;\n", strrchr(data->expression, '.')+1);
         return;
+    } else if(data->kind == QU_MEMBER_CUSTOM) {
+        printf("struct %s%s_s %s;\n",
+            ctx->prefix, data->data.custom.typename,
+            strrchr(data->expression, '.')+1);
     }
     // TODO(tailhook) print other members
 }

@@ -37,6 +37,8 @@ TARGET_LINK_LIBRARIES(quire-tool quire)
 
 GET_TARGET_PROPERTY(QUIRE_GEN quire-gen LOCATION)
 
+FIND_FILE(ASTYLE astyle)
+
 # MACROS FOR TESTS
 
 MACRO(ADD_TEST_BINARY name)
@@ -49,6 +51,20 @@ MACRO(ADD_TEST_BINARY name)
             --c-source ${name}-config.c
         DEPENDS test/${name}.yaml ${QUIRE_GEN}
         )
+    IF(ASTYLE)
+        ADD_CUSTOM_COMMAND(
+            TARGET ${name}
+            PRE_BUILD
+            COMMAND ${ASTYLE} -Y ${name}-config.c
+            DEPENDS ${name}-config.c
+            )
+        ADD_CUSTOM_COMMAND(
+            TARGET ${name}
+            PRE_BUILD
+            COMMAND ${ASTYLE} -Y ${name}-config.h
+            DEPENDS ${name}-config.h
+            )
+    ENDIF()
     SET_SOURCE_FILES_PROPERTIES(${name}-config.h ${name}-config.c
         PROPERTIES GENERATED 1
         )
@@ -79,12 +95,12 @@ ADD_TEST(vartest ${CMAKE_SOURCE_DIR}/test_quire_gen
     ${CMAKE_SOURCE_DIR}/examples/varexample.out
     -c ${CMAKE_SOURCE_DIR}/examples/varexample.yaml -C -P)
 ADD_TEST_BINARY(comprehensive)
-#ADD_TEST(comprtest ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/comprehensive
-#    ${CMAKE_BINARY_DIR}/compexample.out
-#    ${CMAKE_SOURCE_DIR}/examples/compexample.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -P
-#    --config-var clivar=CLI)
+ADD_TEST(comprtest ${CMAKE_SOURCE_DIR}/test_quire_gen
+    ${CMAKE_BINARY_DIR}/comprehensive
+    ${CMAKE_BINARY_DIR}/compexample.out
+    ${CMAKE_SOURCE_DIR}/examples/compexample.out
+    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -P
+    --config-var clivar=CLI)
 #ADD_TEST(comprtest_comments ${CMAKE_SOURCE_DIR}/test_quire_gen
 #    ${CMAKE_BINARY_DIR}/comprehensive
 #    ${CMAKE_BINARY_DIR}/compexample_comments.out

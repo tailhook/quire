@@ -14,6 +14,12 @@ typedef struct qu_nodedata {
     char *expression;
     qu_ast_node *expr_parent;
 
+    union {
+        struct {
+            char *typename;
+        } custom;
+    } data;
+
     TAILQ_ENTRY(qu_nodedata) cli_lst;
     char *cli_name;
 } qu_nodedata;

@@ -61,6 +61,19 @@ static int visitor(qu_context_t *ctx,
             break;
         case QU_TYP_CUSTOM:
             data->kind = QU_MEMBER_CUSTOM;
+            qu_ast_node *mnode = node;
+            if(node->kind == QU_NODE_MAPPING) {
+                mnode = qu_map_get(node, "=");
+                if(!mnode) mnode = qu_map_get(node, "type");
+                if(!mnode) {
+                    ctx->parsing.error_text = "Type not specified";
+                    ctx->parsing.error_token = node->tag;  // better place?
+                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                    longjmp(ctx->parsing.errjmp, 1);
+                }
+            }
+            char *typename = qu_node_content(mnode);
+            data->data.custom.typename = typename;
             break;
         }
         if(node->kind == QU_NODE_MAPPING) {

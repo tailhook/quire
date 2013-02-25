@@ -1,6 +1,7 @@
 #include <ctype.h>
 
 #include "cutil.h"
+#include <stdio.h>
 
 char *reserved_words[] = {
     "auto",
@@ -47,6 +48,7 @@ char *qu_c_name(struct obstack *ob, char *name) {
 }
 
 void qu_append_c_name(struct obstack *ob, char *name) {
+    char *namestart = obstack_base(ob) + obstack_object_size(ob);
     if(isdigit(*name))
         obstack_1grow(ob, '_');
     while(*name) {
@@ -57,10 +59,12 @@ void qu_append_c_name(struct obstack *ob, char *name) {
         }
         ++name;
     }
-    for(char **word = reserved_words; *word; ++word)
-        if(!strncmp(obstack_base(ob), *word, obstack_object_size(ob))) {
+    int len = (char *)obstack_base(ob) + obstack_object_size(ob) - namestart;
+    for(char **word = reserved_words; *word; ++word) {
+        if(!strncmp(namestart, *word, len)) {
             obstack_1grow(ob, '_');
             break;  // can't match keyword twice
         }
+    }
     obstack_1grow(ob, 0);
 }
