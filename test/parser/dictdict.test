@@ -7,6 +7,7 @@ vegetables:
     milk: >
         kinda not
 berry: cherry
+empty: {}
 ...
 ---
 
@@ -31,6 +32,8 @@ berry: cherry
   output: "apple: yes\nbanana: yes\ncherry: no\n"
 - command-line: quire-tool -Ek /berry
   output: "cherry"
+- command-line: quire-tool -Ek /empty
+  output: "{}"
 
 # reformatted
 
@@ -53,3 +56,5 @@ berry: cherry
   output: "apple: yes\nbanana: yes\ncherry: no\n"
 - command-line: quire-tool -E /berry
   output: "cherry"
+- command-line: quire-tool -E /empty
+  output: "{}"
