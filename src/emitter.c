@@ -106,12 +106,14 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
             break;
         case QU_EMIT_MAP_END:
             if(ctx->map_start) {
-                _space_check(ctx);
-                fprintf(ctx->stream, "{}");
+                if(ctx->need_space)
+                    fputc(' ', ctx->stream);
+                fputs("{}", ctx->stream);
                 ctx->need_space = 1;
-                ctx->pending_newline = 1;
+                ctx->pending_newline = 0;
                 ctx->line_start = 0;
             }
+            ctx->cur_indent -= 1;
             break;
         case QU_EMIT_MAP_KEY:
             ctx->map_start = 0;
@@ -143,10 +145,11 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
             break;
         case QU_EMIT_SEQ_END:
             if(ctx->seq_start) {
-                _space_check(ctx);
-                fprintf(ctx->stream, "[]");
+                if(ctx->need_space)
+                    fputc(' ', ctx->stream);
+                fputs("[]", ctx->stream);
                 ctx->need_space = 1;
-                ctx->pending_newline = 1;
+                ctx->pending_newline = 0;
                 ctx->line_start = 0;
             }
             break;
