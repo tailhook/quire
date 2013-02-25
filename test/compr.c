@@ -1,10 +1,10 @@
 #include <stdio.h>
 
-#include <coyaml_src.h> // needed for convert function
 #include "comprehensive.h"
 
 cfg_main_t config;
 
+/*
 int convert_connectaddr(coyaml_parseinfo_t *info, char *value,
     coyaml_group_t * group, cfg_connectaddr_t * target) {
     if(!value || !*value) {
@@ -84,6 +84,7 @@ int convert_listenaddr(coyaml_parseinfo_t *info, char *value,
     }
     return 0;
 }
+*/
 
 int main(int argc, char **argv) {
     /*

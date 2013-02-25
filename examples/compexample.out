@@ -1,3 +1,5 @@
+# Program name: simplehttp
+
 SimpleHTTPServer:
   log-level: 3
   log-file: /var/log/test.log
