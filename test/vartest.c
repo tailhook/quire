@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <getopt.h>
 
-#include "vars.h"
+#include "vartest-config.h"
 
 cfg_main_t config;
 

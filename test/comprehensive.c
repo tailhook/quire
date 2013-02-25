@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "comprehensive.h"
+#include "comprehensive-config.h"
 
 cfg_main_t config;
 

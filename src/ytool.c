@@ -11,7 +11,7 @@
 #include "access.h"
 #include "codes.h"
 #include "emitter.h"
-#include "objpath/objpath.h"
+#include "../objpath/objpath.h"
 
 char short_options[] = "Ehf:vk";
 struct option long_options[] = {

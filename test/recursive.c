@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "recconfig.h"
+#include "recursive-config.h"
 
 cfg_main_t config;
 

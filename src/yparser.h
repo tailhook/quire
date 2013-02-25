@@ -1,4 +1,5 @@
-#include <vars.h>
+#include "vars.h"
+
 #ifndef _H_YPARSER
 #define _H_YPARSER
 

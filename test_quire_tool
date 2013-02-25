@@ -1,0 +1,30 @@
+#!/usr/bin/python
+import yaml
+import sys
+import subprocess
+import os
+import difflib
+
+error = 0
+filename = sys.argv[1]
+with open(filename, 'rb') as f:
+    data, spec = yaml.safe_load_all(f)
+for item in spec:
+    if 'command-line' in item:
+        status, outp = subprocess.getstatusoutput(
+            './' + item['command-line'] + ' -f ' + filename)
+        status = os.WEXITSTATUS(status)
+        if 'result' in item:
+            if status != item['result']:
+                print(filename, 'FAILED:', item['command-line'],
+                    ": returned", status, "instead", item['result'])
+                error = 1
+        if 'output' in item:
+            if outp.rstrip() != item['output'].rstrip():
+                print(filename, 'FAILED:', item['command-line'],
+                    ': output is wrong, diff follows')
+                for line in difflib.ndiff(item['output'].splitlines(),
+                                          outp.splitlines()):
+                    print('   ', line.rstrip())
+                error = 1
+sys.exit(error)

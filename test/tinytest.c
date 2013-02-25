@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <getopt.h>
 
-#include "tinyconfig.h"
+#include "tinytest-config.h"
 
 cfg_main_t config;
 

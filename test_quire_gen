@@ -1,0 +1,7 @@
+#!/bin/sh -e
+binary="$1"
+output="$2"
+original="$3"
+shift 3
+$binary $* > $output
+exec diff -u $original $output
