@@ -28,58 +28,60 @@ static void print_string(char *str) {
     putc('"', stdout);
 }
 
-static int print_default(qu_context_t *ctx, qu_ast_node *node) {
+static int print_default(qu_context_t *ctx, qu_ast_node *node,
+    char *prefix, qu_ast_node *datanode) {
     int rc;
     qu_nodedata *data = node->userdata;
     if(!data)
         return 0;
     if(data->kind == QU_MEMBER_SCALAR) {
         qu_ast_node *def;
-        if(node->kind == QU_NODE_MAPPING) {
-            def = qu_map_get(node, "default");
+        if(datanode->kind == QU_NODE_MAPPING) {
+            def = qu_map_get(datanode, "default");
             if(!def)
-                def = qu_map_get(node, "=");
+                def = qu_map_get(datanode, "=");
             if(!def)
                 return 0;
         } else {
-            def = node;
+            def = datanode;
         }
 
         switch(data->type) {
         case QU_TYP_INT:
-            printf("(*cfg)%s = %ld;\n", data->expression,
+            printf("(*cfg)%s%s = %ld;\n", prefix, data->expression,
                 strtol(qu_node_content(def), NULL, 0));
             break;
         case QU_TYP_FLOAT:
-            printf("(*cfg)%s = %.17f;\n", data->expression,
+            printf("(*cfg)%s%s = %.17f;\n", prefix, data->expression,
                 strtof(qu_node_content(def), NULL));
             break;
         case QU_TYP_FILE:
-            printf("(*cfg)%s = ", data->expression);
+            printf("(*cfg)%s%s = ", prefix, data->expression);
             print_string(qu_node_content(def));
             printf(";\n");
-            printf("(*cfg)%s_len = %lu;\n", data->expression,
+            printf("(*cfg)%s%s_len = %lu;\n", prefix, data->expression,
                 strlen(qu_node_content(def)));
             break;
         case QU_TYP_DIR:
-            printf("(*cfg)%s = ", data->expression);
+            printf("(*cfg)%s%s = ", prefix, data->expression);
             print_string(qu_node_content(def));
             printf(";\n");
-            printf("(*cfg)%s_len = %lu;\n", data->expression,
+            printf("(*cfg)%s%s_len = %lu;\n", prefix, data->expression,
                 strlen(qu_node_content(def)));
             break;
         case QU_TYP_STRING:
-            printf("(*cfg)%s = ", data->expression);
+            printf("(*cfg)%s%s = ", prefix, data->expression);
             print_string(qu_node_content(def));
             printf(";\n");
-            printf("(*cfg)%s_len = %lu;\n", data->expression,
+            printf("(*cfg)%s%s_len = %lu;\n", prefix, data->expression,
                 strlen(qu_node_content(def)));
             break;
         case QU_TYP_BOOL: {
             int val;
             rc = qu_get_boolean(def, &val);
             assert (rc != -1);
-            printf("(*cfg)%s = %d;\n", data->expression, val ? 1 : 0);
+            printf("(*cfg)%s%s = %d;\n", prefix, data->expression,
+                val ? 1 : 0);
             } break;
         default:
             assert (0); // Wrong type
@@ -87,12 +89,34 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node) {
     } else if(data->kind == QU_MEMBER_STRUCT) {
         qu_map_member *item;
         TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
-            int rc = print_default(ctx, item->value);
-            assert(rc >= 0);
+            if(node == datanode) {
+                int rc = print_default(ctx, item->value,
+                                       prefix, item->value);
+                assert(rc >= 0);
+            } else {
+                qu_ast_node *dnode = qu_map_get(datanode,
+                    qu_node_content(item->key));
+                if(dnode) {
+                    int rc = print_default(ctx, item->value,
+                                           prefix, dnode);
+                    assert(rc >= 0);
+                }
+            }
         }
     } else if(data->kind == QU_MEMBER_CUSTOM) {
-        printf("%1$s%2$s_defaults(&(*cfg)%3$s);\n",
-            ctx->prefix, data->data.custom.typename, data->expression);
+        printf("%1$s%2$s_defaults(&(*cfg)%3$s%4$s);\n",
+            ctx->prefix, data->data.custom.typename,
+            prefix, data->expression);
+        qu_ast_node *defnode = qu_map_get(node, "default");
+        if(defnode) {
+            qu_ast_node *ctypenode = qu_map_get(
+                qu_map_get(ctx->parsing.document, "__types__"),
+                data->data.custom.typename);
+            assert(ctypenode);
+            int rc = print_default(ctx, ctypenode,
+                data->expression, defnode);
+            assert(rc >= 0);
+        }
     }
     return 0;
 }
@@ -467,7 +491,7 @@ int qu_output_source(qu_context_t *ctx) {
             printf("void %1$s%2$s_defaults(%1$s%2$s_t *cfg) {\n",
                 ctx->prefix, qu_node_content(typ->key));
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
-                print_default(ctx, item->value);
+                print_default(ctx, item->value, "", item->value);
             }
             printf("}\n");
             printf("\n");
@@ -515,7 +539,7 @@ int qu_output_source(qu_context_t *ctx) {
 
     printf("// Setting defaults\n");
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
-        print_default(ctx, item->value);
+        print_default(ctx, item->value, "", item->value);
     }
 
     printf("\n");
