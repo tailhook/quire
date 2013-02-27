@@ -110,14 +110,17 @@ static void obstack_chunk_free(qu_parse_context *ctx, void *ptr) {
     free(ptr);
 }
 
-
-void _qu_context_init(qu_parse_context *ctx) {
-    obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
-        parser_chunk_alloc, obstack_chunk_free, ctx);
+static void _qu_context_reinit(qu_parse_context *ctx) {
     CIRCLEQ_INIT(&ctx->tokens);
     ctx->buf = NULL;
     ctx->error_kind = 0;
     ctx->variables = NULL;
+}
+
+static void _qu_context_init(qu_parse_context *ctx) {
+    obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
+        parser_chunk_alloc, obstack_chunk_free, ctx);
+	_qu_context_reinit(ctx);
 }
 
 void _qu_load_file(qu_parse_context *ctx, char *filename) {
@@ -766,7 +769,7 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
 }
 
 
-void _qu_parse(qu_parse_context *ctx) {
+qu_ast_node *_qu_parse(qu_parse_context *ctx) {
 
     ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
     ctx->cur_anchor = NULL;
@@ -778,11 +781,11 @@ void _qu_parse(qu_parse_context *ctx) {
         // TODO(tailhook) parse directives
         NEXT;
     }
-    if(!CTOK) return;
+    if(!CTOK) return NULL;
     if(CTOK->kind == QU_TOK_DOC_START) NEXT;
-    if(CTOK->kind == QU_TOK_DOC_END) return;
+    if(CTOK->kind == QU_TOK_DOC_END) return NULL;
 
-    ctx->document = parse_node(ctx, -1);
+    qu_ast_node *node = parse_node(ctx, -1);
 
     assert(!ctx->error_kind);  // long jump is done
 
@@ -793,6 +796,7 @@ void _qu_parse(qu_parse_context *ctx) {
         longjmp(ctx->errjmp, 1);
     }
 
+	return node;
 }
 
 
@@ -811,13 +815,36 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
         _qu_load_file(ctx, filename);
         _qu_tokenize(ctx);
         //qu_print_tokens(ctx, stderr);
-        _qu_parse(ctx);
+        ctx->document = _qu_parse(ctx);
     } else {
         ctx->has_jmp = 0;
         return rc;
     }
     ctx->has_jmp = 0;
     return 0;
+}
+
+qu_ast_node *qu_file_newparse(qu_parse_context *ctx, char *filename) {
+    int rc;
+	if(!ctx->has_jmp) {
+		ctx->has_jmp = 1;
+		qu_ast_node *node = NULL;
+		if(!(rc = setjmp(ctx->errjmp))) {
+			_qu_context_reinit(ctx);
+			_qu_load_file(ctx, filename);
+			_qu_tokenize(ctx);
+			//qu_print_tokens(ctx, stderr);
+			node = _qu_parse(ctx);
+		}
+		ctx->has_jmp = 0;
+		return node;
+	} else {
+		_qu_context_reinit(ctx);
+		_qu_load_file(ctx, filename);
+		_qu_tokenize(ctx);
+		//qu_print_tokens(ctx, stderr);
+		return _qu_parse(ctx);
+	}
 }
 
 

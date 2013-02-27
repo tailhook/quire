@@ -87,6 +87,7 @@ typedef struct qu_parse_context_s {
 
 } qu_parse_context;
 
+qu_ast_node *qu_file_newparse(qu_parse_context *ctx, char *filename);
 
 // PUBLIC API
 // Keep in sync with quire.h

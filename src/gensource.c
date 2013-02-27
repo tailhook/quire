@@ -556,8 +556,7 @@ int qu_output_source(qu_context_t *ctx) {
     printf("qu_parse_context *ctx = &cctx;\n");
     printf("rc = qu_file_parse(ctx, cli->cfg_filename);\n");
     printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error parsing_file\");\n",
-        ctx->meta.program_name);
+    printf("    qu_print_error(ctx, stderr);\n");
     printf("    exit(127);\n");
     printf("};\n");
 
@@ -569,15 +568,13 @@ int qu_output_source(qu_context_t *ctx) {
     printf("rc = qu_process_includes(ctx, QU_IFLAG_FROMFILE"
         "|QU_IFLAG_INCLUDE|QU_IFLAG_GLOBSEQ|QU_IFLAG_GLOBMAP);\n");
     printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error parsing_file\");\n",
-        ctx->meta.program_name);
+    printf("    qu_print_error(ctx, stderr);\n");
     printf("    exit(127);\n");
     printf("}\n");
     printf("rc = qu_merge_maps(ctx, QU_MFLAG_MAPMERGE"
         "|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);\n");
     printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error parsing_file\");\n",
-        ctx->meta.program_name);
+    printf("    qu_print_error(ctx, stderr);\n");
     printf("    exit(127);\n");
     printf("}\n");
     printf("\n");

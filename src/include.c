@@ -1,10 +1,27 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <assert.h>
 #include <sys/stat.h>
 
 #include "yparser.h"
 #include "codes.h"
+#include "access.h"
+
+
+static char *join_filenames(qu_parse_context *ctx, char *base, char *target) {
+	if(!target)
+		return NULL;
+	if(*target == '/')
+		return target;
+	char *slash = strrchr(base, '/');
+	if(!slash)
+		return target;
+	obstack_blank(&ctx->pieces, 0);
+	obstack_grow(&ctx->pieces, base, slash - base + 1);
+	obstack_grow0(&ctx->pieces, target, strlen(target));
+	return obstack_finish(&ctx->pieces);
+}
 
 
 static qu_ast_node *process(qu_parse_context *ctx,
@@ -12,10 +29,11 @@ static qu_ast_node *process(qu_parse_context *ctx,
 {
 	int tlen = node->tag->bytelen;
 	char *tag = (char *)node->tag->data;
-	if(tlen >= 10 && !strncmp(tag, "!FromFile:", 10)) {
+	if(tlen == 9 && !strncmp(tag, "!FromFile", 9)) {
 		int rc, eno;
 		unsigned char *data = NULL;
-		int fd = open(tag + 10, O_RDONLY);
+		int fd = open(join_filenames(ctx, node->tag->filename,
+									 qu_node_content(node)), O_RDONLY);
 		if(fd < 0) {
 			ctx->error_kind = YAML_SYSTEM_ERROR;
 			ctx->error_text = "Can't open file";
@@ -55,7 +73,13 @@ static qu_ast_node *process(qu_parse_context *ctx,
 		data[so_far] = 0;
 		node->content = (char *)data;
 		node->content_len = so_far;
+		node->tag = NULL;
 		return node;
+	} else if(tlen == 8 && !strncmp(tag, "!Include", 8)) {
+		qu_ast_node *newone = qu_file_newparse(ctx,
+			join_filenames(ctx, node->tag->filename, qu_node_content(node)));
+		assert(newone);  // usually longjumps on error
+		return newone;
 	}
 	return node;
 }
