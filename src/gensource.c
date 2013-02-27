@@ -566,6 +566,13 @@ int qu_output_source(qu_context_t *ctx) {
     printf("    exit(126);\n");
     printf("}\n");
     printf("\n");
+    printf("rc = qu_process_includes(ctx, QU_IFLAG_FROMFILE"
+        "|QU_IFLAG_INCLUDE|QU_IFLAG_GLOBSEQ|QU_IFLAG_GLOBMAP);\n");
+    printf("if(rc < 0) {\n");
+    printf("    perror(\"%s: libquire: Error parsing_file\");\n",
+        ctx->meta.program_name);
+    printf("    exit(127);\n");
+    printf("}\n");
     printf("rc = qu_merge_maps(ctx, QU_MFLAG_MAPMERGE"
         "|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);\n");
     printf("if(rc < 0) {\n");

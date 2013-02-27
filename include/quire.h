@@ -90,6 +90,11 @@ int qu_emit_alias(qu_emit_context *, char *name);
 #define QU_MFLAG_SEQMERGE 2
 #define QU_MFLAG_RESOLVEALIAS 4
 int qu_merge_maps(qu_parse_context *ctx, int flags);
+#define QU_IFLAG_FROMFILE 1
+#define QU_IFLAG_INCLUDE  2
+#define QU_IFLAG_GLOBSEQ  3
+#define QU_IFLAG_GLOBMAP  4
+int qu_process_includes(qu_parse_context *ctx, int flags);
 
 
 #endif // QUIRE_MAIN_INCLUDED

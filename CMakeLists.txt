@@ -21,6 +21,7 @@ ADD_LIBRARY(quire
     src/access.c
     src/maputil.c
     src/wrappers.c
+    src/include.c
     objpath/objpath.c
     )
 

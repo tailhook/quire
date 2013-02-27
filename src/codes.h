@@ -17,6 +17,11 @@
 #define QU_MFLAG_MAPMERGE 1
 #define QU_MFLAG_SEQMERGE 2
 #define QU_MFLAG_RESOLVEALIAS 4
+// Include flags
+#define QU_IFLAG_FROMFILE 1
+#define QU_IFLAG_INCLUDE  2
+#define QU_IFLAG_GLOBSEQ  3
+#define QU_IFLAG_GLOBMAP  4
 
 typedef enum qu_token_kind_enum {
     // Keep in sync with strings in yparser.c
@@ -60,6 +65,7 @@ typedef enum qu_error_enum {
     YAML_SCANNER_ERROR,
     YAML_PARSER_ERROR,
     YAML_CONTENT_ERROR,
+    YAML_SYSTEM_ERROR,
     YAML_UNSUPPORTED_ERROR
 } qu_error_t;
 

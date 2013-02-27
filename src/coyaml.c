@@ -26,6 +26,10 @@ int main(int argc, char **argv) {
     quire_parse_options(&ctx.options, argc, argv);
     int rc = qu_file_parse(&ctx.parsing, ctx.options.source_file);
     if(rc == 0) {
+        rc = qu_process_includes(&ctx.parsing, QU_IFLAG_FROMFILE
+            |QU_IFLAG_INCLUDE|QU_IFLAG_GLOBSEQ|QU_IFLAG_GLOBMAP);
+    }
+    if(rc == 0) {
         rc = qu_merge_maps(&ctx.parsing, QU_MFLAG_MAPMERGE
             |QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);
     }
