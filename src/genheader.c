@@ -49,7 +49,27 @@ static void print_member(qu_context_t *ctx, qu_ast_node *node) {
         printf("struct %s%s_s %s;\n",
             ctx->prefix, data->data.custom.typename,
             strrchr(data->expression, '.')+1);
-    }
+    } else if(data->kind == QU_MEMBER_ARRAY) {
+		printf("struct %sa_%s_s *%s;\n",
+			ctx->prefix, data->data.array.membername,
+            strrchr(data->expression, '.')+1);
+		printf("struct %sa_%s_s *%s_last;\n",
+			ctx->prefix, data->data.array.membername,
+            strrchr(data->expression, '.')+1);
+		printf("int %s_len;\n", strrchr(data->expression, '.')+1);
+    } else if(data->kind == QU_MEMBER_MAP) {
+		printf("struct %sm_%s_%s_s *%s;\n",
+			ctx->prefix,
+			data->data.mapping.keyname,
+			data->data.mapping.valuename,
+            strrchr(data->expression, '.')+1);
+		printf("struct %sm_%s_%s_s *%s_last;\n",
+			ctx->prefix,
+			data->data.mapping.keyname,
+			data->data.mapping.valuename,
+            strrchr(data->expression, '.')+1);
+		printf("int %s_len;\n", strrchr(data->expression, '.')+1);
+	}
     // TODO(tailhook) print other members
 }
 
@@ -63,8 +83,28 @@ int qu_output_header(qu_context_t *ctx) {
     printf("#include <quire.h>\n");
     printf("\n");
 
-    // TODO describe array|mapping element structures
+	printf("// Forward declarations\n");
+	qu_nodedata *aitem;
+	TAILQ_FOREACH(aitem, &ctx->arrays, data.array.lst) {
+		printf("typedef struct %1$sa_%2$s_s %1$sa_%2$s_t;\n", ctx->prefix,
+			aitem->data.array.membername);
+	}
+	TAILQ_FOREACH(aitem, &ctx->mappings, data.mapping.lst) {
+		printf("typedef struct %1$sm_%2$s_%3$s_s %1$sm_%2$s_%3$s_t;\n",
+			ctx->prefix, aitem->data.mapping.keyname,
+			aitem->data.mapping.valuename);
+	}
+    qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
+    if(types) {
+        qu_map_member *typ;
+        TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
+            printf("typedef struct %1$s%2$s_s  %1$s%2$s_t;\n",
+				ctx->prefix, qu_node_content(typ->key));
+        }
+    }
+	printf("\n");
 
+	printf("// Real declarations\n");
     printf("typedef struct %scli_s {\n", ctx->prefix);
     printf("char *cfg_filename;\n");
     printf("uint64_t cfg_flags;\n");
@@ -87,7 +127,6 @@ int qu_output_header(qu_context_t *ctx) {
     printf("} %scli_t;\n", ctx->prefix);
     printf("\n");
 
-    qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
     if(types) {
         qu_map_member *typ;
         TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
@@ -101,6 +140,27 @@ int qu_output_header(qu_context_t *ctx) {
             printf("\n");
         }
     }
+
+	TAILQ_FOREACH(aitem, &ctx->arrays, data.array.lst) {
+		printf("typedef struct %sa_%s_s {\n",
+			ctx->prefix, aitem->data.array.membername);
+		printf("qu_array_head head;");
+		print_member(ctx, qu_map_get(aitem->node, "element"));
+		printf("} %sa_%s_t;\n", ctx->prefix,
+			aitem->data.array.membername);
+		printf("\n");
+	}
+	TAILQ_FOREACH(aitem, &ctx->mappings, data.mapping.lst) {
+		printf("typedef struct %sm_%s_%s_s {\n", ctx->prefix,
+			aitem->data.mapping.keyname, aitem->data.mapping.valuename);
+		printf("qu_mapping_head head;");
+		print_member(ctx, qu_map_get(aitem->node, "key-element"));
+		print_member(ctx, qu_map_get(aitem->node, "value-element"));
+		printf("} %sm_%s_%s_t;\n", ctx->prefix,
+			aitem->data.mapping.keyname, aitem->data.mapping.valuename);
+		printf("\n");
+	}
+
 
     printf("typedef struct %smain_s {\n", ctx->prefix);
     qu_map_member *item;

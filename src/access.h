@@ -3,6 +3,10 @@
 
 #include "yparser.h"
 
+struct qu_array_head {
+	struct qu_array_head *next;
+} qu_array_head __attribute__((aligned(sizeof(void*)*2)));
+
 
 qu_map_member **qu_find_node(qu_map_member **root, char *value);
 

@@ -45,6 +45,14 @@ typedef struct qu_emit_context {
     char data[512];
 } qu_emit_context;
 
+typedef struct qu_array_head {
+	void *_data[2];
+} qu_array_head;
+
+typedef struct qu_mapping_head {
+	void *_data[2];
+} qu_mapping_head;
+
 typedef struct qu_ast_node qu_ast_node;
 
 // Methods from access.c

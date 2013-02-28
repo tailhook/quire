@@ -1,11 +1,24 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "preprocessing.h"
 #include "codes.h"
 #include "access.h"
 #include "cutil.h"
+
+static char *typealias[] = {
+    [QU_TYP_INT] = "long",
+    [QU_TYP_FLOAT] = "double",
+    [QU_TYP_FILE] = "file",
+    [QU_TYP_DIR] = "dir",
+    [QU_TYP_STRING] = "string",
+    [QU_TYP_BOOL] = "bool",
+    [QU_TYP_CUSTOM] = NULL,
+    [QU_TYP_ARRAY] = NULL,
+    [QU_TYP_MAP] = NULL,
+    };
 
 static int visitor(qu_context_t *ctx,
     qu_ast_node *node,
@@ -56,8 +69,96 @@ static int visitor(qu_context_t *ctx,
             data->kind = QU_MEMBER_SCALAR;
             break;
         case QU_TYP_ARRAY:
-        case QU_TYP_MAP:
             data->kind = QU_MEMBER_ARRAY;
+            qu_ast_node *elem = qu_map_get(node, "element");
+            if(!elem) {
+                ctx->parsing.error_text = "Element type not specified";
+                ctx->parsing.error_token = node->tag;  // better place?
+                ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                longjmp(ctx->parsing.errjmp, 1);
+            }
+            visitor(ctx, elem, ".value", expr_parent);
+            qu_nodedata *edata = elem->userdata;
+            char *tname = typealias[edata->type];
+            if(tname == NULL) {
+                switch(edata->kind) {
+                case QU_MEMBER_CUSTOM:
+                    tname = edata->data.custom.typename;
+                    break;
+                default:
+                    ctx->parsing.error_text = "Nested arrays and maps "
+                                              "are not supported";
+                    ctx->parsing.error_token = node->tag;  // better place?
+                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                    longjmp(ctx->parsing.errjmp, 1);
+                }
+            }
+            data->data.array.membername = tname;
+            qu_nodedata *oldarr = NULL;
+            TAILQ_FOREACH(oldarr, &ctx->arrays, data.array.lst) {
+                if(!strcmp(oldarr->data.array.membername, tname)) {
+                    break;
+                }
+            }
+            if(!oldarr) {
+                TAILQ_INSERT_HEAD(&ctx->arrays, data, data.array.lst);
+            }
+            break;
+        case QU_TYP_MAP:
+            data->kind = QU_MEMBER_MAP;
+            qu_ast_node *kelem = qu_map_get(node, "key-element");
+            qu_ast_node *velem = qu_map_get(node, "value-element");
+            if(!kelem || !velem) {
+                ctx->parsing.error_text = "Key or value type not specified";
+                ctx->parsing.error_token = node->tag;  // better place?
+                ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                longjmp(ctx->parsing.errjmp, 1);
+            }
+            visitor(ctx, kelem, ".key", expr_parent);
+            visitor(ctx, velem, ".value", expr_parent);
+            qu_nodedata *kedata = kelem->userdata;
+            char *ktname = typealias[kedata->type];
+            if(ktname == NULL) {
+                switch(kedata->kind) {
+                case QU_MEMBER_CUSTOM:
+                    ktname = kedata->data.custom.typename;
+                    break;
+                default:
+                    ctx->parsing.error_text = "Nested arrays and maps "
+                                              "are not supported";
+                    ctx->parsing.error_token = node->tag;  // better place?
+                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                    longjmp(ctx->parsing.errjmp, 1);
+                }
+            }
+            qu_nodedata *vedata = velem->userdata;
+            char *vtname = typealias[vedata->type];
+            if(vtname == NULL) {
+                switch(vedata->kind) {
+                case QU_MEMBER_CUSTOM:
+                    vtname = vedata->data.custom.typename;
+                    break;
+                default:
+                    ctx->parsing.error_text = "Nested arrays and maps "
+                                              "are not supported";
+                    ctx->parsing.error_token = node->tag;  // better place?
+                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
+                    longjmp(ctx->parsing.errjmp, 1);
+                }
+            }
+            assert(ktname && vtname);
+            data->data.mapping.keyname = ktname;
+            data->data.mapping.valuename = vtname;
+            qu_nodedata *oldmapping = NULL;
+            TAILQ_FOREACH(oldmapping, &ctx->mappings, data.mapping.lst) {
+                if(!strcmp(oldmapping->data.mapping.keyname, ktname) ||
+                   !strcmp(oldmapping->data.mapping.valuename, ktname)) {
+                    break;
+                }
+            }
+            if(!oldmapping) {
+                TAILQ_INSERT_HEAD(&ctx->mappings, data, data.mapping.lst);
+            }
             break;
         case QU_TYP_CUSTOM:
             data->kind = QU_MEMBER_CUSTOM;

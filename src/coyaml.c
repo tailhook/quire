@@ -19,10 +19,16 @@
     exit(1); \
     }
 
+void qu_context_init(qu_context_t *ctx) {
+    memset(ctx, 0, sizeof(qu_context_t));
+    TAILQ_INIT(&ctx->arrays);
+    TAILQ_INIT(&ctx->mappings);
+}
+
 
 int main(int argc, char **argv) {
     qu_context_t ctx;
-    memset(&ctx, 0, sizeof(ctx));
+    qu_context_init(&ctx);
     quire_parse_options(&ctx.options, argc, argv);
     int rc = qu_file_parse(&ctx.parsing, ctx.options.source_file);
     if(rc == 0) {

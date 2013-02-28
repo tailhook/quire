@@ -18,6 +18,15 @@ typedef struct qu_nodedata {
         struct {
             char *typename;
         } custom;
+		struct {
+			TAILQ_ENTRY(qu_nodedata) lst;
+			char *membername;
+		} array;
+		struct {
+			TAILQ_ENTRY(qu_nodedata) lst;
+			char *keyname;
+			char *valuename;
+		} mapping;
     } data;
 
     TAILQ_ENTRY(qu_nodedata) cli_lst;
@@ -36,6 +45,9 @@ typedef struct qu_context_s {
 
     int node_level;
     char node_vars[16];
+
+	TAILQ_HEAD(qu_array_list, qu_nodedata) arrays;
+	TAILQ_HEAD(qu_mapping_list, qu_nodedata) mappings;
 } qu_context_t;
 
 _Static_assert(sizeof(qu_context_t) < 4096,
