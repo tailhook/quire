@@ -206,7 +206,14 @@ static void print_parser(qu_context_t *ctx, qu_ast_node *node) {
         ctx->node_level += 1;
         printf("qu_ast_node *node%1$d = qu_seq_node(seq%1$d);\n",
             ctx->node_level);
-        print_parser(ctx, qu_map_get(node, "element"));
+        qu_ast_node *eltype = qu_map_get(node, "element");
+        qu_nodedata *eldata = eltype->userdata;
+        if(eldata->type == QU_TYP_CUSTOM) {
+            printf("%1$s%2$s_defaults(&(*targ)%3$s);\n",
+                ctx->prefix, eldata->data.custom.typename,
+                eldata->expression);
+        }
+        print_parser(ctx, eltype);
         ctx->node_level -= 1;
         printf("}\n");
         printf("qu_config_array_insert("
