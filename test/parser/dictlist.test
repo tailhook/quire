@@ -47,8 +47,7 @@ gadgets: []
   output: |
     - apple
     - banana
-    -
-      cherry: no
+    - cherry: no
       pear: yes
 - command-line: quire-tool -E /vegetable
   output: "carrot"

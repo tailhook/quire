@@ -51,6 +51,7 @@ typedef struct qu_emit_context {
     int line_start;
     int map_start;
     int seq_start;
+    int seq_item;
     char indent_levels[255];
 } qu_emit_context;
 

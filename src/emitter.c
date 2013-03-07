@@ -99,7 +99,11 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
                 ctx->cur_indent += 1;
                 ctx->indent_levels[ctx->cur_indent] = oi + ctx->min_indent;
                 if(!ctx->line_start) {
-                    ctx->pending_newline = 0;
+                    if(ctx->seq_item) {
+                        ctx->pending_newline += 1;
+                    } else {
+                        ctx->pending_newline = 0;
+                    }
                 }
             }
             ctx->map_start = 1;
@@ -134,6 +138,7 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
         case QU_EMIT_SEQ_ITEM:
             ctx->map_start = 0;
             ctx->seq_start = 0;
+            ctx->seq_item = 1;
             _space_check(ctx);
             fprintf(ctx->stream, "-");
             ctx->need_space = 1;
@@ -142,6 +147,9 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
             break;
         case QU_EMIT_SEQ_START:
             ctx->seq_start = 1;
+            if(!ctx->line_start) {
+                ctx->pending_newline = 0;
+            }
             break;
         case QU_EMIT_SEQ_END:
             if(ctx->seq_start) {
@@ -162,6 +170,29 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
 
 int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     char *data, int len) {
+    if(!len || !data || !*data) {
+        if(ctx->doc_start) {
+            // document is fully null
+            ctx->doc_start = 0;
+            return 0;
+        }
+        if(ctx->line_start) {  // force tilde
+            fputc('~', ctx->stream);
+            ctx->line_start = 0;
+            ctx->pending_newline = 0;
+            _space_check(ctx);
+            return 0;
+        }
+        // force newline
+        fputc('\n', ctx->stream);
+        ctx->pending_newline = -1;
+        ctx->line_start = 1;
+        ctx->need_space = 0;
+
+        ctx->map_start = 0;
+        ctx->seq_start = 0;
+        return 0;
+    }
     if(len >= 0) {
         return qu_emit_printf(ctx, tag, anchor, kind, "%.*s", len, data);
     } else {
@@ -174,6 +205,7 @@ int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     _space_check(ctx);
     ctx->map_start = 0;
     ctx->seq_start = 0;
+    ctx->seq_item = 0;
 
     switch(kind) {
         case QU_STYLE_AUTO:  // TODO(tailhook) scan scalar
