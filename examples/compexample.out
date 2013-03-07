@@ -10,7 +10,7 @@ SimpleHTTPServer:
     unix-socket:
     fd: 0
   max-request-size: 1048576
-  request-timeout: 10.000000
+  request-timeout: 10
   directory-indexes:
   - index
   - index.html
@@ -70,10 +70,10 @@ SimpleHTTPServer:
   movements:
   - !left
     distance: 10
-    speed: 1.000000
+    speed: 1
   - !right
     distance: 2
-    speed: 0.500000
+    speed: 0.5
   responses:
     default:
       code: 200
