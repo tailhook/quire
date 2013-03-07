@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
+#include <malloc.h>
+#include <stdlib.h>
 
 #include "access.h"
 #include "yparser.h"
@@ -93,4 +95,62 @@ int qu_get_boolean(qu_ast_node *node, int *value) {
 
 qu_ast_node *qu_get_root(qu_parse_context *ctx) {
     return ctx->document;
+}
+
+qu_seq_member *qu_seq_iter(qu_ast_node *node) {
+    if(node->kind != QU_NODE_SEQUENCE)
+        return NULL;
+    return TAILQ_FIRST(&node->val.seq_index.items);
+}
+
+qu_seq_member *qu_seq_next(qu_seq_member *iter) {
+    return TAILQ_NEXT(iter, lst);
+}
+
+qu_ast_node *qu_seq_node(qu_seq_member *iter) {
+    return iter->value;
+}
+
+void *qu_config_alloc(qu_config_head *cfg, int size) {
+    void *ptr = obstack_alloc(&cfg->pieces, size);
+    return ptr;
+}
+
+void qu_config_array_insert(qu_array_head **head, qu_array_head **tail,
+        int *list_size, qu_array_head *member) {
+    member->next = NULL;
+    if(*tail) {
+        (*tail)->next = member;
+        *tail = member;
+    } else {
+        *tail = *head = member;
+    }
+}
+
+qu_array_head *qu_config_array_next(qu_array_head *elem) {
+    return elem->next;
+}
+
+static void *config_chunk_alloc(qu_config_head *cfg, int size) {
+    void *res = malloc(size);
+    if(!res) {
+        // TODO(tailhook) do a long jump
+        fprintf(stderr, "Memory allocation failed without jmp context\n");
+        abort();
+    }
+    return res;
+}
+
+static void config_chunk_free(qu_config_head *cfg, void *ptr) {
+    free(ptr);
+}
+
+void qu_config_init(qu_config_head *cfg, int size) {
+    memset(cfg, 0, size);
+    obstack_specify_allocation_with_arg(&cfg->pieces, 4096, 0,
+        config_chunk_alloc, config_chunk_free, cfg);
+}
+
+void qu_config_free(qu_config_head *cfg) {
+    obstack_free(&cfg->pieces, NULL);
 }

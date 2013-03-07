@@ -2,6 +2,7 @@
 #define QUIRE_MAIN_INCLUDED
 
 #include <stdint.h>
+#include <setjmp.h>
 
 // Constants from emitter.h
 #define QU_EMIT_UNKNOWN     0
@@ -34,7 +35,8 @@
 #define QU_MODE_NORMAL      1
 
 typedef struct qu_config_head {
-    char data[128];
+	jmp_buf safejump;
+    char data[512 - sizeof(jmp_buf)];
 } qu_config_head;
 
 typedef struct qu_parse_context {
@@ -54,12 +56,23 @@ typedef struct qu_mapping_head {
 } qu_mapping_head;
 
 typedef struct qu_ast_node qu_ast_node;
+typedef struct qu_seq_member qu_seq_member;
 
 // Methods from access.c
 qu_ast_node *qu_get_root(qu_parse_context *ctx);
 qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
 int qu_get_boolean(qu_ast_node *node, int *value);
 char *qu_node_content(qu_ast_node *node);
+qu_seq_member *qu_seq_iter(qu_ast_node *node);
+qu_seq_member *qu_seq_next(qu_seq_member *iter);
+qu_ast_node *qu_seq_node(qu_seq_member *iter);
+void *qu_config_init(void *cfg, int size);
+void qu_config_free(void *cfg);
+void *qu_config_alloc(void *cfg, int size);
+void qu_config_array_insert(void **head, void **tail,
+							int *list_size,
+						    qu_array_head *member);
+void *qu_config_array_next(void *elem);
 
 // Methods from yparser.c
 int qu_file_parse(qu_parse_context *ctx, char *filename)

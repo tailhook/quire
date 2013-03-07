@@ -144,7 +144,7 @@ int qu_output_header(qu_context_t *ctx) {
 	TAILQ_FOREACH(aitem, &ctx->arrays, data.array.lst) {
 		printf("typedef struct %sa_%s_s {\n",
 			ctx->prefix, aitem->data.array.membername);
-		printf("qu_array_head head;");
+		printf("qu_array_head head;\n");
 		print_member(ctx, qu_map_get(aitem->node, "element"));
 		printf("} %sa_%s_t;\n", ctx->prefix,
 			aitem->data.array.membername);
@@ -163,6 +163,7 @@ int qu_output_header(qu_context_t *ctx) {
 
 
     printf("typedef struct %smain_s {\n", ctx->prefix);
+	printf("qu_config_head head;\n");
     qu_map_member *item;
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
         print_member(ctx, item->value);

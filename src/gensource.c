@@ -122,7 +122,10 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node,
 }
 
 
-static void print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
+static void print_parser(qu_context_t *ctx, qu_ast_node *node);
+
+static void print_parse_member(qu_context_t *ctx,
+    qu_ast_node *node, char *name) {
     qu_nodedata *data = node->userdata;
     if(!data)
         return;
@@ -130,71 +133,87 @@ static void print_parser(qu_context_t *ctx, qu_ast_node *node, char *name) {
         ctx->node_vars[ctx->node_level] = 1;
         printf("qu_ast_node *node%d;\n", ctx->node_level);
     }
+    printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
+        ctx->node_level, ctx->node_level-1, name);
+    print_parser(ctx, node);
+    printf("}\n");
+}
+
+static void print_parser(qu_context_t *ctx, qu_ast_node *node) {
+    qu_nodedata *data = node->userdata;
+    assert(data);
     if(data->kind == QU_MEMBER_SCALAR) {
-        printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
-            ctx->node_level, ctx->node_level-1, name);
         if(!strncmp((char *)node->tag->data, "!Int", node->tag->bytelen)) {
-            printf("qu_node_to_int(ctx, node%d, cli->cfg_flags, &(*cfg)%s);\n",
+            printf("qu_node_to_int(ctx, node%d, cli->cfg_flags, &(*targ)%s);\n",
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Float", node->tag->bytelen)) {
-            printf("qu_node_to_float(ctx, node%d, cli->cfg_flags, &(*cfg)%s);\n",
+            printf("qu_node_to_float(ctx, node%d, cli->cfg_flags, &(*targ)%s);\n",
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
             printf("qu_node_to_str(ctx, node%1$d, cli->cfg_flags, "
-                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                "&(*targ)%2$s, &(*targ)%2$s_len);\n",
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!File", node->tag->bytelen)) {
             printf("qu_node_to_str(ctx, node%1$d, cli->cfg_flags, "
-                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                "&(*targ)%2$s, &(*targ)%2$s_len);\n",
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Dir", node->tag->bytelen)) {
             printf("qu_node_to_str(ctx, node%1$d, cli->cfg_flags, "
-                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                "&(*targ)%2$s, &(*targ)%2$s_len);\n",
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!String", node->tag->bytelen)) {
             printf("qu_node_to_str(ctx, node%1$d, cli->cfg_flags, "
-                "&(*cfg)%2$s, &(*cfg)%2$s_len);\n",
+                "&(*targ)%2$s, &(*targ)%2$s_len);\n",
                 ctx->node_level, data->expression);
         } else if(!strncmp((char *)node->tag->data,
                   "!Bool", node->tag->bytelen)) {
-            printf("qu_get_boolean(node%d, &(*cfg)%s);\n",
+            printf("qu_get_boolean(node%d, &(*targ)%s);\n",
                 ctx->node_level, data->expression);
         } else {
             assert (0); // Wrong type
         }
-        printf("}\n");
     } else if(data->kind == QU_MEMBER_STRUCT) {
-        printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
-                ctx->node_level, ctx->node_level-1, name);
-
         ctx->node_level += 1;
         ctx->node_vars[ctx->node_level] = 0;
         qu_map_member *item;
         TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
-            print_parser(ctx, item->value, qu_node_content(item->key));
+            print_parse_member(ctx, item->value, qu_node_content(item->key));
         }
         ctx->node_level -= 1;
-
-        printf("}\n");
     } else if(data->type == QU_TYP_CUSTOM) {
-        printf("if((node%d = qu_map_get(node%d, \"%s\"))) {\n",
-                ctx->node_level, ctx->node_level-1, name);
-
         ctx->node_level += 1;
         ctx->node_vars[ctx->node_level] = 0;
-        printf("%1$s%2$s_parse(&(*cfg)%3$s, node%4$d, ctx, cli);\n",
+        printf("%1$s%2$s_parse(cfg, &(*targ)%3$s, node%4$d, ctx, cli);\n",
             ctx->prefix, data->data.custom.typename,
             data->expression, ctx->node_level-1);
         ctx->node_level -= 1;
 
-        printf("}\n");
     } else if(data->type == QU_TYP_ARRAY) {
-        // TODO(tailhook)
+        printf("for(qu_seq_member *seq%1$d = qu_seq_iter(node%2$d);"
+               " seq%1$d; seq%1$d = qu_seq_next(seq%1$d)) {\n",
+               ctx->node_level+1, ctx->node_level);
+        printf("%1$sa_%2$s_t *el = qu_config_alloc(cfg, "
+            "sizeof(%1$sa_%2$s_t));\n",
+            ctx->prefix, data->data.array.membername);
+        printf("{\n");
+        printf("%1$sa_%2$s_t *targ = el;\n",
+            ctx->prefix, data->data.array.membername);
+        ctx->node_level += 1;
+        printf("qu_ast_node *node%1$d = qu_seq_node(seq%1$d);\n",
+            ctx->node_level);
+        print_parser(ctx, qu_map_get(node, "element"));
+        ctx->node_level -= 1;
+        printf("}\n");
+        printf("qu_config_array_insert("
+            "(void **)&(*targ)%1$s, (void **)&(*targ)%1$s_last, "
+            "&(*targ)%1$s_len, &el->head);\n",
+            data->expression);
+        printf("}\n");
     } else if(data->type == QU_TYP_MAP) {
         // TODO(tailhook)
     } else {
@@ -254,7 +273,16 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
             data->data.custom.typename, data->expression);
     } else if(data->type == QU_TYP_ARRAY) {
         printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_START);\n");
-        // TODO(tailhook)
+        printf("for(%1$sa_%2$s_t *elem=(*cfg)%3$s; elem; "
+               "elem = qu_config_array_next(elem)) {\n",
+            ctx->prefix, data->data.array.membername, data->expression);
+        printf("{\n");
+        printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_ITEM);\n");
+        printf("%1$sa_%2$s_t *cfg = elem;\n",
+            ctx->prefix, data->data.array.membername);
+        print_printer(ctx, qu_map_get(node, "element"));
+        printf("}\n");
+        printf("}\n");
         printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_END);\n");
     } else if(data->type == QU_TYP_MAP) {
         printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
@@ -497,13 +525,16 @@ int qu_output_source(qu_context_t *ctx) {
             printf("\n");
 
             // parse
-            printf("void %1$s%2$s_parse(%1$s%2$s_t *cfg, qu_ast_node *node0,"
+            printf("void %1$s%2$s_parse(%1$smain_t *cfg,"
+                   " %1$s%2$s_t *targ, "
+                   "qu_ast_node *node0, "
                    "qu_parse_context *ctx, %1$scli_t *cli) {\n",
                 ctx->prefix, qu_node_content(typ->key));
             ctx->node_level = 1;
             ctx->node_vars[1] = 0;
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
-                print_parser(ctx, item->value, qu_node_content(item->key));
+                print_parse_member(ctx, item->value,
+                    qu_node_content(item->key));
             }
             printf("}\n");
             printf("\n");
@@ -537,6 +568,7 @@ int qu_output_source(qu_context_t *ctx) {
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
         ctx->prefix);
 
+    printf("qu_config_init(cfg, sizeof(*cfg));\n");
     printf("// Setting defaults\n");
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
         print_default(ctx, item->value, "", item->value);
@@ -579,12 +611,13 @@ int qu_output_source(qu_context_t *ctx) {
     printf("}\n");
     printf("\n");
     printf("qu_ast_node *node0 = qu_get_root(ctx);\n");
+    printf("%smain_t *targ = cfg; // same for root element\n", ctx->prefix);
 
     printf("// Parsing root elements\n");
     ctx->node_level = 1;
     ctx->node_vars[1] = 0;
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
-        print_parser(ctx, item->value, qu_node_content(item->key));
+        print_parse_member(ctx, item->value, qu_node_content(item->key));
     }
 
     printf("// Overlay command-line options on top\n");
@@ -609,7 +642,7 @@ int qu_output_source(qu_context_t *ctx) {
     ///////////////  config_free
 
     printf("int %1$sfree(%1$smain_t *cfg) {\n", ctx->prefix);
-    printf("// TODO\n");
+    printf("qu_config_free(cfg);\n");
     printf("return 0;\n");
     printf("}\n");
     printf("\n");
