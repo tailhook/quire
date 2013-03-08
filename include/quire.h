@@ -57,6 +57,7 @@ typedef struct qu_mapping_head {
 
 typedef struct qu_ast_node qu_ast_node;
 typedef struct qu_seq_member qu_seq_member;
+typedef struct qu_map_member qu_map_member;
 
 // Methods from access.c
 qu_ast_node *qu_get_root(qu_parse_context *ctx);
@@ -66,6 +67,10 @@ char *qu_node_content(qu_ast_node *node);
 qu_seq_member *qu_seq_iter(qu_ast_node *node);
 qu_seq_member *qu_seq_next(qu_seq_member *iter);
 qu_ast_node *qu_seq_node(qu_seq_member *iter);
+qu_map_member *qu_map_iter(qu_ast_node *node);
+qu_map_member *qu_map_next(qu_map_member *iter);
+qu_ast_node *qu_map_key(qu_map_member *iter);
+qu_ast_node *qu_map_value(qu_map_member *iter);
 void *qu_config_init(void *cfg, int size);
 void qu_config_free(void *cfg);
 void *qu_config_alloc(void *cfg, int size);
@@ -73,6 +78,10 @@ void qu_config_array_insert(void **head, void **tail,
 							int *list_size,
 						    qu_array_head *member);
 void *qu_config_array_next(void *elem);
+void qu_config_mapping_insert(void **head, void **tail,
+							int *list_size,
+						    qu_mapping_head *member);
+void *qu_config_mapping_next(void *elem);
 
 // Methods from yparser.c
 int qu_file_parse(qu_parse_context *ctx, char *filename)

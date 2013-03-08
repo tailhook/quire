@@ -399,14 +399,15 @@ void _qu_eval_str(qu_parse_context *info,
                 nlen = c - name;
                 SYNTAX_ERROR(*c++ == '}');
                 variable_t *var = evaluate(info, name, nlen);
-                SYNTAX_ERROR(var);
-                if(var_to_string(&var)) {
+                if(var) {
+                    if(var_to_string(&var)) {
+                        free(var);
+                        SYNTAX_ERROR(0);
+                    }
+                    obstack_grow(&info->pieces,
+                        var->data.str.value, var->data.str.length);
                     free(var);
-                    SYNTAX_ERROR(0);
                 }
-                obstack_grow(&info->pieces,
-                    var->data.str.value, var->data.str.length);
-                free(var);
             } else {
                 while(*c && (isalnum(*c) || *c == '_')) ++c;
                 nlen = c - name;

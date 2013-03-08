@@ -111,6 +111,24 @@ qu_ast_node *qu_seq_node(qu_seq_member *iter) {
     return iter->value;
 }
 
+qu_map_member *qu_map_iter(qu_ast_node *node) {
+    if(node->kind != QU_NODE_MAPPING)
+        return NULL;
+    return TAILQ_FIRST(&node->val.map_index.items);
+}
+
+qu_map_member *qu_map_next(qu_map_member *iter) {
+    return TAILQ_NEXT(iter, lst);
+}
+
+qu_ast_node *qu_map_key(qu_map_member *iter) {
+    return iter->key;
+}
+
+qu_ast_node *qu_map_value(qu_map_member *iter) {
+    return iter->value;
+}
+
 void *qu_config_alloc(qu_config_head *cfg, int size) {
     void *ptr = obstack_alloc(&cfg->pieces, size);
     return ptr;
@@ -128,6 +146,21 @@ void qu_config_array_insert(qu_array_head **head, qu_array_head **tail,
 }
 
 qu_array_head *qu_config_array_next(qu_array_head *elem) {
+    return elem->next;
+}
+
+void qu_config_mapping_insert(qu_mapping_head **head, qu_mapping_head **tail,
+        int *list_size, qu_mapping_head *member) {
+    member->next = NULL;
+    if(*tail) {
+        (*tail)->next = member;
+        *tail = member;
+    } else {
+        *tail = *head = member;
+    }
+}
+
+qu_mapping_head *qu_config_mapping_next(qu_mapping_head *elem) {
     return elem->next;
 }
 

@@ -222,7 +222,41 @@ static void print_parser(qu_context_t *ctx, qu_ast_node *node) {
             data->expression);
         printf("}\n");
     } else if(data->type == QU_TYP_MAP) {
-        // TODO(tailhook)
+        printf("for(qu_map_member *mem%1$d = qu_map_iter(node%2$d);"
+               " mem%1$d; mem%1$d = qu_map_next(mem%1$d)) {\n",
+               ctx->node_level+1, ctx->node_level);
+        printf("%1$sm_%2$s_%3$s_t *el = qu_config_alloc(cfg, "
+            "sizeof(%1$sm_%2$s_%3$s_t));\n", ctx->prefix,
+            data->data.mapping.keyname, data->data.mapping.valuename);
+        printf("{\n");
+        printf("%1$sm_%2$s_%3$s_t *targ = el;\n", ctx->prefix,
+            data->data.mapping.keyname, data->data.mapping.valuename);
+        ctx->node_level += 1;
+
+        printf("qu_ast_node *node%1$d = qu_map_key(mem%1$d);\n",
+            ctx->node_level);
+        qu_ast_node *ktype = qu_map_get(node, "key-element");
+        qu_nodedata *kdata = ktype->userdata;
+        assert(kdata->kind == QU_MEMBER_SCALAR);
+        print_parser(ctx, ktype);
+
+        printf("node%1$d = qu_map_value(mem%1$d);\n", ctx->node_level);
+        qu_ast_node *vtype = qu_map_get(node, "value-element");
+        qu_nodedata *vdata = vtype->userdata;
+        if(vdata->type == QU_TYP_CUSTOM) {
+            printf("%1$s%2$s_defaults(&(*targ)%3$s);\n",
+                ctx->prefix, vdata->data.custom.typename,
+                vdata->expression);
+        }
+        print_parser(ctx, vtype);
+
+        ctx->node_level -= 1;
+        printf("}\n");
+        printf("qu_config_mapping_insert("
+            "(void **)&(*targ)%1$s, (void **)&(*targ)%1$s_last, "
+            "&(*targ)%1$s_len, &el->head);\n",
+            data->expression);
+        printf("}\n");
     } else {
         assert(0);
     }
@@ -293,7 +327,18 @@ int print_printer(qu_context_t *ctx, qu_ast_node *node) {
         printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_END);\n");
     } else if(data->type == QU_TYP_MAP) {
         printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
-        // TODO(tailhook)
+        printf("for(%1$sm_%2$s_%3$s_t *elem=(*cfg)%4$s; elem; "
+               "elem = qu_config_array_next(elem)) {\n", ctx->prefix,
+                data->data.mapping.keyname, data->data.mapping.valuename,
+                data->expression);
+        printf("{\n");
+        printf("%1$sm_%2$s_%3$s_t *cfg = elem;\n", ctx->prefix,
+            data->data.mapping.keyname, data->data.mapping.valuename);
+        print_printer(ctx, qu_map_get(node, "key-element"));
+        printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
+        print_printer(ctx, qu_map_get(node, "value-element"));
+        printf("}\n");
+        printf("}\n");
         printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
     } else {
         assert(0);

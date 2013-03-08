@@ -7,6 +7,9 @@
 typedef struct qu_array_head {
 	struct qu_array_head *next;
 } qu_array_head __attribute__((aligned(sizeof(void*)*2)));
+typedef struct qu_mapping_head {
+	struct qu_mapping_head *next;
+} qu_mapping_head __attribute__((aligned(sizeof(void*)*2)));
 
 
 qu_map_member **qu_find_node(qu_map_member **root, char *value);
@@ -20,6 +23,10 @@ qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
 qu_seq_member *qu_seq_iter(qu_ast_node *node);
 qu_seq_member *qu_seq_next(qu_seq_member *iter);
 qu_ast_node *qu_seq_node(qu_seq_member *iter);
+qu_map_member *qu_map_iter(qu_ast_node *node);
+qu_map_member *qu_map_next(qu_map_member *iter);
+qu_ast_node *qu_map_key(qu_map_member *iter);
+qu_ast_node *qu_map_value(qu_map_member *iter);
 int qu_get_boolean(qu_ast_node *node, int *value);
 char *qu_node_content(qu_ast_node *node);
 void *qu_config_alloc(qu_config_head *cfg, int size);
