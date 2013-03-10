@@ -436,14 +436,15 @@ int qu_output_source(qu_context_t *ctx) {
 
     ///////////////  config_cli_parse
 
-    printf("int %1$scli_parse(%1$scli_t *cfg, int argc, char **argv) {\n",
-        ctx->prefix);
+    printf("int %1$scli_parse(qu_parse_context *ctx, %1$scli_t *cfg,"
+           "int argc, char **argv) {\n", ctx->prefix);
     char options[128] = "hc:D:PC";
     int optlen = strlen(options);
     int optnum = 1000;
     qu_nodedata *data;
     printf("struct option options[] = {\n");
     printf("{\"config\", 1, NULL, 'c'},\n");
+    printf("{\"config-var\", 1, NULL, 'D'},\n");
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         if(print_1opt(qu_map_get(data->node, "command-line"), 1, optnum,
                    options, &optlen))
@@ -477,6 +478,16 @@ int qu_output_source(qu_context_t *ctx) {
     printf("case 'c':\n");
     printf("cfg->cfg_filename = optarg;\n");
     printf("break;\n");
+    printf("case 'D': {\n");
+    printf("char *eq = strchr(optarg, '=');\n");
+    printf("if(eq) {\n");
+    printf("*eq = 0;\n");
+    printf("qu_set_string(ctx, optarg, eq+1, strlen(eq+1));\n");
+    printf("*eq = '=';\n");
+    printf("} else {\n");
+    printf("qu_set_string(ctx, optarg, \"\", 0);\n");
+    printf("}\n");
+    printf("}; break;\n");
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         if(print_case(qu_map_get(data->node, "command-line"), optnum)) {
             ++ optnum;
@@ -528,6 +539,14 @@ int qu_output_source(qu_context_t *ctx) {
             printf("if((*cli)%s_set) {\n", strrchr(data->expression, '.'));
             printf("(*cfg)%s = (*cli)%s;\n", data->expression,
                    strrchr(data->expression, '.'));
+            switch(data->type) {
+            case QU_TYP_FILE:
+            case QU_TYP_DIR:
+            case QU_TYP_STRING:
+                printf("(*cfg)%s_len = strlen((*cli)%s);\n", data->expression,
+                       strrchr(data->expression, '.'));
+                break;
+            }
             // TODO(tailhook) set length for strings
             printf("}\n");
         }
@@ -627,17 +646,20 @@ int qu_output_source(qu_context_t *ctx) {
     }
 
     printf("\n");
+    printf("// Prepare context\n");
+    printf("qu_parse_context cctx;\n");
+    printf("qu_parse_context *ctx = &cctx;\n");
+    printf("qu_parser_init(ctx);\n");
+    printf("\n");
     printf("// Parsing command-line options\n");
     printf("%scli_t ccli;\n", ctx->prefix);
     printf("%scli_t *cli = &ccli;\n", ctx->prefix);
     printf("memset(cli, 0, sizeof(%scli_t));\n", ctx->prefix);
-    printf("%scli_parse(cli, argc, argv);\n", ctx->prefix);
+    printf("%scli_parse(ctx, cli, argc, argv);\n", ctx->prefix);
 
     printf("\n");
     printf("// Prepare the AST\n");
     printf("int rc;\n");
-    printf("qu_parse_context cctx;\n");
-    printf("qu_parse_context *ctx = &cctx;\n");
     printf("rc = qu_file_parse(ctx, cli->cfg_filename);\n");
     printf("if(rc < 0) {\n");
     printf("    qu_print_error(ctx, stderr);\n");
@@ -682,7 +704,7 @@ int qu_output_source(qu_context_t *ctx) {
 
     printf("\n");
     printf("// Free resources\n");
-    printf("qu_context_free(ctx);\n");
+    printf("qu_parser_free(ctx);\n");
 
     // Temporary
     printf("%1$sprint(cfg, 0, stdout);\n", ctx->prefix);

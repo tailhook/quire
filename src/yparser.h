@@ -93,7 +93,8 @@ qu_ast_node *qu_file_newparse(qu_parse_context *ctx, char *filename);
 // Keep in sync with quire.h
 // Think about ABI compatibility
 int qu_file_parse(qu_parse_context *ctx, char *filename);
-void qu_context_free(qu_parse_context *ctx);
+void qu_parser_init(qu_parse_context *ctx);
+void qu_parser_free(qu_parse_context *ctx);
 
 
 #endif // _H_YPARSER

@@ -35,4 +35,11 @@ void _qu_insert_anchor(qu_parse_context *ctx,
     unsigned char *name, int namelen, qu_ast_node *node);
 qu_ast_node *_qu_find_anchor(qu_parse_context *ctx,
     unsigned char *name, int namelen);
+
+
+// PUBLIC API
+// Keep in sync with quire.h
+// Think about ABI compatibility
+int qu_set_string(qu_parse_context *ctx, char*name, char *data, int dlen);
+
 #endif //_H_VARS

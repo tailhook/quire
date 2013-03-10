@@ -96,7 +96,7 @@ SimpleHTTPServer:
     default: 5
     description: >
       Amount of debugging info written into log file (or stdout)
-    command-line: [-D, --log-level]
+    command-line: [-L, --log-level]
     command-line-incr: [ -v, --verbose]
     command-line-decr: [ -q, --quiet]
     environ-var: COMPR_LOGLEVEL

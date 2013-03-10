@@ -114,12 +114,12 @@ static void _qu_context_reinit(qu_parse_context *ctx) {
     CIRCLEQ_INIT(&ctx->tokens);
     ctx->buf = NULL;
     ctx->error_kind = 0;
-    ctx->variables = NULL;
 }
 
-static void _qu_context_init(qu_parse_context *ctx) {
+void qu_parser_init(qu_parse_context *ctx) {
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
+    ctx->variables = NULL;
 	_qu_context_reinit(ctx);
 }
 
@@ -160,7 +160,7 @@ void _qu_load_file(qu_parse_context *ctx, char *filename) {
     ctx->buflen = so_far;
 }
 
-void qu_context_free(qu_parse_context *ctx) {
+void qu_parser_free(qu_parse_context *ctx) {
     obstack_free(&ctx->pieces, NULL);
 }
 
@@ -563,6 +563,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         node->start_token = CTOK;
         node->kind = QU_NODE_MAPPING;
         TAILQ_INIT(&node->val.map_index.items);
+        node->val.map_index.tree = NULL;
         NEXT;
         while(CTOK->kind != QU_TOK_FLOW_MAP_END) {
             qu_ast_node *knode = new_text_node(ctx, CTOK);
@@ -579,6 +580,8 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
                     *targ = obstack_alloc(&ctx->pieces,
                                           sizeof(qu_map_member));
                     (*targ)->key = knode;
+                    (*targ)->left = NULL;
+                    (*targ)->right = NULL;
                     TAILQ_INSERT_TAIL(&node->val.map_index.items, *targ, lst);
                 }
             } else {
@@ -694,6 +697,7 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
             node->start_token = CTOK;
             node->kind = QU_NODE_MAPPING;
             TAILQ_INIT(&node->val.map_index.items);
+            node->val.map_index.tree = NULL;
             int mapping_indent = CTOK->indent;
             int oldmap = ctx->cur_mapping;
             ctx->cur_mapping = CTOK->indent;
@@ -716,6 +720,8 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
                         *targ = obstack_alloc(&ctx->pieces,
                                               sizeof(qu_map_member));
                         (*targ)->key = knode;
+                        (*targ)->left = NULL;
+                        (*targ)->right = NULL;
                         TAILQ_INSERT_TAIL(&node->val.map_index.items,
                                           *targ, lst);
                     }
@@ -811,7 +817,6 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
     int rc;
     ctx->has_jmp = 1;
     if(!(rc = setjmp(ctx->errjmp))) {
-        _qu_context_init(ctx);
         _qu_load_file(ctx, filename);
         _qu_tokenize(ctx);
         //qu_print_tokens(ctx, stderr);

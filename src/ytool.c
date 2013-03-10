@@ -262,6 +262,7 @@ int main(int argc, char **argv) {
     assert(argc >= 2);
     qu_parse_context ctx;
     int rc;
+    qu_parser_init(&ctx);
     rc = qu_file_parse(&ctx, options.filename);
     if(rc == 1) {
         qu_print_error(&ctx, stderr);
@@ -276,6 +277,6 @@ int main(int argc, char **argv) {
             QU_MFLAG_MAPMERGE|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);
     }
     execute_action(argv + optind, ctx.document);
-    qu_context_free(&ctx);
+    qu_parser_free(&ctx);
     return 0;
 }

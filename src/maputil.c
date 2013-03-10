@@ -44,6 +44,8 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
             if(QU_MFLAG_MAPMERGE & flags
                && !strcmp(qu_node_content(item->key), "<<")) {
                 if(item->value->kind == QU_NODE_SEQUENCE) {
+                    qu_map_member *anchor = item;
+                    qu_map_member *next = TAILQ_NEXT(item, lst);
                     qu_seq_index *chseq = &item->value->val.seq_index;
                     qu_seq_member *child;
                     TAILQ_FOREACH(child, &chseq->items, lst) {
@@ -52,7 +54,12 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
                             child->value = child->value->val.alias_target;
                         }
                         if(child->value->kind == QU_NODE_MAPPING) {
-                            merge_mapping(ctx, map, child->value, item);
+                            merge_mapping(ctx, map, child->value, anchor);
+                        }
+                        if(next) {
+                            anchor = TAILQ_PREV(next, qu_map_list, lst);
+                        } else {
+                            anchor = TAILQ_LAST(&map->items, qu_map_list);
                         }
                     }
                 } else if(item->value->kind == QU_NODE_MAPPING) {

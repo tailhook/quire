@@ -23,6 +23,7 @@ void qu_context_init(qu_context_t *ctx) {
     memset(ctx, 0, sizeof(qu_context_t));
     TAILQ_INIT(&ctx->arrays);
     TAILQ_INIT(&ctx->mappings);
+    qu_parser_init(&ctx->parsing);
 }
 
 
@@ -43,7 +44,7 @@ int main(int argc, char **argv) {
         rc = qu_config_preprocess(&ctx);
     if(rc > 0) {
         qu_print_error(&ctx.parsing, stderr);
-        qu_context_free(&ctx.parsing);
+        qu_parser_free(&ctx.parsing);
         return 1;
     } else if(rc < 0) {
         fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
@@ -73,6 +74,6 @@ int main(int argc, char **argv) {
         ftruncate(1, ftell(stdout));
     }
 
-    qu_context_free(&ctx.parsing);
+    qu_parser_free(&ctx.parsing);
     return 0;
 }

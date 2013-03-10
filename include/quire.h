@@ -86,7 +86,8 @@ void *qu_config_mapping_next(void *elem);
 // Methods from yparser.c
 int qu_file_parse(qu_parse_context *ctx, char *filename)
     __attribute__((warn_unused_result));
-void qu_context_free(qu_parse_context *ctx);
+void qu_parser_init(qu_parse_context *ctx);
+void qu_parser_free(qu_parse_context *ctx);
 
 // Methods from eval.c
 void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
@@ -95,6 +96,9 @@ void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
     double *result);
 void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
     char **result, size_t *rlen);
+
+// Methods from vars.h
+int qu_set_string(qu_parse_context *ctx, char*name, char *data, int dlen);
 
 // Methods from error.c
 int qu_has_error(qu_parse_context *);
