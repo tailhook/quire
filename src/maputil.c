@@ -11,14 +11,22 @@ static void merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
     qu_map_member *item;
     TAILQ_FOREACH(item, &source->val.map_index.items, lst) {
         char *key = qu_node_content(item->key);
-        qu_map_member **tmp = qu_find_node(&idx->tree, key);
-        if(*tmp) // already has a key
-            continue;
+        qu_map_member **tmp = NULL;
+        if(strcmp(key, "<<")) {
+            // we already know that merge key is in the mapping
+            // we need to insert it to recurse into more mappings
+            // however no need to insert it into tree
+            tmp = qu_find_node(&idx->tree, key);
+            if(*tmp) // already has a key
+                continue;
+        }
         qu_map_member *copy = obstack_alloc(&ctx->pieces,
                                             sizeof(qu_map_member));
         copy->key = item->key;
         copy->value = item->value;
-        *tmp = copy;
+        if(tmp) {
+            *tmp = copy;
+        }
         TAILQ_INSERT_AFTER(&idx->items, after, copy, lst);
         after = copy;
     }
@@ -39,6 +47,10 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
                     qu_seq_index *chseq = &item->value->val.seq_index;
                     qu_seq_member *child;
                     TAILQ_FOREACH(child, &chseq->items, lst) {
+                        if(child->value->kind == QU_NODE_ALIAS
+                           && QU_MFLAG_RESOLVEALIAS & flags) {
+                            child->value = child->value->val.alias_target;
+                        }
                         if(child->value->kind == QU_NODE_MAPPING) {
                             merge_mapping(ctx, map, child->value, item);
                         }

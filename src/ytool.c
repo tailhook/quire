@@ -12,11 +12,13 @@
 #include "codes.h"
 #include "emitter.h"
 #include "../objpath/objpath.h"
+#include "maputil.h"
 
-char short_options[] = "Ehf:vk";
+char short_options[] = "Ehf:vkp";
 struct option long_options[] = {
     {"extract", 0, NULL, 'E'},
     {"verbose", 0, NULL, 'v'},
+    {"plain", 0, NULL, 'p'},
     {"keep-formatting", 0, NULL, 'k'},
     {"error-basename", 0, NULL, 'r'},
     {"help", 0, NULL, 'h'},
@@ -32,6 +34,7 @@ struct {
     char *filename;
     int error_basename;
     int keep_formatting;
+    int plain;
 } options;
 
 
@@ -50,6 +53,8 @@ void print_usage(FILE *stream) {
         "  -k, --keep-formatting\n"
         "            Keep formatting of original file "
                     "(incl. comments and anchors)\n"
+        "  -p, --plain\n"
+        "            Process plain structure (merge maps, resolve anchors..)\n"
         "  -f, --input FILE\n"
         "            Input filename (stdin by default)\n"
         "\n"
@@ -70,6 +75,9 @@ void parse_options(int argc, char **argv) {
             break;
         case 'k':
             options.keep_formatting = 1;
+            break;
+        case 'p':
+            options.plain = 1;
             break;
         case 'v':
             options.verbosity += 1;
@@ -262,6 +270,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
             options.filename, strerror(-rc));
         return 1;
+    }
+    if(options.plain) {
+        _qu_merge_maps(&ctx,
+            QU_MFLAG_MAPMERGE|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);
     }
     execute_action(argv + optind, ctx.document);
     qu_context_free(&ctx);
