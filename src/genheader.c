@@ -174,6 +174,8 @@ int qu_output_header(qu_context_t *ctx) {
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv);\n",
         ctx->prefix);
+    printf("int %1$sset_defaults(%1$smain_t *cfg);\n",
+        ctx->prefix);
     printf("int %1$sprint(%1$smain_t *cfg, int flags, FILE *);\n",
         ctx->prefix);
     printf("int %1$sfree(%1$smain_t *cfg);\n", ctx->prefix);

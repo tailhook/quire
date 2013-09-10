@@ -634,16 +634,25 @@ int qu_output_source(qu_context_t *ctx) {
         }
     }
 
+    ///////////////  config_set_defaults
+
+    printf("int %1$sset_defaults(%1$smain_t *cfg) {\n", ctx->prefix);
+    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+        print_default(ctx, item->value, "", item->value);
+    }
+
+    printf("return 0;\n");
+    printf("}\n");
+    printf("\n");
+
+
     ///////////////  config_load
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
         ctx->prefix);
 
     printf("qu_config_init(cfg, sizeof(*cfg));\n");
-    printf("// Setting defaults\n");
-    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
-        print_default(ctx, item->value, "", item->value);
-    }
+    printf("%1$sset_defaults(cfg);\n", ctx->prefix);
 
     printf("\n");
     printf("// Prepare context\n");
