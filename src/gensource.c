@@ -482,10 +482,10 @@ int qu_output_source(qu_context_t *ctx) {
     printf("char *eq = strchr(optarg, '=');\n");
     printf("if(eq) {\n");
     printf("*eq = 0;\n");
-    printf("qu_set_string(ctx, optarg, eq+1, strlen(eq+1));\n");
+    printf("qu_set_string(ctx, optarg, eq+1);\n");
     printf("*eq = '=';\n");
     printf("} else {\n");
-    printf("qu_set_string(ctx, optarg, \"\", 0);\n");
+    printf("qu_set_string(ctx, optarg, \"\");\n");
     printf("}\n");
     printf("}; break;\n");
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {

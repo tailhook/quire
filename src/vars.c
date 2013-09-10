@@ -68,8 +68,8 @@ static qu_variable_t *find_and_set(qu_parse_context *ctx, char *name) {
     return var;
 }
 
-int qu_set_string(qu_parse_context *ctx,
-    char *name, char *data, int dlen){
+int qu_set_string(qu_parse_context *ctx, char *name, char *data) {
+	int dlen = strlen(data);
     qu_variable_t *var = find_and_set(ctx, name);
     if(!var) return -1;
     var->type = QU_VAR_STRING;

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "comprehensive-config.h"
 
@@ -107,6 +108,34 @@ int main(int argc, char **argv) {
     CFG_STRING_STRING_LOOP(item, config.SimpleHTTPServer.extra_headers) {
         printf("HEADER: \"%s\": \"%s\"\n", item->key, item->value);
     }*/
-    cfg_load(&config, argc, argv);
-    cfg_free(&config);
+	int rc;
+	cfg_main_t ccfg;
+	cfg_main_t *cfg = &ccfg;
+    qu_config_init(cfg, sizeof(*cfg));
+    cfg_set_defaults(cfg);
+
+    // Prepare context
+    qu_parse_context cctx;
+    qu_parse_context *ctx = &cctx;
+    qu_parser_init(ctx);
+	qu_set_string(ctx, "hello", "example");
+	qu_set_integer(ctx, "intvar", 123);
+
+    // Parsing command-line options
+    cfg_cli_t ccli;
+    cfg_cli_t *cli = &ccli;
+    memset(cli, 0, sizeof(cfg_cli_t));
+    cfg_cli_parse(ctx, cli, argc, argv);
+    cfg_do_parse(ctx, cli, cfg);
+    // Overlay command-line options on top
+    rc = cfg_cli_apply(cfg, cli);
+    if(rc < 0) {
+        perror("simplehttp: libquire: Error applying command-line args");
+        exit(127);
+    }
+
+    // Free resources
+    qu_parser_free(ctx);
+    cfg_print(cfg, 0, stdout);
+    return 0;
 }

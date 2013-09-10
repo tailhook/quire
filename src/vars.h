@@ -40,6 +40,7 @@ qu_ast_node *_qu_find_anchor(qu_parse_context *ctx,
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-int qu_set_string(qu_parse_context *ctx, char*name, char *data, int dlen);
+int qu_set_string(qu_parse_context *ctx, char*name, char *data);
+int qu_set_integer(qu_parse_context *ctx, char*name, long value);
 
 #endif //_H_VARS

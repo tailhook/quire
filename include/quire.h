@@ -98,7 +98,8 @@ void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
     char **result, size_t *rlen);
 
 // Methods from vars.h
-int qu_set_string(qu_parse_context *ctx, char*name, char *data, int dlen);
+int qu_set_string(qu_parse_context *ctx, char*name, char *data);
+int qu_set_integer(qu_parse_context *ctx, char *name, long value);
 
 // Methods from error.c
 int qu_has_error(qu_parse_context *);
