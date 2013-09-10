@@ -174,6 +174,12 @@ int qu_output_header(qu_context_t *ctx) {
 
     printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv);\n",
         ctx->prefix);
+    printf("int %1$scli_parse(qu_parse_context *ctx, %1$scli_t *cli, "
+		"int argc, char **argv);\n", ctx->prefix);
+    printf("int %1$scli_apply(%1$smain_t *cfg, %1$scli_t *cli);\n",
+		ctx->prefix);
+    printf("int %1$sdo_parse(qu_parse_context *ctx, %1$scli_t *cli, "
+		"%1$smain_t *cfg);\n", ctx->prefix);
     printf("int %1$sset_defaults(%1$smain_t *cfg);\n",
         ctx->prefix);
     printf("int %1$sprint(%1$smain_t *cfg, int flags, FILE *);\n",

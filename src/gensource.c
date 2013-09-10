@@ -595,6 +595,18 @@ int qu_output_source(qu_context_t *ctx) {
             printf("}\n");
             printf("\n");
 
+            qu_ast_node *cnode = qu_map_get(typ->value, "__value__");
+            char *conversion = NULL;
+            if(cnode && cnode->tag->bytelen == 8 &&
+                !strncmp((char *)cnode->tag->data,
+                         "!Convert", cnode->tag->bytelen)) {
+                conversion = qu_node_content(cnode);
+                printf("// Forward declaration\n");
+                printf("void %3$s(qu_parse_context *ctx, %1$smain_t *cfg, "
+                    "%1$s%2$s_t *targ, char *value);\n",
+                    ctx->prefix, qu_node_content(typ->key), conversion);
+            }
+
             // parse
             printf("void %1$s%2$s_parse(%1$smain_t *cfg,"
                    " %1$s%2$s_t *targ, "
@@ -603,6 +615,12 @@ int qu_output_source(qu_context_t *ctx) {
                 ctx->prefix, qu_node_content(typ->key));
             ctx->node_level = 1;
             ctx->node_vars[1] = 0;
+			if(conversion) {
+				printf("if(qu_node_content(node0)) {\n");
+				printf("%s(ctx, cfg, targ, qu_node_content(node0));\n",
+					conversion);
+				printf("}\n");
+			}
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
                 print_parse_member(ctx, item->value,
                     qu_node_content(item->key));
