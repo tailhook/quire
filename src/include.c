@@ -35,20 +35,16 @@ static qu_ast_node *process(qu_parse_context *ctx,
 		int fd = open(join_filenames(ctx, node->tag->filename,
 									 qu_node_content(node)), O_RDONLY);
 		if(fd < 0) {
-			ctx->error_kind = YAML_SYSTEM_ERROR;
-			ctx->error_text = "Can't open file";
-			ctx->error_token = node->start_token;
-			longjmp(ctx->errjmp, -errno);
+			LONGJUMP_WITH_SYSTEM_ERROR(ctx, node->start_token,
+				"Can't open file");
 		}
 		struct stat stinfo;
 		rc = fstat(fd, &stinfo);
 		if(rc < 0) {
 			eno = errno;
 			close(fd);
-			ctx->error_kind = YAML_SYSTEM_ERROR;
-			ctx->error_text = "Can't stat file";
-			ctx->error_token = node->start_token;
-			longjmp(ctx->errjmp, -eno);
+			LONGJUMP_WITH_SYSTEM_ERROR(ctx, node->start_token,
+				"Can't stat file");
 		}
 		data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
 		int so_far = 0;
@@ -58,10 +54,8 @@ static qu_ast_node *process(qu_parse_context *ctx,
 				eno = errno;
 				if(eno == EINTR) continue;
 				close(fd);
-				ctx->error_kind = YAML_SYSTEM_ERROR;
-				ctx->error_text = "Can't read file";
-				ctx->error_token = node->start_token;
-				longjmp(ctx->errjmp, -eno);
+				LONGJUMP_WITH_SYSTEM_ERROR(ctx, node->start_token,
+					"Error reading file");
 			}
 			if(!rc) {
 				// WARNING: file truncated

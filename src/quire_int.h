@@ -4,6 +4,9 @@
 #include <obstack.h>
 #include <setjmp.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#include "codes.h"
 
 typedef struct __attribute__((__aligned__(512))) qu_config_head {
     jmp_buf *errjmp;
@@ -50,6 +53,17 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
         longjmp(*(ctx)->errjmp, 1); \
     } else { \
         fprintf(stderr, "Parser error: %s\n", (text)); \
+        abort(); \
+    }}
+
+#define LONGJUMP_WITH_SYSTEM_ERROR(ctx, token, text) {\
+    if((ctx)->errjmp) { \
+        (ctx)->error_kind = YAML_SYSTEM_ERROR; \
+        (ctx)->error_text = (text); \
+        (ctx)->error_token = (token); \
+        longjmp(*(ctx)->errjmp, 1); \
+    } else { \
+        fprintf(stderr, "System error: %s\n", (text)); \
         abort(); \
     }}
 

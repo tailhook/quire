@@ -7,13 +7,8 @@
 #include "eval.h"
 #include "vars.h"
 #include "access.h"
+#include "quire_int.h"
 
-#define SYNTAX_ERROR(cond) if(!(cond)) { \
-    longjmp(info->errjmp, 1); \
-    }
-#define SYNTAX_ERROR2_NULL(message, ...) if(TRUE) { \
-    longjmp(info->errjmp, 1); \
-    }
 
 typedef enum {
     VAR_INT,
@@ -348,12 +343,19 @@ void _qu_eval_int(qu_parse_context *info, char *value,
         _qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_int(data, result);
         obstack_free(&info->pieces, data);
-        SYNTAX_ERROR(end == data + dlen);
+        if(end != data + dlen) {
+			LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+				"Integer value required");
+		}
+
         return;
     }
     char *end = parse_int(value, result);
     int vlen = strlen(value);
-    SYNTAX_ERROR(end == value + vlen);
+    if(end != value + vlen) {
+		LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+			"Integer value required");
+	}
 }
 
 void _qu_eval_float(qu_parse_context *info, char *value,
@@ -365,12 +367,18 @@ void _qu_eval_float(qu_parse_context *info, char *value,
         _qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_double(data, result);
         obstack_free(&info->pieces, data);
-        SYNTAX_ERROR(end == data + dlen);
+        if(end != data + dlen) {
+			LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+				"Floating point value required");
+		}
         return;
     }
     char *end = parse_double(value, result);
     int vlen = strlen(value);
-    SYNTAX_ERROR(end == value + vlen);
+    if(end != value + vlen) {
+		LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+			"Floating point value required");
+	}
 }
 
 void _qu_eval_str(qu_parse_context *info,
@@ -384,7 +392,10 @@ void _qu_eval_str(qu_parse_context *info,
                 continue;
             }
             if(*c == '\\') {
-                SYNTAX_ERROR(*++c);
+				if(!*++c) {
+					LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+						"Expected char after backslash");
+				}
                 obstack_1grow(&info->pieces, *c);
                 ++c;
                 continue;
@@ -397,12 +408,16 @@ void _qu_eval_str(qu_parse_context *info,
                 ++name;
                 while(*++c && *c != '}');
                 nlen = c - name;
-                SYNTAX_ERROR(*c++ == '}');
+                if(*c++ != '}') {
+					LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+						"Expected closing }");
+				}
                 variable_t *var = evaluate(info, name, nlen);
                 if(var) {
                     if(var_to_string(&var)) {
                         free(var);
-                        SYNTAX_ERROR(0);
+						LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+							"Variable not found");
                     }
                     obstack_grow(&info->pieces,
                         var->data.str.value, var->data.str.length);
