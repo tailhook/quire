@@ -646,25 +646,9 @@ int qu_output_source(qu_context_t *ctx) {
     printf("\n");
 
 
-    ///////////////  config_load
-
-    printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
-        ctx->prefix);
-
-    printf("qu_config_init(cfg, sizeof(*cfg));\n");
-    printf("%1$sset_defaults(cfg);\n", ctx->prefix);
-
-    printf("\n");
-    printf("// Prepare context\n");
-    printf("qu_parse_context cctx;\n");
-    printf("qu_parse_context *ctx = &cctx;\n");
-    printf("qu_parser_init(ctx);\n");
-    printf("\n");
-    printf("// Parsing command-line options\n");
-    printf("%scli_t ccli;\n", ctx->prefix);
-    printf("%scli_t *cli = &ccli;\n", ctx->prefix);
-    printf("memset(cli, 0, sizeof(%scli_t));\n", ctx->prefix);
-    printf("%scli_parse(ctx, cli, argc, argv);\n", ctx->prefix);
+	///////////////  config_do_parse
+    printf("int %1$sdo_parse(qu_parse_context *ctx, %1$scli_t *cli, "
+		"%1$smain_t *cfg) {\n", ctx->prefix);
 
     printf("\n");
     printf("// Prepare the AST\n");
@@ -702,6 +686,34 @@ int qu_output_source(qu_context_t *ctx) {
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
         print_parse_member(ctx, item->value, qu_node_content(item->key));
     }
+    printf("return 0;\n");
+    printf("}\n");
+    printf("\n");
+
+
+    ///////////////  config_load
+
+    printf("int %1$sload(%1$smain_t *cfg, int argc, char **argv) {\n",
+        ctx->prefix);
+	printf("int rc;\n");
+
+    printf("qu_config_init(cfg, sizeof(*cfg));\n");
+    printf("%1$sset_defaults(cfg);\n", ctx->prefix);
+
+    printf("\n");
+    printf("// Prepare context\n");
+    printf("qu_parse_context cctx;\n");
+    printf("qu_parse_context *ctx = &cctx;\n");
+    printf("qu_parser_init(ctx);\n");
+    printf("\n");
+
+    printf("// Parsing command-line options\n");
+    printf("%scli_t ccli;\n", ctx->prefix);
+    printf("%scli_t *cli = &ccli;\n", ctx->prefix);
+    printf("memset(cli, 0, sizeof(%scli_t));\n", ctx->prefix);
+    printf("%scli_parse(ctx, cli, argc, argv);\n", ctx->prefix);
+
+	printf("%1$sdo_parse(ctx, cli, cfg);\n", ctx->prefix);
 
     printf("// Overlay command-line options on top\n");
     printf("rc = %scli_apply(cfg, cli);\n", ctx->prefix);
