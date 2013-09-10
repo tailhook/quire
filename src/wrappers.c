@@ -4,26 +4,34 @@
 
 int qu_process_includes(qu_parse_context *ctx, int flags) {
     int rc;
-    ctx->has_jmp = 1;
-    if(!(rc = setjmp(ctx->errjmp))) {
-        _qu_process_includes(ctx, flags);
-    } else {
-        ctx->has_jmp = 0;
-        return rc;
-    }
-    ctx->has_jmp = 0;
+	if(!ctx->errjmp) {
+		ctx->errjmp = &ctx->errjmp_buf;
+		if(!(rc = setjmp(ctx->errjmp_buf))) {
+			_qu_process_includes(ctx, flags);
+		} else {
+			ctx->errjmp = NULL;
+			return rc;
+		}
+		ctx->errjmp = NULL;
+	} else {
+		_qu_process_includes(ctx, flags);
+	}
     return 0;
 }
 
 int qu_merge_maps(qu_parse_context *ctx, int flags) {
     int rc;
-    ctx->has_jmp = 1;
-    if(!(rc = setjmp(ctx->errjmp))) {
-        _qu_merge_maps(ctx, flags);
-    } else {
-        ctx->has_jmp = 0;
-        return rc;
-    }
-    ctx->has_jmp = 0;
+	if(!ctx->errjmp) {
+		ctx->errjmp = &ctx->errjmp_buf;
+		if(!(rc = setjmp(ctx->errjmp_buf))) {
+			_qu_merge_maps(ctx, flags);
+		} else {
+			ctx->errjmp = NULL;
+			return rc;
+		}
+		ctx->errjmp = NULL;
+	} else {
+		_qu_merge_maps(ctx, flags);
+	}
     return 0;
 }

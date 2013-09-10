@@ -96,12 +96,7 @@ static void print_token(qu_token *tok, FILE *stream) {
 static void *parser_chunk_alloc(qu_parse_context *ctx, int size) {
     void *res = malloc(size);
     if(unlikely(!res)) {
-        if(unlikely(!ctx->has_jmp)) {
-            fprintf(stderr, "Memory allocation failed without jmp context\n");
-            abort();
-        } else {
-            longjmp(ctx->errjmp, -ENOMEM);
-        }
+        LONGJUMP_WITH_ERRCODE(ctx, ENOMEM);
     }
     return res;
 }
@@ -130,13 +125,13 @@ void _qu_load_file(qu_parse_context *ctx, char *filename) {
     unsigned char *data = NULL;
     int fd = open(filename, O_RDONLY);
     if(fd < 0)
-        longjmp(ctx->errjmp, -errno);
+        LONGJUMP_WITH_ERRNO(ctx);
     struct stat stinfo;
     rc = fstat(fd, &stinfo);
     if(rc < 0) {
         eno = errno;
         close(fd);
-        longjmp(ctx->errjmp, -eno);
+        LONGJUMP_WITH_ERRCODE(ctx, eno);
     }
     data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
     int so_far = 0;
@@ -146,7 +141,7 @@ void _qu_load_file(qu_parse_context *ctx, char *filename) {
             eno = errno;
             if(eno == EINTR) continue;
             close(fd);
-            longjmp(ctx->errjmp, -eno);
+            LONGJUMP_WITH_ERRCODE(ctx, eno);
         }
         if(!rc) {
             // WARNING: file truncated
@@ -193,19 +188,13 @@ void _qu_tokenize(qu_parse_context *ctx) {
     ctok->kind = QU_TOK_ERROR; \
     ctok->end_line = ctx->curline; \
     ctok->end_char = ctx->curpos; \
-    ctx->error_kind = YAML_SCANNER_ERROR; \
-    ctx->error_text = "Premature end of file"; \
-    ctx->error_token = ctok; \
-    longjmp(ctx->errjmp, 1); \
+    LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok, "Premature en of file"); \
     }
 #define SYNTAX_ERROR(message) {\
     ctok->kind = QU_TOK_ERROR; \
     ctok->end_line = ctx->curline; \
     ctok->end_char = ctx->curpos; \
-    ctx->error_kind = YAML_SCANNER_ERROR; \
-    ctx->error_text = message; \
-    ctx->error_token = ctok; \
-    longjmp(ctx->errjmp, 1); \
+    LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok, (message)); \
     }
 
 #define CONSUME_WHILE(cond) LOOP { if(!(cond)) break; }
@@ -233,11 +222,9 @@ void _qu_tokenize(qu_parse_context *ctx) {
                 if(KLASS == CHAR_WHITESPACE) {
                     ctok->kind = QU_TOK_SEQUENCE_ENTRY;
                     if(!ctx->linestart) {
-                        ctx->error_kind = YAML_SCANNER_ERROR;
-                        ctx->error_text = "Sequence entry dash sign is only"
-                                          " allowed at the start of line";
-                        ctx->error_token = ctok;
-                        longjmp(ctx->errjmp, 1);
+                        LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok,
+                            "Sequence entry dash sign is only"
+                            " allowed at the start of line")
                     }
                     ctx->indent += 1;
                     ctok->indent = ctx->indent;
@@ -277,10 +264,8 @@ void _qu_tokenize(qu_parse_context *ctx) {
             case '@': case '`':
                 ctok->end_char += 1;
                 ctok->kind = QU_TOK_ERROR;
-                ctx->error_kind = YAML_SCANNER_ERROR;
-                ctx->error_text = "Characters '@' and '`' are reserved";
-                ctx->error_token = ctok;
-                longjmp(ctx->errjmp, 1);
+                LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok,
+                    "Characters '@' and '`' are reserved")
             case '"':
                 FORCE_NEXT;
                 ctok->kind = QU_TOK_DOUBLESTRING;
@@ -532,10 +517,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             NEXT;
             return node;
         } else {
-            ctx->error_text = "Anchor target not found";
-            ctx->error_token = CTOK;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Anchor target not found");
         }
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
@@ -572,10 +554,8 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             if(cont) {  // duplicate key check
                 targ = qu_find_node(&node->val.map_index.tree, cont);
                 if(*targ) {
-                    ctx->error_text = "Duplicate mapping key";
-                    ctx->error_token = knode->start_token;
-                    ctx->error_kind = YAML_CONTENT_ERROR;
-                    longjmp(ctx->errjmp, 1);
+                    LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                        "Duplicate mapping key");
                 } else {
                     *targ = obstack_alloc(&ctx->pieces,
                                           sizeof(qu_map_member));
@@ -585,28 +565,20 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
                     TAILQ_INSERT_TAIL(&node->val.map_index.items, *targ, lst);
                 }
             } else {
-                ctx->error_text = "Only string keys supported";
-                ctx->error_token = knode->start_token;
-                ctx->error_kind = YAML_UNSUPPORTED_ERROR;
-                longjmp(ctx->errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                    "Only string keys supported");
             }
             NEXT; NEXT;
             qu_ast_node *vnode = parse_flow_node(ctx);
             if(!vnode) {
-                ctx->error_text = "Unexpected token";
-                ctx->error_token = CTOK;
-                ctx->error_kind = YAML_CONTENT_ERROR;
-                longjmp(ctx->errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
             }
             (*targ)->value = vnode;
 
             if(CTOK->kind == QU_TOK_FLOW_MAP_END)
                 break;
             if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
-                ctx->error_text = "Unexpected token";
-                ctx->error_token = CTOK;
-                ctx->error_kind = YAML_CONTENT_ERROR;
-                longjmp(ctx->errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
             }
             NEXT;
         }
@@ -629,10 +601,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             if(CTOK->kind == QU_TOK_FLOW_SEQ_END)
                 break;
             if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
-                ctx->error_text = "Unexpected token";
-                ctx->error_token = CTOK;
-                ctx->error_kind = YAML_CONTENT_ERROR;
-                longjmp(ctx->errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
             }
             NEXT;
         }
@@ -643,10 +612,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
     if(CTOK->kind == QU_TOK_DOC_END) {
         return new_text_node(ctx, NULL);
     }
-    ctx->error_text = "Unknown syntax";
-    ctx->error_token = CTOK;
-    ctx->error_kind = YAML_CONTENT_ERROR;
-    longjmp(ctx->errjmp, 1);
+    LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unknown syntax");
 }
 
 qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
@@ -663,10 +629,7 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
             NEXT;
             return node;
         } else {
-            ctx->error_text = "Anchor target not found";
-            ctx->error_token = CTOK;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Anchor target not found");
         }
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
@@ -712,10 +675,8 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
                 if(cont) {  // duplicate key check
                     targ = qu_find_node(&node->val.map_index.tree, cont);
                     if(*targ) {
-                        ctx->error_text = "Duplicate key in mapping";
-                        ctx->error_token = knode->start_token;
-                        ctx->error_kind = YAML_CONTENT_ERROR;
-                        longjmp(ctx->errjmp, 1);
+                        LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                            "Duplicate key in mapping");
                     } else {
                         *targ = obstack_alloc(&ctx->pieces,
                                               sizeof(qu_map_member));
@@ -726,15 +687,12 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
                                           *targ, lst);
                     }
                 } else {
-                    ctx->error_text = "Only scalar keys allowed";
-                    ctx->error_token = knode->start_token;
-                    ctx->error_kind = YAML_UNSUPPORTED_ERROR;
-                    longjmp(ctx->errjmp, 1);
+                    LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                        "Only scalar keys allowed");
                 }
                 NEXT; NEXT;
                 qu_ast_node *vnode = parse_node(ctx, mapping_indent);
-                if(!vnode)
-                    longjmp(ctx->errjmp, 1);
+                assert(vnode);
                 (*targ)->value = vnode;
             }
             //printf("END MAP\n");
@@ -796,10 +754,7 @@ qu_ast_node *_qu_parse(qu_parse_context *ctx) {
     assert(!ctx->error_kind);  // long jump is done
 
     if(CTOK->kind != QU_TOK_DOC_END) {
-        ctx->error_token = CTOK;
-        ctx->error_kind = YAML_PARSER_ERROR;
-        ctx->error_text = "Unexpected token";
-        longjmp(ctx->errjmp, 1);
+        LONGJUMP_WITH_PARSER_ERROR(ctx, CTOK, "Unexpected token");
     }
 
 	return node;
@@ -815,39 +770,37 @@ void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
 
 int qu_file_parse(qu_parse_context *ctx, char *filename) {
     int rc;
-    ctx->has_jmp = 1;
-    if(!(rc = setjmp(ctx->errjmp))) {
+    assert(!ctx->errjmp);
+    ctx->errjmp = &ctx->errjmp_buf;
+    if(!(rc = setjmp(ctx->errjmp_buf))) {
         _qu_load_file(ctx, filename);
         _qu_tokenize(ctx);
-        //qu_print_tokens(ctx, stderr);
         ctx->document = _qu_parse(ctx);
     } else {
-        ctx->has_jmp = 0;
+        ctx->errjmp = NULL;
         return rc;
     }
-    ctx->has_jmp = 0;
+    ctx->errjmp = NULL;
     return 0;
 }
 
 qu_ast_node *qu_file_newparse(qu_parse_context *ctx, char *filename) {
     int rc;
-	if(!ctx->has_jmp) {
-		ctx->has_jmp = 1;
+	if(!ctx->errjmp) {
+		ctx->errjmp = &ctx->errjmp_buf;
 		qu_ast_node *node = NULL;
-		if(!(rc = setjmp(ctx->errjmp))) {
+		if(!(rc = setjmp(ctx->errjmp_buf))) {
 			_qu_context_reinit(ctx);
 			_qu_load_file(ctx, filename);
 			_qu_tokenize(ctx);
-			//qu_print_tokens(ctx, stderr);
 			node = _qu_parse(ctx);
 		}
-		ctx->has_jmp = 0;
+		ctx->errjmp = NULL;
 		return node;
 	} else {
 		_qu_context_reinit(ctx);
 		_qu_load_file(ctx, filename);
 		_qu_tokenize(ctx);
-		//qu_print_tokens(ctx, stderr);
 		return _qu_parse(ctx);
 	}
 }

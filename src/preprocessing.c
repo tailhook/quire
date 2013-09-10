@@ -54,10 +54,8 @@ static int visitor(qu_context_t *ctx,
         else if(tlen == 8 && !strncmp(tdata, "!Mapping", 8))
             data->type = QU_TYP_MAP;
         else {
-            ctx->parsing.error_text = "Unknown type tag";
-            ctx->parsing.error_token = node->tag;
-            ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-            longjmp(ctx->parsing.errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                node->tag, "Unknown type tag");
         }
         switch(data->type) {
         case QU_TYP_INT:
@@ -72,10 +70,8 @@ static int visitor(qu_context_t *ctx,
             data->kind = QU_MEMBER_ARRAY;
             qu_ast_node *elem = qu_map_get(node, "element");
             if(!elem) {
-                ctx->parsing.error_text = "Element type not specified";
-                ctx->parsing.error_token = node->tag;  // better place?
-                ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                longjmp(ctx->parsing.errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    node->tag, "Element type not specified");
             }
             visitor(ctx, elem, ".value", expr_parent);
             qu_nodedata *edata = elem->userdata;
@@ -86,11 +82,9 @@ static int visitor(qu_context_t *ctx,
                     tname = edata->data.custom.typename;
                     break;
                 default:
-                    ctx->parsing.error_text = "Nested arrays and maps "
-                                              "are not supported";
-                    ctx->parsing.error_token = node->tag;  // better place?
-                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                    longjmp(ctx->parsing.errjmp, 1);
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                        node->tag, "Nested arrays and maps "
+                                   "are not supported");
                 }
             }
             data->data.array.membername = tname;
@@ -109,10 +103,8 @@ static int visitor(qu_context_t *ctx,
             qu_ast_node *kelem = qu_map_get(node, "key-element");
             qu_ast_node *velem = qu_map_get(node, "value-element");
             if(!kelem || !velem) {
-                ctx->parsing.error_text = "Key or value type not specified";
-                ctx->parsing.error_token = node->tag;  // better place?
-                ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                longjmp(ctx->parsing.errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    node->tag, "Key or value type not specified");
             }
             visitor(ctx, kelem, ".key", expr_parent);
             visitor(ctx, velem, ".value", expr_parent);
@@ -124,11 +116,9 @@ static int visitor(qu_context_t *ctx,
                     ktname = kedata->data.custom.typename;
                     break;
                 default:
-                    ctx->parsing.error_text = "Nested arrays and maps "
-                                              "are not supported";
-                    ctx->parsing.error_token = node->tag;  // better place?
-                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                    longjmp(ctx->parsing.errjmp, 1);
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                        node->tag, "Nested arrays and maps "
+                                   "are not supported");
                 }
             }
             qu_nodedata *vedata = velem->userdata;
@@ -139,11 +129,9 @@ static int visitor(qu_context_t *ctx,
                     vtname = vedata->data.custom.typename;
                     break;
                 default:
-                    ctx->parsing.error_text = "Nested arrays and maps "
-                                              "are not supported";
-                    ctx->parsing.error_token = node->tag;  // better place?
-                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                    longjmp(ctx->parsing.errjmp, 1);
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                        node->tag, "Nested arrays and maps "
+                                   "are not supported");
                 }
             }
             assert(ktname && vtname);
@@ -167,10 +155,8 @@ static int visitor(qu_context_t *ctx,
                 mnode = qu_map_get(node, "=");
                 if(!mnode) mnode = qu_map_get(node, "type");
                 if(!mnode) {
-                    ctx->parsing.error_text = "Type not specified";
-                    ctx->parsing.error_token = node->tag;  // better place?
-                    ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                    longjmp(ctx->parsing.errjmp, 1);
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                        node->tag, "Type not specified");
                 }
             }
             char *typename = qu_node_content(mnode);
@@ -207,8 +193,9 @@ static int visitor(qu_context_t *ctx,
 
 int qu_config_preprocess(qu_context_t *ctx) {
     int rc;
-    ctx->parsing.has_jmp = 1;
-    if(!(rc = setjmp(ctx->parsing.errjmp))) {
+    assert(!ctx->parsing.errjmp);
+    ctx->parsing.errjmp = &ctx->parsing.errjmp_buf;
+    if(!(rc = setjmp(ctx->parsing.errjmp_buf))) {
 
         _qu_parse_metadata(ctx);
 
@@ -224,10 +211,8 @@ int qu_config_preprocess(qu_context_t *ctx) {
         qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
         if(types) {
             if(types->kind != QU_NODE_MAPPING) {
-                ctx->parsing.error_text = "__types__ must be mapping";
-                ctx->parsing.error_token = types->start_token;
-                ctx->parsing.error_kind = YAML_CONTENT_ERROR;
-                longjmp(ctx->parsing.errjmp, 1);
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    types->tag, "__types__ must be mapping");
             }
             qu_map_member *item;
             TAILQ_FOREACH(item, &types->val.map_index.items, lst) {
@@ -236,9 +221,9 @@ int qu_config_preprocess(qu_context_t *ctx) {
         }
 
     } else {
-        ctx->parsing.has_jmp = 0;
+        ctx->parsing.errjmp = NULL;
         return rc;
     }
-    ctx->parsing.has_jmp = 0;
+    ctx->parsing.errjmp = NULL;
     return 0;
 }

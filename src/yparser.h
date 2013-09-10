@@ -56,8 +56,8 @@ typedef struct qu_node_s {
 
 typedef struct qu_parse_context_s {
     struct obstack pieces;
-    jmp_buf errjmp;
-    int has_jmp;
+    jmp_buf *errjmp;
+    jmp_buf errjmp_buf;
     char *filename;
     unsigned char *buf;
     int buflen;

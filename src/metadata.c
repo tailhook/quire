@@ -25,10 +25,8 @@ void _qu_parse_metadata(qu_context_t *bigctx) {
     if(tnode) {
         tdata = qu_node_content(tnode);
         if(!tdata) {
-            ctx->error_token = tnode->start_token;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            ctx->error_text = "__meta__.program-name must be scalar";
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
+                "__meta__.program-name must be scalar");
         }
         meta->program_name = tdata;
     }
@@ -37,10 +35,8 @@ void _qu_parse_metadata(qu_context_t *bigctx) {
     if(tnode) {
         tdata = qu_node_content(tnode);
         if(!tdata) {
-            ctx->error_token = tnode->start_token;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            ctx->error_text = "__meta__.default-config must be scalar";
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
+                "__meta__.default-config must be scalar");
         }
         meta->default_config = tdata;
     }
@@ -49,10 +45,8 @@ void _qu_parse_metadata(qu_context_t *bigctx) {
     if(tnode) {
         tdata = qu_node_content(tnode);
         if(!tdata) {
-            ctx->error_token = tnode->start_token;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            ctx->error_text = "__meta__.description must be scalar";
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
+                "__meta__.description must be scalar");
         }
         meta->description = tdata;
     }
@@ -61,10 +55,8 @@ void _qu_parse_metadata(qu_context_t *bigctx) {
     if(tnode) {
         int value;
         if(qu_get_boolean(tnode, &value) == -1) {
-            ctx->error_token = tnode->start_token;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            ctx->error_text = "__meta__.has-arguments must be boolean";
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
+                "__meta__.has-arguments must be boolean");
         }
         meta->has_arguments = value;
     }
@@ -73,17 +65,13 @@ void _qu_parse_metadata(qu_context_t *bigctx) {
     if(tnode) {
         int value;
         if(qu_get_boolean(tnode, &value) == -1) {
-            ctx->error_token = tnode->start_token;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            ctx->error_text = "__meta__.mixed-arguments must be boolean";
-            longjmp(ctx->errjmp, 1);
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
+                "__meta__.mixed-arguments must be boolean");
         }
         if(value && !meta->has_arguments) {
-            ctx->error_token = tnode->start_token;
-            ctx->error_kind = YAML_CONTENT_ERROR;
-            ctx->error_text = ("__meta__.mixed-arguments without has-arguments"
+            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
+                "__meta__.mixed-arguments without has-arguments"
                 " is useless");
-            longjmp(ctx->errjmp, 1);
         }
         meta->mixed_arguments = value;
     }
