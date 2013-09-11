@@ -187,6 +187,11 @@ static int visitor(qu_context_t *ctx,
             char *nexpr = (char *)obstack_finish(&ctx->parsing.pieces);
             visitor(ctx, item->value, nexpr, expr_parent);
         }
+        qu_ast_node *vnode = qu_map_get(node, "__value__");
+        if(vnode && vnode->tag && (vnode->tag->bytelen != 8
+            || strncmp((char *)vnode->tag->data, "!Convert", 8))) {
+            visitor(ctx, vnode, ".value", expr_parent);
+        }
     }
     return 0;
 }

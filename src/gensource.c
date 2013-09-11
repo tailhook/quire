@@ -622,6 +622,9 @@ int qu_output_source(qu_context_t *ctx) {
 				printf("}\n");
 			}
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
+                char *mname = qu_node_content(item->key);
+                if(mname && *mname == '_')
+                    continue;
                 print_parse_member(ctx, item->value,
                     qu_node_content(item->key));
             }
@@ -637,6 +640,8 @@ int qu_output_source(qu_context_t *ctx) {
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
                 if(item->value->userdata) {
                     char *mname = qu_node_content(item->key);
+                    if(mname && *mname == '_')
+                        continue;
                     printf("qu_emit_scalar(ctx, NULL, NULL, "
                            "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
                     printf("qu_emit_opcode(ctx, "
