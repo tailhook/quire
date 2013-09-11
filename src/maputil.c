@@ -24,6 +24,8 @@ static void merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
                                             sizeof(qu_map_member));
         copy->key = item->key;
         copy->value = item->value;
+        copy->left = NULL;
+        copy->right = NULL;
         if(tmp) {
             *tmp = copy;
         }
