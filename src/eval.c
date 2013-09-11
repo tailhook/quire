@@ -344,18 +344,18 @@ void _qu_eval_int(qu_parse_context *info, char *value,
         char *end = parse_int(data, result);
         obstack_free(&info->pieces, data);
         if(end != data + dlen) {
-			LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
-				"Integer value required");
-		}
+            LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+                "Integer value required");
+        }
 
         return;
     }
     char *end = parse_int(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
-		LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
-			"Integer value required");
-	}
+        LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+            "Integer value required");
+    }
 }
 
 void _qu_eval_float(qu_parse_context *info, char *value,
