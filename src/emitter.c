@@ -106,6 +106,12 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
                     }
                 }
             }
+            if(tag) {
+                _space_check(ctx);
+                fprintf(ctx->stream, tag);
+                ctx->need_space = 1;
+                ctx->pending_newline = 0;
+            }
             ctx->map_start = 1;
             break;
         case QU_EMIT_MAP_END:
@@ -202,6 +208,11 @@ int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
 
 int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     char *format, ...) {
+    if(tag) {
+        _space_check(ctx);
+        fprintf(ctx->stream, tag);
+        ctx->need_space = 1;
+    }
     _space_check(ctx);
     ctx->map_start = 0;
     ctx->seq_start = 0;

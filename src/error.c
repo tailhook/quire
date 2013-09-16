@@ -3,6 +3,7 @@
 
 #include "yparser.h"
 #include "error.h"
+#include "quire_int.h"
 
 int qu_print_error(qu_parse_context *ctx, FILE *stream) {
     int rc;
@@ -25,4 +26,8 @@ int qu_print_error(qu_parse_context *ctx, FILE *stream) {
 			return -errno;
 	}
     return 0;
+}
+
+void qu_report_error(qu_parse_context *ctx, qu_ast_node *node, char *text) {
+    LONGJUMP_WITH_CONTENT_ERROR(ctx, node->start_token, text);
 }

@@ -71,6 +71,8 @@ qu_map_member *qu_map_iter(qu_ast_node *node);
 qu_map_member *qu_map_next(qu_map_member *iter);
 qu_ast_node *qu_map_key(qu_map_member *iter);
 qu_ast_node *qu_map_value(qu_map_member *iter);
+void qu_get_tag(qu_ast_node *node, char **data, int *len);
+
 void *qu_config_init(void *cfg, int size);
 void qu_config_free(void *cfg);
 void *qu_config_alloc(void *cfg, int size);
@@ -104,6 +106,7 @@ int qu_set_integer(qu_parse_context *ctx, char *name, long value);
 // Methods from error.c
 int qu_has_error(qu_parse_context *);
 int qu_print_error(qu_parse_context *, FILE *err);
+void qu_report_error(qu_parse_context *, qu_ast_node *node, char *text);
 
 // Methods from emitter.c
 int qu_emit_init(qu_emit_context *, FILE *stream);

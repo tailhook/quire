@@ -130,8 +130,37 @@ int qu_output_header(qu_context_t *ctx) {
     if(types) {
         qu_map_member *typ;
         TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
+            qu_ast_node *tags = qu_map_get(typ->value, "__tags__");
+            if(tags && !strcmp(tags->userdata, qu_node_content(typ->key))) {
+                printf("typedef enum %s%s_tag_e {\n",
+                    ctx->prefix, qu_node_content(typ->key));
+                qu_map_member *item;
+                TAILQ_FOREACH(item, &tags->val.map_index.items, lst) {
+                    if(qu_node_content(item->key)[0] == '_')
+                        continue;
+                    printf("%s = %d",
+                        (char *)item->value->userdata,
+                        atoi(qu_node_content(item->value)));
+                    if(TAILQ_NEXT(item, lst))
+                        printf(",");
+                    printf("\n");
+                }
+                printf("} %s%s_tag_t;\n",
+                    ctx->prefix, qu_node_content(typ->key));
+                printf("\n");
+            }
             printf("typedef struct %s%s_s {\n",
                 ctx->prefix, qu_node_content(typ->key));
+            if(tags) {
+                qu_ast_node *prop = qu_map_get(tags, "__property__");
+                if(prop) {
+                    printf("%s%s_tag_t %s;\n", ctx->prefix,
+                        (char *)tags->userdata, qu_node_content(prop));
+                } else {
+                    printf("%s%s_tag_t tag;\n",
+                        ctx->prefix, (char *)tags->userdata);
+                }
+            }
             qu_map_member *item;
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
                 print_member(ctx, item->value);

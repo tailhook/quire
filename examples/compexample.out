@@ -56,10 +56,10 @@ SimpleHTTPServer:
     - !zmq.Bind tcp://127.0.0.1:123
   better-zmq:
     enabled: yes
-    value: []
     some_property: default
+    =: []
   intvalue: !mbytes 2
-  intvalue2: 123
+  intvalue2: !kbytes 123
   intvalue3: 10
   movements:
   - !left

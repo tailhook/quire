@@ -219,9 +219,25 @@ int qu_config_preprocess(qu_context_t *ctx) {
                 LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
                     types->tag, "__types__ must be mapping");
             }
-            qu_map_member *item;
-            TAILQ_FOREACH(item, &types->val.map_index.items, lst) {
-                visitor(ctx, item->value, "", NULL);
+            qu_map_member *typ;
+            TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
+                qu_ast_node *tags = qu_map_get(typ->value, "__tags__");
+                if(tags && !tags->userdata) {
+                    qu_map_member *item;
+                    TAILQ_FOREACH(item, &tags->val.map_index.items, lst) {
+                        if(qu_node_content(item->key)[0] == '_')
+                            continue;
+                        obstack_blank(&ctx->parsing.pieces, 0);
+                        obstack_grow(&ctx->parsing.pieces,
+                            ctx->macroprefix, strlen(ctx->macroprefix));
+                        qu_append_c_name(&ctx->parsing.pieces,
+                            qu_node_content(item->key));
+                        item->value->userdata = obstack_finish(
+                            &ctx->parsing.pieces);
+                    }
+                    tags->userdata = qu_node_content(typ->key);
+                }
+                visitor(ctx, typ->value, "", NULL);
             }
         }
 

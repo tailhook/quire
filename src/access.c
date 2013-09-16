@@ -11,8 +11,14 @@
 char *qu_node_content(qu_ast_node *node) {
     if(node->kind == QU_NODE_ALIAS)
         return qu_node_content(node->val.alias_target);
-    if(node->kind != QU_NODE_SCALAR)
+    if(node->kind != QU_NODE_SCALAR) {
+        if(node->kind == QU_NODE_MAPPING) {
+            qu_ast_node *value = qu_map_get(node, "=");
+            if(value)
+                return qu_node_content(value);
+        }
         return NULL;
+    }
     if(!node->start_token)
         return "";
     if(node->content)
@@ -186,4 +192,14 @@ void qu_config_init(qu_config_head *cfg, int size) {
 
 void qu_config_free(qu_config_head *cfg) {
     obstack_free(&cfg->pieces, NULL);
+}
+
+void qu_get_tag(qu_ast_node *node, char **data, int *len) {
+    if(node->tag) {
+        *data = (char *)node->tag->data;
+        *len = node->tag->bytelen;
+    } else {
+        *data = NULL;
+        *len = 0;
+    }
 }

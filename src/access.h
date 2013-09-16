@@ -27,6 +27,7 @@ qu_map_member *qu_map_iter(qu_ast_node *node);
 qu_map_member *qu_map_next(qu_map_member *iter);
 qu_ast_node *qu_map_key(qu_map_member *iter);
 qu_ast_node *qu_map_value(qu_map_member *iter);
+void qu_get_tag(qu_ast_node *node, char **data, int *len);
 int qu_get_boolean(qu_ast_node *node, int *value);
 char *qu_node_content(qu_ast_node *node);
 void *qu_config_alloc(qu_config_head *cfg, int size);
