@@ -608,19 +608,25 @@ int qu_output_source(qu_context_t *ctx) {
             }
 
             // parse
+            ctx->node_level = 0;
+            ctx->node_vars[0] = 1;
             printf("void %1$s%2$s_parse(%1$smain_t *cfg,"
                    " %1$s%2$s_t *targ, "
                    "qu_ast_node *node0, "
                    "qu_parse_context *ctx, %1$scli_t *cli) {\n",
                 ctx->prefix, qu_node_content(typ->key));
-            ctx->node_level = 1;
-            ctx->node_vars[1] = 0;
 			if(conversion) {
 				printf("if(qu_node_content(node0)) {\n");
 				printf("%s(ctx, cfg, targ, qu_node_content(node0));\n",
 					conversion);
 				printf("}\n");
-			}
+			} else if(cnode) {
+				printf("if(qu_node_content(node0) || qu_seq_iter(node0)) {\n");
+                print_parser(ctx, cnode);
+				printf("}\n");
+            }
+            ctx->node_level = 1;
+            ctx->node_vars[1] = 0;
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
                 char *mname = qu_node_content(item->key);
                 if(mname && *mname == '_')
@@ -635,13 +641,18 @@ int qu_output_source(qu_context_t *ctx) {
             printf("void %1$s%2$s_print(%1$s%2$s_t *cfg, "
                    "qu_emit_context *ctx) {\n",
                 ctx->prefix, qu_node_content(typ->key));
-            printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
+            int first_member = 1;
 
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
                 if(item->value->userdata) {
                     char *mname = qu_node_content(item->key);
                     if(mname && *mname == '_')
                         continue;
+                    if(first_member) {
+                        printf("qu_emit_opcode(ctx, NULL, NULL, "
+                            "QU_EMIT_MAP_START);\n");
+                        first_member = 0;
+                    }
                     printf("qu_emit_scalar(ctx, NULL, NULL, "
                            "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
                     printf("qu_emit_opcode(ctx, "
@@ -649,8 +660,25 @@ int qu_output_source(qu_context_t *ctx) {
                     print_printer(ctx, item->value);
                 }
             }
-
-            printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
+            if(first_member) {
+                if(cnode && !conversion) {
+                    print_printer(ctx, cnode);
+                } else {
+                    printf("qu_emit_opcode(ctx, NULL, NULL, "
+                        "QU_EMIT_MAP_START);\n");
+                    printf("qu_emit_opcode(ctx, NULL, NULL, "
+                        "QU_EMIT_MAP_END);\n");
+                }
+            } else {
+                if(cnode && !conversion) {
+                    printf("qu_emit_scalar(ctx, NULL, NULL, "
+                           "QU_STYLE_PLAIN, \"=\", -1);\n");
+                    printf("qu_emit_opcode(ctx, "
+                           "NULL, NULL, QU_EMIT_MAP_VALUE);\n");
+                    print_printer(ctx, cnode);
+                }
+                printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
+            }
             printf("}\n");
             printf("\n");
 
