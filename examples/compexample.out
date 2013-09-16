@@ -75,8 +75,7 @@ SimpleHTTPServer:
       headers:
         Content-Type: text/html
         X-Fortune: no
-      body: "<!DOCTYPE html>\n<html>\n    <head><title>Hello</title></head>\n    <body>\n
-        \       <h1>Hello</h2>\n        This is an empty site, actually!\n    </body>\n</html>\n"
+      body: "<!DOCTYPE html>\n<html>\n    <head><title>Hello</title></head>\n    <body>\n        <h1>Hello</h2>\n        This is an empty site, actually!\n    </body>\n</html>\n"
     not-found:
       code: 500
       status: Error

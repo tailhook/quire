@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "emitter.h"
 
@@ -176,6 +177,7 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
 
 int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     char *data, int len) {
+    int need_quotes;
     if(!len || !data || !*data) {
         if(ctx->doc_start) {
             // document is fully null
@@ -199,11 +201,63 @@ int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
         ctx->seq_start = 0;
         return 0;
     }
-    if(len >= 0) {
-        return qu_emit_printf(ctx, tag, anchor, kind, "%.*s", len, data);
-    } else {
-        return qu_emit_printf(ctx, tag, anchor, kind, "%s", data);
+    if(tag) {
+        _space_check(ctx);
+        fprintf(ctx->stream, tag);
+        ctx->need_space = 1;
     }
+    _space_check(ctx);
+    ctx->map_start = 0;
+    ctx->seq_start = 0;
+    ctx->seq_item = 0;
+
+    if(len < 0)
+        len = strlen(data);
+    switch(kind) {
+        case QU_STYLE_AUTO:
+            need_quotes = 0;
+            for(int i = 0; i < len; ++i) {
+                if(!isprint(data[i])) {
+                    need_quotes = 1;
+                    break;
+                }
+            }
+            if(need_quotes) {
+                fputc ('"', ctx->stream);
+                for (; len > 0; --len, ++data) {
+                    switch(*data) {
+                    case '\n':
+                        fprintf(ctx->stream, "\\n");
+                        break;
+                    case '\r':
+                        fprintf(ctx->stream, "\\r");
+                        break;
+                    case '\\':
+                    case '\"':
+                        fprintf(ctx->stream, "\\%c", *data);
+                        break;
+                    default:
+                        if(isprint(*data)) {
+                            fputc(*data, ctx->stream);
+                        } else {
+                            fprintf(ctx->stream, "\\x%02x", *data);
+                        }
+                    }
+                }
+                fprintf (ctx->stream, "\"");
+            } else {
+                fprintf(ctx->stream, "%.*s", len, data);
+            }
+            break;
+        case QU_STYLE_PLAIN:
+            fprintf(ctx->stream, "%.*s", len, data);
+            break;
+        default:
+            assert(0);
+    }
+    ctx->pending_newline -= 1;
+    ctx->line_start = 0;
+    return 0;
 }
 
 int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
