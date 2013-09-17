@@ -102,7 +102,11 @@ int main(int argc, char **argv) {
     if(rc < 0) {
         exit(127);  // Error is already reported
     }
-    cfg_do_parse(ctx, cli, cfg);
+    rc = cfg_do_parse(ctx, cli, cfg);
+    if(rc < 0) {
+        qu_print_error(ctx, stderr);
+        exit(127);
+    }
     // Overlay command-line options on top
     rc = cfg_cli_apply(cfg, cli);
     if(rc < 0) {

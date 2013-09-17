@@ -6,6 +6,7 @@
 #include "codes.h"
 #include "access.h"
 #include "cutil.h"
+#include "quire_int.h"
 
 static void print_string(char *str) {
     putc('"', stdout);
@@ -386,7 +387,7 @@ int print_1opt(qu_ast_node *namenode, int arg, int num,
     return res;
 }
 
-int print_case(qu_ast_node *namenode, int num) {
+static int print_case(qu_ast_node *namenode, int num) {
     if(!namenode)
         return 0;
     int res = 0;
@@ -411,6 +412,25 @@ int print_case(qu_ast_node *namenode, int num) {
         }
     }
     return res;
+}
+
+static char *get_optname(qu_ast_node *namenode) {
+    char *opt = qu_node_content(namenode);
+    char *shortopt = NULL;
+    if(opt) {
+        return opt;
+    } else if(namenode->kind == QU_NODE_SEQUENCE) {
+        qu_seq_member *item;
+        TAILQ_FOREACH(item, &namenode->val.seq_index.items, lst) {
+            opt = qu_node_content(item->value);
+            if(opt && opt[1] == '-') {  // long option
+                return opt;
+            } else {
+                shortopt = opt;
+            }
+        }
+    }
+    return shortopt;
 }
 
 
@@ -496,6 +516,39 @@ int qu_output_source(qu_context_t *ctx) {
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         if(print_case(qu_map_get(data->node, "command-line"), optnum)) {
             ++ optnum;
+            switch(data->type) {
+            case QU_TYP_INT:
+                printf("do {\n");
+                printf("char *end;\n");
+                printf("(*cfg)%s = strtol(optarg, &end, 0);\n",
+                    strrchr(data->expression, '.'));
+                printf("if(end == optarg || *end) {\n");
+                printf("fprintf(stderr, \"%s: Argument for %s "
+                       "must be an integer\\n\");\n",
+                    ctx->meta.program_name, get_optname(data->node));
+                printf("return -1;\n");
+                printf("}\n");
+                printf("} while(0);\n");
+                break;
+            case QU_TYP_BOOL:
+                printf("(*cfg)%s = "
+                       "!strcasecmp(optarg, \"yes\") || "
+                       "!strcasecmp(optarg, \"y\") || "
+                       "!strcasecmp(optarg, \"true\");\n",
+                    strrchr(data->expression, '.'));
+                break;
+            case QU_TYP_STRING:
+            case QU_TYP_FILE:
+            case QU_TYP_DIR:
+                printf("(*cfg)%s = optarg;\n",
+                    strrchr(data->expression, '.'));
+                break;
+            default:
+                fprintf(stderr,
+                    "Wrong command-line option type %d\n", data->type);
+                abort();
+            }
+            printf("(*cfg)%s_set = 1;\n", strrchr(data->expression, '.'));
             printf("break;\n");
         }
         if(print_case(qu_map_get(data->node, "command-line-incr"), optnum)) {
@@ -843,7 +896,11 @@ int qu_output_source(qu_context_t *ctx) {
     printf("    exit(127);\n");
     printf("}\n");
 
-	printf("%1$sdo_parse(ctx, cli, cfg);\n", ctx->prefix);
+	printf("rc = %1$sdo_parse(ctx, cli, cfg);\n", ctx->prefix);
+    printf("if(rc < 0) {\n");
+    printf("    qu_print_error(ctx, stderr);\n");
+    printf("    exit(127);\n");
+    printf("}\n");
 
     printf("// Overlay command-line options on top\n");
     printf("rc = %scli_apply(cfg, cli);\n", ctx->prefix);
