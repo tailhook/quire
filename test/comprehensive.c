@@ -98,7 +98,10 @@ int main(int argc, char **argv) {
     cfg_cli_t ccli;
     cfg_cli_t *cli = &ccli;
     memset(cli, 0, sizeof(cfg_cli_t));
-    cfg_cli_parse(ctx, cli, argc, argv);
+    rc = cfg_cli_parse(ctx, cli, argc, argv);
+    if(rc < 0) {
+        exit(127);  // Error is already reported
+    }
     cfg_do_parse(ctx, cli, cfg);
     // Overlay command-line options on top
     rc = cfg_cli_apply(cfg, cli);

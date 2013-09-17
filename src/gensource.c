@@ -526,7 +526,7 @@ int qu_output_source(qu_context_t *ctx) {
         }
     }
     printf("case '?':\n");
-    printf("break;\n");
+    printf("return -1;\n");
     printf("}\n");
     printf("}\n");
 
@@ -838,7 +838,10 @@ int qu_output_source(qu_context_t *ctx) {
     printf("%scli_t ccli;\n", ctx->prefix);
     printf("%scli_t *cli = &ccli;\n", ctx->prefix);
     printf("memset(cli, 0, sizeof(%scli_t));\n", ctx->prefix);
-    printf("%scli_parse(ctx, cli, argc, argv);\n", ctx->prefix);
+    printf("rc = %scli_parse(ctx, cli, argc, argv);\n", ctx->prefix);
+    printf("if(rc < 0) {\n");  // Error is already reported
+    printf("    exit(127);\n");
+    printf("}\n");
 
 	printf("%1$sdo_parse(ctx, cli, cfg);\n", ctx->prefix);
 
