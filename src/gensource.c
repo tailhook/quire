@@ -103,6 +103,10 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node,
                 }
             }
         }
+        qu_ast_node *cnode = qu_map_get(node, "__value__");
+        if(cnode && cnode->userdata) {
+            print_default(ctx, cnode, prefix, datanode);
+        }
     } else if(data->kind == QU_MEMBER_CUSTOM) {
         printf("%1$s%2$s_defaults(&(*cfg)%3$s%4$s);\n",
             ctx->prefix, data->data.custom.typename,
