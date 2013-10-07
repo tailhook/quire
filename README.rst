@@ -29,7 +29,10 @@ All this to meet the following goals:
  * Add each option only in one place
  * Document it just as easy as adding
 
+The quire library is successor to old coyaml_ library of the same author
+
 .. _YAML: http://yaml.org
+.. _coyaml: http://github.com/tailhook/coyaml
 
 
 Build Instructions
