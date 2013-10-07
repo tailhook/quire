@@ -1,7 +1,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include "yparser.h"
 #include "error.h"
 #include "quire_int.h"
 

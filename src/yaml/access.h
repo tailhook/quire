@@ -1,8 +1,9 @@
 #ifndef _H_ACCESS
 #define _H_ACCESS
 
-#include "yparser.h"
-#include "quire_int.h"
+#include "node.h"
+#include "parser.h"
+#include "../quire_int.h"
 
 typedef struct qu_array_head {
 	struct qu_array_head *next;

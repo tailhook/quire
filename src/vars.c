@@ -2,9 +2,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "yparser.h"
 #include "vars.h"
-#include "access.h"
+#include "../yaml/access.h"
 
 static int find_value(qu_variable_t *var, char *name, int nlen,
     qu_variable_t **node) {

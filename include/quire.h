@@ -43,6 +43,11 @@ typedef struct qu_parse_context {
     char data[4096];
 } qu_parse_context;
 
+typedef struct qu_config_context {
+    qu_parse_context parser;
+    char data[512];
+} qu_config_context;
+
 typedef struct qu_emit_context {
     char data[512];
 } qu_emit_context;
@@ -99,9 +104,9 @@ void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
 void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
     char **result, size_t *rlen);
 
-// Methods from vars.h
-int qu_set_string(qu_parse_context *ctx, char*name, char *data);
-int qu_set_integer(qu_parse_context *ctx, char *name, long value);
+// Methods from cfg/vars.h
+int qu_set_string(qu_config_context *ctx, char *name, char *data);
+int qu_set_integer(qu_config_context *ctx, char *name, long value);
 
 // Methods from error.c
 int qu_has_error(qu_parse_context *);

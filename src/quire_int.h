@@ -5,8 +5,7 @@
 #include <setjmp.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "codes.h"
+#include "yaml/codes.h"
 
 typedef struct __attribute__((__aligned__(512))) qu_config_head {
     jmp_buf *errjmp;

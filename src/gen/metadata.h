@@ -1,7 +1,5 @@
-#ifndef _H_METADATA
-#define _H_METADATA
-
-#include "yparser.h"
+#ifndef QUIRE_H_GEN_METADATA
+#define QUIRE_H_GEN_METADATA
 
 typedef struct qu_metadata_s {
     char *program_name;
@@ -13,6 +11,6 @@ typedef struct qu_metadata_s {
 
 struct qu_context_s;
 
-void _qu_parse_metadata(struct qu_context_s *ctx);
+void qu_parse_metadata(struct qu_context_s *ctx);
 
-#endif // _H_METADATA
+#endif // QUIRE_H_GEN_METADATA

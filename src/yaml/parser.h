@@ -1,7 +1,5 @@
-#include "vars.h"
-
-#ifndef _H_YPARSER
-#define _H_YPARSER
+#ifndef QUIRE_H_YAML_PARSER
+#define QUIRE_H_YAML_PARSER
 
 #include <obstack.h>
 #include <sys/queue.h>
@@ -9,50 +7,13 @@
 
 struct qu_parse_context_s;
 
-#include "maputil.h"
-
+#include "node.h"
+#include "map.h"
 
 #define MAX_FLOW_STACK 128
 #define MAX_NODE_STACK 256
 
 
-typedef struct qu_token_s {
-    CIRCLEQ_ENTRY(qu_token_s) lst;
-    int kind;
-
-    char *filename;
-    int indent;  // indentation, -1 if middle of the line or flow context
-    int expect_indent;
-    int start_line;
-    int start_char;
-    int end_line;
-    int end_char;
-    unsigned char *data;  // real pointer to data
-    int bytepos;  // byte offset from start of file
-    int bytelen;  // length in bytes
-
-    struct qu_node_s *owner_node;
-} qu_token;
-
-typedef struct qu_node_s {
-    int kind;
-    struct qu_parse_context_s *ctx;
-    qu_token *anchor;
-    qu_token *tag;
-    qu_token *start_token;
-    qu_token *end_token;
-
-    char *content;  // for scalar nodes or aliases or mappings with "="
-    int content_len;
-
-    union {
-        struct qu_node_s *alias_target;
-        qu_map_index map_index;
-        qu_seq_index seq_index;
-    } val;
-
-    void *userdata;
-} qu_ast_node;
 
 typedef struct qu_parse_context_s {
     struct obstack pieces;
@@ -64,7 +25,7 @@ typedef struct qu_parse_context_s {
 
     CIRCLEQ_HEAD(qu_token_list, qu_token_s) tokens;
     qu_ast_node *document;
-    qu_variable_t *variables;
+    struct qu_anchor_index *anchor_index;
 
     int linestart; // boolean flag if we are still at indentation
     int curline;
@@ -97,4 +58,4 @@ void qu_parser_init(qu_parse_context *ctx);
 void qu_parser_free(qu_parse_context *ctx);
 
 
-#endif // _H_YPARSER
+#endif // QUIRE_H_YAML_PARSER

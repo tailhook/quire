@@ -6,8 +6,9 @@
 
 #include "eval.h"
 #include "vars.h"
-#include "access.h"
-#include "quire_int.h"
+#include "context.h"
+#include "../yaml/access.h"
+#include "../quire_int.h"
 
 
 typedef enum {
@@ -45,7 +46,7 @@ typedef enum {
 } token_t;
 
 typedef struct eval_context_s {
-    qu_parse_context *info;
+    qu_config_context *info;
     char *data;
     char *token;
     char *next;
@@ -86,18 +87,6 @@ static struct unit_s {
     {"Ei", 1L << 60},
     {NULL, 0},
     };
-
-static char *find_var(qu_parse_context *info, char *name, int nlen) {
-    char *data;
-    int dlen;
-    char cname[nlen+1];
-    memcpy(cname, name, nlen);
-    cname[nlen] = 0;
-    if(!qu_get_string(info, cname, &data, &dlen)) {
-        return data;
-    }
-    return NULL;
-}
 
 static token_t _next_tok(char **data, char *end) {
     char *cur = *data;
@@ -241,8 +230,10 @@ static variable_t *eval_atom(eval_context_t *ctx) {
         next_tok(ctx);
         return res;
     } else if(ctx->curtok == TOK_IDENT) {
-        char *value = find_var(ctx->info, ctx->token, ctx->next - ctx->token);
-        if(!value) {
+        char *value;
+        int value_len;
+        if(qu_get_string_len(ctx->info, ctx->token, ctx->next - ctx->token,
+            &value, &value_len) < 0) {
             return NULL;
         }
         variable_t *res = (variable_t *)malloc(sizeof(variable_t));
@@ -315,7 +306,7 @@ static variable_t *eval_sum(eval_context_t *ctx) {
     return left;
 }
 
-static variable_t *evaluate(qu_parse_context *info, char *data, int dlen) {
+static variable_t *evaluate(qu_config_context *info, char *data, int dlen) {
     eval_context_t eval = {
         info: info,
         data: data,
@@ -334,17 +325,17 @@ static variable_t *evaluate(qu_parse_context *info, char *data, int dlen) {
     return res;
 }
 
-void _qu_eval_int(qu_parse_context *info, char *value,
+void qu_eval_int(qu_config_context *info, char *value,
     int interp, long *result)
 {
     if(interp && strchr(value, '$')) {
         char *data;
         size_t dlen;
-        _qu_eval_str(info, value, interp, &data, &dlen);
+        qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_int(data, result);
-        obstack_free(&info->pieces, data);
+        obstack_free(&info->parser.pieces, data);
         if(end != data + dlen) {
-            LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+            LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Integer value required");
         }
 
@@ -353,22 +344,22 @@ void _qu_eval_int(qu_parse_context *info, char *value,
     char *end = parse_int(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
-        LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+        LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
             "Integer value required");
     }
 }
 
-void _qu_eval_float(qu_parse_context *info, char *value,
+void qu_eval_float(qu_config_context *info, char *value,
     int interp, double *result)
 {
     if(interp && strchr(value, '$')) {
         char *data;
         size_t dlen;
-        _qu_eval_str(info, value, interp, &data, &dlen);
+        qu_eval_str(info, value, interp, &data, &dlen);
         char *end = parse_double(data, result);
-        obstack_free(&info->pieces, data);
+        obstack_free(&info->parser.pieces, data);
         if(end != data + dlen) {
-			LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+			LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
 				"Floating point value required");
 		}
         return;
@@ -376,27 +367,28 @@ void _qu_eval_float(qu_parse_context *info, char *value,
     char *end = parse_double(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
-		LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+		LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
 			"Floating point value required");
 	}
 }
 
-void _qu_eval_str(qu_parse_context *info,
+void qu_eval_str(qu_config_context *info,
     char *data, int interp, char **result, size_t *rlen) {
     if(interp && strchr(data, '$')) {
-        obstack_blank(&info->pieces, 0);
+        obstack_blank(&info->parser.pieces, 0);
         for(char *c = data; *c;) {
             if(*c != '$' && *c != '\\') {
-                obstack_1grow(&info->pieces, *c);
+                obstack_1grow(&info->parser.pieces, *c);
                 ++c;
                 continue;
             }
             if(*c == '\\') {
 				if(!*++c) {
-					LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+					LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                        info->parser.cur_token,
 						"Expected char after backslash");
 				}
-                obstack_1grow(&info->pieces, *c);
+                obstack_1grow(&info->parser.pieces, *c);
                 ++c;
                 continue;
             }
@@ -409,17 +401,19 @@ void _qu_eval_str(qu_parse_context *info,
                 while(*++c && *c != '}');
                 nlen = c - name;
                 if(*c++ != '}') {
-					LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+					LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                        info->parser.cur_token,
 						"Expected closing }");
 				}
                 variable_t *var = evaluate(info, name, nlen);
                 if(var) {
                     if(var_to_string(&var)) {
                         free(var);
-						LONGJUMP_WITH_CONTENT_ERROR(info, info->cur_token,
+						LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                            info->parser.cur_token,
 							"Variable not found");
                     }
-                    obstack_grow(&info->pieces,
+                    obstack_grow(&info->parser.pieces,
                         var->data.str.value, var->data.str.length);
                     free(var);
                 }
@@ -427,42 +421,43 @@ void _qu_eval_str(qu_parse_context *info,
                 while(*c && (isalnum(*c) || *c == '_')) ++c;
                 nlen = c - name;
                 if(nlen == 0) {
-                    obstack_1grow(&info->pieces, '$');
+                    obstack_1grow(&info->parser.pieces, '$');
                     continue;
                 }
-                char *value = find_var(info, name, nlen);
-                if(value) {
-                    obstack_grow(&info->pieces, value, strlen(value));
+                char *value;
+                int value_len;
+                if(!qu_get_string_len(info, name, nlen, &value, &value_len)) {
+                    obstack_grow(&info->parser.pieces, value, strlen(value));
                 } else {
                     //COYAML_DEBUG("Not found variable ``%.*s''", nlen, name);
                 }
             }
         }
-        obstack_1grow(&info->pieces, 0);
-        *rlen = obstack_object_size(&info->pieces)-1;
-        *result = obstack_finish(&info->pieces);
+        obstack_1grow(&info->parser.pieces, 0);
+        *rlen = obstack_object_size(&info->parser.pieces)-1;
+        *result = obstack_finish(&info->parser.pieces);
     } else {
         *rlen = strlen(data);
-        *result = obstack_copy0(&info->pieces, data, *rlen);
+        *result = obstack_copy0(&info->parser.pieces, data, *rlen);
     }
 }
 
 
-void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
-    long *result) {
+void qu_node_to_int(qu_config_context *ctx, qu_ast_node *node, long *result) {
     char *content = qu_node_content(node);
     if(content)
-        _qu_eval_int(ctx, content, flags & QU_FLAGS_VARS, result);
+        qu_eval_int(ctx, content, 1, result);
 }
-void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
-    double *result) {
+void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
+    double *result)
+{
     char *content = qu_node_content(node);
     if(content)
-        _qu_eval_float(ctx, content, flags & QU_FLAGS_VARS, result);
+        qu_eval_float(ctx, content, 1, result);
 }
-void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_str(qu_config_context *ctx, qu_ast_node *node,
     char **result, size_t *rlen) {
     char *content = qu_node_content(node);
     if(content)
-        _qu_eval_str(ctx, content, flags & QU_FLAGS_VARS, result, rlen);
+        qu_eval_str(ctx, content, 1, result, rlen);
 }

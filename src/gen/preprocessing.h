@@ -1,8 +1,8 @@
 #ifndef _H_PREPROCESSING
 #define _H_PREPROCESSING
 
-#include "context.h"
+struct qu_context;
 
-int qu_config_preprocess(qu_context_t *ctx);
+int qu_config_preprocess(struct qu_context *ctx);
 
 #endif // _H_PREPROCESSING

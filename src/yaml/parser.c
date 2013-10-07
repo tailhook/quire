@@ -9,10 +9,10 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "yparser.h"
+#include "parser.h"
 #include "access.h"
 #include "codes.h"
-#include "util.h"
+#include "anchors.h"
 
 
 enum char_klass {
@@ -95,7 +95,7 @@ static void print_token(qu_token *tok, FILE *stream) {
 
 static void *parser_chunk_alloc(qu_parse_context *ctx, int size) {
     void *res = malloc(size);
-    if(unlikely(!res)) {
+    if(!res) {
         LONGJUMP_WITH_ERRCODE(ctx, ENOMEM);
     }
     return res;
@@ -114,7 +114,6 @@ static void _qu_context_reinit(qu_parse_context *ctx) {
 void qu_parser_init(qu_parse_context *ctx) {
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
-    ctx->variables = NULL;
 	ctx->errjmp = NULL;
 	_qu_context_reinit(ctx);
 }
@@ -463,8 +462,7 @@ static qu_ast_node *new_node(qu_parse_context *ctx) {
     node->ctx = ctx;
     node->anchor = ctx->cur_anchor;
     if(ctx->cur_anchor) {
-        _qu_insert_anchor(ctx,
-            node->anchor->data+1, node->anchor->bytelen-1, node);
+        qu_insert_anchor(ctx, node);
         ctx->cur_anchor = NULL;
     }
     node->tag = ctx->cur_tag;
@@ -511,8 +509,8 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         node->start_token = CTOK;
         node->end_token = CTOK;
         node->kind = QU_NODE_ALIAS;
-        qu_ast_node *target = _qu_find_anchor(ctx,
-            CTOK->data+1, CTOK->bytelen-1);
+        qu_ast_node *target = qu_find_anchor(ctx,
+            (char *)CTOK->data+1, CTOK->bytelen-1);
         if(target) {
             node->val.alias_target = target;
             NEXT;
@@ -623,8 +621,8 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
         node->start_token = CTOK;
         node->end_token = CTOK;
         node->kind = QU_NODE_ALIAS;
-        qu_ast_node *target = _qu_find_anchor(ctx,
-            CTOK->data+1, CTOK->bytelen-1);
+        qu_ast_node *target = qu_find_anchor(ctx,
+            (char *)CTOK->data+1, CTOK->bytelen-1);
         if(target) {
             node->val.alias_target = target;
             NEXT;

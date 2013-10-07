@@ -6,24 +6,24 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu99")
 
 
 ADD_LIBRARY(quire
-    src/yparser.c
-    src/access.c
+    src/yaml/parser.c
+    src/yaml/access.c
+    src/raw/common.c
+    src/raw/fromfile.c
+    src/raw/include.c
+    src/raw/merge.c
+    src/cfg/vars.c
+    src/cfg/eval.c
     src/cutil.c
     src/error.c
     src/emitter.c
-    src/vars.c
-    src/eval.c
-    src/maputil.c
-    src/wrappers.c
-    src/include.c
-    objpath/objpath.c
     )
 
 ADD_EXECUTABLE(quire-gen
-    src/coyaml.c
+    src/gen/main.c
     src/genheader.c
     src/gensource.c
-    src/metadata.c
+    src/gen/metadata.c
     src/options.c
     src/preprocessing.c
     )

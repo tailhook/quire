@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "yparser.h"
+#include "yaml/parser.h"
 
 // PUBLIC API
 // Keep in sync with quire.h

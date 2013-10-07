@@ -1,12 +1,9 @@
-#include <stdio.h>
+#include "../yaml/parser.h"
+#include "../yaml/map.h"
+#include "../yaml/codes.h"
+#include "../yaml/access.h"
 
-#include "context.h"
-#include "yparser.h"
-#include "maputil.h"
-#include "codes.h"
-#include "access.h"
-
-static void merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
+static void qu_raw_merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
     qu_ast_node *source, qu_map_member *after) {
     qu_map_member *item;
     TAILQ_FOREACH(item, &source->val.map_index.items, lst) {
@@ -34,29 +31,28 @@ static void merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
     }
 }
 
-static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
+void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
+{
     switch(node->kind) {
     case QU_NODE_MAPPING: {
         qu_map_index *map = &node->val.map_index;
         for(qu_map_member *item = TAILQ_FIRST(&map->items); item;) {
-            if(item->value->kind == QU_NODE_ALIAS
-               && QU_MFLAG_RESOLVEALIAS & flags) {
+            if(item->value->kind == QU_NODE_ALIAS) {
                 item->value = item->value->val.alias_target;
             }
-            if(QU_MFLAG_MAPMERGE & flags
-               && !strcmp(qu_node_content(item->key), "<<")) {
+            if(!strcmp(qu_node_content(item->key), "<<")) {
                 if(item->value->kind == QU_NODE_SEQUENCE) {
                     qu_map_member *anchor = item;
                     qu_map_member *next = TAILQ_NEXT(item, lst);
                     qu_seq_index *chseq = &item->value->val.seq_index;
                     qu_seq_member *child;
                     TAILQ_FOREACH(child, &chseq->items, lst) {
-                        if(child->value->kind == QU_NODE_ALIAS
-                           && QU_MFLAG_RESOLVEALIAS & flags) {
+                        if(child->value->kind == QU_NODE_ALIAS) {
                             child->value = child->value->val.alias_target;
                         }
                         if(child->value->kind == QU_NODE_MAPPING) {
-                            merge_mapping(ctx, map, child->value, anchor);
+                            qu_raw_merge_mapping(ctx,
+                                map, child->value, anchor);
                         }
                         if(next) {
                             anchor = TAILQ_PREV(next, qu_map_list, lst);
@@ -65,13 +61,13 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
                         }
                     }
                 } else if(item->value->kind == QU_NODE_MAPPING) {
-                    merge_mapping(ctx, map, item->value, item);
+                    qu_raw_merge_mapping(ctx, map, item->value, item);
                 }
                 qu_map_member *oitem = item;
                 item = TAILQ_NEXT(item, lst);
                 TAILQ_REMOVE(&map->items, oitem, lst);
             } else {
-                visitor(ctx, item->value, flags);
+                qu_raw_maps_visitor(ctx, item->value);
                 item = TAILQ_NEXT(item, lst);
             }
         }
@@ -79,12 +75,10 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
     case QU_NODE_SEQUENCE: {
         qu_seq_index *seq = &node->val.seq_index;
         for(qu_seq_member *item = TAILQ_FIRST(&seq->items); item;) {
-            if(item->value->kind == QU_NODE_ALIAS
-               && QU_MFLAG_RESOLVEALIAS & flags) {
+            if(item->value->kind == QU_NODE_ALIAS) {
                 item->value = item->value->val.alias_target;
             }
-            if(QU_MFLAG_SEQMERGE & flags
-                && item->value->tag
+            if(item->value->tag
                 && item->value->tag->bytelen == 2
                 && !memcmp(item->value->tag->data, "!*", 2)) {
                 if(item->value->kind == QU_NODE_SEQUENCE) {
@@ -101,7 +95,7 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
                 item = TAILQ_NEXT(item, lst);
                 TAILQ_REMOVE(&seq->items, oitem, lst);
             } else {
-                visitor(ctx, item->value, flags);
+                qu_raw_maps_visitor(ctx, item->value);
                 item = TAILQ_NEXT(item, lst);
             }
             // TODO(tailhook) write some tests
@@ -110,7 +104,4 @@ static void visitor(qu_parse_context *ctx, qu_ast_node *node, int flags) {
     }
 }
 
-void _qu_merge_maps(struct qu_parse_context_s *ctx, int flags) {
-    visitor(ctx, ctx->document, flags);
-}
 

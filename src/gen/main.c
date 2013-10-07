@@ -5,11 +5,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "yparser.h"
+#include "../yaml/parser.h"
 #include "metadata.h"
 #include "preprocessing.h"
-#include "genheader.h"
-#include "gensource.h"
+#include "header.h"
+#include "source.h"
 #include "error.h"
 #include "wrappers.h"
 #include "codes.h"
