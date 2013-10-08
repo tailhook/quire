@@ -9,8 +9,8 @@ typedef struct qu_metadata_s {
     int mixed_arguments;
 } qu_metadata_t;
 
-struct qu_context_s;
+struct qu_context;
 
-void qu_parse_metadata(struct qu_context_s *ctx);
+void qu_parse_metadata(struct qu_context *ctx);
 
 #endif // QUIRE_H_GEN_METADATA

@@ -68,3 +68,24 @@ void qu_append_c_name(struct obstack *ob, char *name) {
     }
     obstack_1grow(ob, 0);
 }
+
+void qu_print_c_string(FILE *file, char *str) {
+    putc('"', file);
+    for(char *c = str; *c; ++c) {
+        if(*c < 32) {
+            switch(*c) {
+            case '\r': fprintf(file, "\\r"); break;
+            case '\n': fprintf(file, "\\n"); break;
+            case '\t': fprintf(file, "\\t"); break;
+            default: fprintf(file, "\\x%02x", *c); break;
+            }
+            continue;
+        } else if(*c == '\\' || *c == '"') {
+            putc('\\', file);
+            putc(*c, file);
+        } else {
+            putc(*c, file);
+        }
+    }
+    putc('"', file);
+}

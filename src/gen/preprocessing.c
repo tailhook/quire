@@ -4,9 +4,11 @@
 #include <assert.h>
 
 #include "preprocessing.h"
-#include "codes.h"
-#include "access.h"
+#include "../yaml/codes.h"
+#include "../yaml/access.h"
 #include "cutil.h"
+#include "context.h"
+#include "metadata.h"
 
 static char *typealias[] = {
     [QU_TYP_INT] = "long",
@@ -20,7 +22,7 @@ static char *typealias[] = {
     [QU_TYP_MAP] = NULL,
     };
 
-static int visitor(qu_context_t *ctx,
+static int visitor(struct qu_context *ctx,
     qu_ast_node *node,
     char *expr, qu_ast_node *expr_parent) {
     qu_nodedata *data = obstack_alloc(&ctx->parsing.pieces,
@@ -196,13 +198,13 @@ static int visitor(qu_context_t *ctx,
     return 0;
 }
 
-int qu_config_preprocess(qu_context_t *ctx) {
+int qu_config_preprocess(struct qu_context *ctx) {
     int rc;
     assert(!ctx->parsing.errjmp);
     ctx->parsing.errjmp = &ctx->parsing.errjmp_buf;
     if(!(rc = setjmp(ctx->parsing.errjmp_buf))) {
 
-        _qu_parse_metadata(ctx);
+        qu_parse_metadata(ctx);
 
         ctx->prefix = ctx->options.prefix;
         int len = strlen(ctx->prefix);

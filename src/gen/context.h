@@ -5,7 +5,7 @@
 
 #include "options.h"
 #include "metadata.h"
-#include "yparser.h"
+#include "../yaml/parser.h"
 
 typedef struct qu_nodedata {
     int kind;
@@ -34,7 +34,7 @@ typedef struct qu_nodedata {
 } qu_nodedata;
 
 
-typedef struct qu_context_s {
+typedef struct qu_context {
     qu_parse_context parsing;
     qu_options_t options;
     qu_metadata_t meta;

@@ -2,34 +2,15 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "gensource.h"
-#include "codes.h"
-#include "access.h"
+#include "source.h"
+#include "../yaml/codes.h"
+#include "../yaml/access.h"
 #include "cutil.h"
-#include "quire_int.h"
+#include "context.h"
+#include "../quire_int.h"
 
-static void print_string(char *str) {
-    putc('"', stdout);
-    for(char *c = str; *c; ++c) {
-        if(*c < 32) {
-            switch(*c) {
-            case '\r': printf("\\r"); break;
-            case '\n': printf("\\n"); break;
-            case '\t': printf("\\t"); break;
-            default: printf("\\x%02x", *c); break;
-            }
-            continue;
-        } else if(*c == '\\' || *c == '"') {
-            putc('\\', stdout);
-            putc(*c, stdout);
-        } else {
-            putc(*c, stdout);
-        }
-    }
-    putc('"', stdout);
-}
 
-static int print_default(qu_context_t *ctx, qu_ast_node *node,
+static int print_default(struct qu_context *ctx, qu_ast_node *node,
     char *prefix, qu_ast_node *datanode) {
     int rc;
     qu_nodedata *data = node->userdata;
@@ -58,21 +39,21 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node,
             break;
         case QU_TYP_FILE:
             printf("(*cfg)%s%s = ", prefix, data->expression);
-            print_string(qu_node_content(def));
+            qu_print_c_string(stdout, qu_node_content(def));
             printf(";\n");
             printf("(*cfg)%s%s_len = %lu;\n", prefix, data->expression,
                 strlen(qu_node_content(def)));
             break;
         case QU_TYP_DIR:
             printf("(*cfg)%s%s = ", prefix, data->expression);
-            print_string(qu_node_content(def));
+            qu_print_c_string(stdout, qu_node_content(def));
             printf(";\n");
             printf("(*cfg)%s%s_len = %lu;\n", prefix, data->expression,
                 strlen(qu_node_content(def)));
             break;
         case QU_TYP_STRING:
             printf("(*cfg)%s%s = ", prefix, data->expression);
-            print_string(qu_node_content(def));
+            qu_print_c_string(stdout, qu_node_content(def));
             printf(";\n");
             printf("(*cfg)%s%s_len = %lu;\n", prefix, data->expression,
                 strlen(qu_node_content(def)));
@@ -127,9 +108,9 @@ static int print_default(qu_context_t *ctx, qu_ast_node *node,
 }
 
 
-static void print_parser(qu_context_t *ctx, qu_ast_node *node);
+static void print_parser(struct qu_context *ctx, qu_ast_node *node);
 
-static void print_parse_member(qu_context_t *ctx,
+static void print_parse_member(struct qu_context *ctx,
     qu_ast_node *node, char *name) {
     qu_nodedata *data = node->userdata;
     if(!data)
@@ -144,7 +125,7 @@ static void print_parse_member(qu_context_t *ctx,
     printf("}\n");
 }
 
-static void print_parser(qu_context_t *ctx, qu_ast_node *node) {
+static void print_parser(struct qu_context *ctx, qu_ast_node *node) {
     qu_nodedata *data = node->userdata;
     assert(data);
     if(data->kind == QU_MEMBER_SCALAR) {
@@ -267,7 +248,7 @@ static void print_parser(qu_context_t *ctx, qu_ast_node *node) {
     }
 }
 
-int print_printer(qu_context_t *ctx, qu_ast_node *node, char *tag) {
+int print_printer(struct qu_context *ctx, qu_ast_node *node, char *tag) {
     qu_nodedata *data = node->userdata;
     if(!data)
         return 0;
@@ -434,7 +415,7 @@ static char *get_optname(qu_ast_node *namenode) {
 }
 
 
-int qu_output_source(qu_context_t *ctx) {
+int qu_output_source(struct qu_context *ctx) {
     char *header = ctx->options.output_source;
     char *tmp = strrchr(header, '/');
     if(tmp) {

@@ -82,6 +82,6 @@ static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node) {
 }
 
 void qu_raw_process(qu_parse_context *ctx) {
+    qu_raw_visitor (ctx, ctx->document);
     qu_raw_maps_visitor(ctx, ctx->document);
-    qu_raw_merge_maps (ctx, ctx->document);
 }

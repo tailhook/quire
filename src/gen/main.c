@@ -10,9 +10,9 @@
 #include "preprocessing.h"
 #include "header.h"
 #include "source.h"
-#include "error.h"
-#include "wrappers.h"
-#include "codes.h"
+#include "../error.h"
+#include "../yaml/codes.h"
+#include "../raw/common.h"
 
 #define std_assert(val) if((val) == -1) {\
     fprintf(stderr, "coyaml: %s", strerror(errno));\
@@ -28,18 +28,11 @@ void qu_context_init(qu_context_t *ctx) {
 
 
 int main(int argc, char **argv) {
-    qu_context_t ctx;
+    struct qu_context ctx;
     qu_context_init(&ctx);
     quire_parse_options(&ctx.options, argc, argv);
     int rc = qu_file_parse(&ctx.parsing, ctx.options.source_file);
-    if(rc == 0) {
-        rc = qu_process_includes(&ctx.parsing, QU_IFLAG_FROMFILE
-            |QU_IFLAG_INCLUDE|QU_IFLAG_GLOBSEQ|QU_IFLAG_GLOBMAP);
-    }
-    if(rc == 0) {
-        rc = qu_merge_maps(&ctx.parsing, QU_MFLAG_MAPMERGE
-            |QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);
-    }
+    qu_raw_process(&ctx.parsing);
     if(rc == 0)
         rc = qu_config_preprocess(&ctx);
     if(rc > 0) {

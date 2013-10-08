@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "genheader.h"
-#include "yparser.h"
-#include "codes.h"
+#include "header.h"
+#include "../yaml/parser.h"
+#include "../yaml/codes.h"
 #include "cutil.h"
-#include "access.h"
+#include "../yaml/access.h"
 
 #define STRING_TYPE(typ) ((typ) == QU_TYP_FILE \
                           || (typ) == QU_TYP_DIR \

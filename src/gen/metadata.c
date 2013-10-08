@@ -1,11 +1,11 @@
 #include <stdio.h>
 
 #include "metadata.h"
-#include "access.h"
+#include "../yaml/access.h"
 #include "context.h"
-#include "codes.h"
+#include "../yaml/codes.h"
 
-void _qu_parse_metadata(qu_context_t *bigctx) {
+void qu_parse_metadata(struct qu_context *bigctx) {
     qu_parse_context *ctx = &bigctx->parsing;
     qu_ast_node *root = ctx->document;
     qu_metadata_t *meta = &bigctx->meta;
