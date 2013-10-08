@@ -137,6 +137,8 @@ ADD_TOOL_TEST(list)
 ADD_TOOL_TEST(listlist)
 ADD_TOOL_TEST(scalar)
 ADD_TOOL_TEST(mergemap)
+ADD_TOOL_TEST(mergeseq)
 ADD_TOOL_TEST(incl)
 ADD_TOOL_TEST(incmap)
+ADD_TOOL_TEST(incseq)
 

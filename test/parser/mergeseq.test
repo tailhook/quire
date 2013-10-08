@@ -1,0 +1,57 @@
+fruits: &fruits
+- apple
+- banana
+furniture: &furniture
+- chair
+- table
+fruits2:
+- !Unpack [*fruits]
+eatable:
+    - vodka
+    - !Unpack [*fruits]
+    - meat
+things:
+    - !Unpack [*fruits]
+    - !Unpack [*furniture]
+things2:
+    - knife
+    - !Unpack [*fruits]
+    - brick
+    - !Unpack [*furniture,*fruits]
+...
+---
+
+- command-line: quire-tool -Ep /fruits
+  output: |
+    - apple
+    - banana
+- command-line: quire-tool -Ep /furniture
+  output: |
+    - chair
+    - table
+- command-line: quire-tool -Ep /eatable
+  output: |
+    - vodka
+    - apple
+    - banana
+    - meat
+- command-line: quire-tool -Ep /fruits2
+  output: |
+    - apple
+    - banana
+- command-line: quire-tool -Ep /things
+  output: |
+    - apple
+    - banana
+    - chair
+    - table
+- command-line: quire-tool -Ep /things2
+  output: |
+    - knife
+    - apple
+    - banana
+    - brick
+    - chair
+    - table
+    - apple
+    - banana

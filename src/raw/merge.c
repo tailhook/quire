@@ -31,6 +31,19 @@ static void qu_raw_merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
     }
 }
 
+static void qu_raw_merge_sequence(qu_parse_context *ctx, qu_seq_index *idx,
+    qu_ast_node *source, qu_seq_member *after) {
+    qu_seq_member *item;
+    TAILQ_FOREACH(item, &source->val.seq_index.items, lst) {
+        qu_seq_member *copy = obstack_alloc(&ctx->pieces,
+            sizeof(qu_seq_member));
+        copy->value = item->value;
+        TAILQ_INSERT_AFTER(&idx->items, after, copy, lst);
+        after = copy;
+    }
+}
+
+
 void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
 {
     switch(node->kind) {
@@ -79,18 +92,28 @@ void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
                 item->value = item->value->val.alias_target;
             }
             if(item->value->tag
-                && item->value->tag->bytelen == 2
-                && !memcmp(item->value->tag->data, "!*", 2)) {
+                && item->value->tag->bytelen == 7
+                && !memcmp(item->value->tag->data, "!Unpack", 7)) {
                 if(item->value->kind == QU_NODE_SEQUENCE) {
+                    qu_seq_member *anchor = item;
+                    qu_seq_member *next = TAILQ_NEXT(item, lst);
                     qu_seq_index *chseq = &item->value->val.seq_index;
                     qu_seq_member *child;
                     TAILQ_FOREACH(child, &chseq->items, lst) {
-                        qu_seq_member *copy = obstack_alloc(&ctx->pieces,
-                            sizeof(qu_seq_member));
-                        copy->value = item->value;
-                        TAILQ_INSERT_AFTER(&seq->items, item, copy, lst);
+                        if(child->value->kind == QU_NODE_ALIAS) {
+                            child->value = child->value->val.alias_target;
+                        }
+                        if(child->value->kind == QU_NODE_SEQUENCE) {
+                            qu_raw_merge_sequence(ctx,
+                                seq, child->value, anchor);
+                        }
+                        if(next) {
+                            anchor = TAILQ_PREV(next, qu_seq_list, lst);
+                        } else {
+                            anchor = TAILQ_LAST(&seq->items, qu_seq_list);
+                        }
                     }
-                }
+                } // TODO(tailhook) report error
                 qu_seq_member *oitem = item;
                 item = TAILQ_NEXT(item, lst);
                 TAILQ_REMOVE(&seq->items, oitem, lst);
@@ -98,7 +121,6 @@ void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
                 qu_raw_maps_visitor(ctx, item->value);
                 item = TAILQ_NEXT(item, lst);
             }
-            // TODO(tailhook) write some tests
         }
         } break;
     }

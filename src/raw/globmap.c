@@ -73,7 +73,6 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
 
     char *suffix;
     char suffix_len;
-    printf("STAR ``%s'' PATEND ``%s''\n", star, pat_end);
     if(pat_end == star+1) {
         suffix = "";
         suffix_len = 0;
@@ -81,11 +80,11 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
         suffix = alloca(pat_end - (star+1) + 1);
         const char *c;
         char *t = suffix;
-        for(c = pat_start; c < star; ++c)
-            if(*c != '(')
+        for(c = star+1; c < pat_end; ++c)
+            if(*c != ')')
                 *t++ = *c;
         *t = 0;
-        suffix_len = t - dir;
+        suffix_len = t - suffix;
     }
 
     DIR *d = opendir(dir);
@@ -113,7 +112,6 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
         }
 
         // Suffix match
-        printf("ENTRY ``%s'' ``%.*s''\n", entryp->d_name, suffix_len, suffix);
         if(suffix_len) {
             char *eend = entryp->d_name + strlen(entryp->d_name);
             if(eend - entryp->d_name < suffix_len)
@@ -140,17 +138,16 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
         }
         char *nend = nstart + strlen(entryp->d_name);
         if(endbr < pat_end) {  // The case "(some*thing).conf"
-            nend -= pat_end - endbr;
+            nend -= pat_end - endbr - 1;
         }
         obstack_grow(&ctx->pieces, nstart, nend - nstart);
-        if(endbr > pat_end) { // The case "(some*/thing).conf"
+        if(endbr > pat_end) { // The case "(some*)/my.conf"
             obstack_grow0(&ctx->pieces, pat_end, endbr - pat_end);
         } else {
             obstack_1grow(&ctx->pieces, 0);
         }
-
-
         char *name = obstack_finish(&ctx->pieces);
+
 
         qu_ast_node *knode = qu_new_raw_text_node(ctx, name);
         assert(ctx->errjmp);

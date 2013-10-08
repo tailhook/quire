@@ -18,10 +18,10 @@ const char *qu_node_content(qu_ast_node *node) {
         }
         return NULL;
     }
-    if(!node->start_token)
-        return "";
     if(node->content)
         return node->content;
+    if(!node->start_token)
+        return "";
     if(node->start_token == node->end_token
         && node->start_token->kind == QU_TOK_PLAINSTRING) {
         node->content = obstack_copy0(&node->ctx->pieces,

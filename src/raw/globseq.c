@@ -23,7 +23,7 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
     const char *c;
     for (c = star-1; c >= pattern && *c != '/'; --c);
     const char *pat_start = c+1;
-    for (c = star+1; *c && *c != '/'; --c);
+    for (c = star+1; *c && *c != '/'; ++c);
     const char *pat_end = c;
     int taillen = strlen(pat_end);
 
@@ -52,7 +52,8 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
         name_max = 255;         /* Take a guess */
     int len = offsetof(struct dirent, d_name) + name_max + 1;
     struct dirent *entryp = alloca(len);
-    while(!readdir_r(d, entryp, &entryp) && entryp) {
+    int rc;
+    while(!(rc = readdir_r(d, entryp, &entryp)) && entryp) {
         // Prefix match
         if(pat_start == star) { //  dir/* shouldn't match hidden files
             if(entryp->d_name[0] == '.')
@@ -65,7 +66,7 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
         // Suffix match
         char *eend = entryp->d_name + strlen(entryp->d_name);
         if(pat_end > star+1) {
-            int suffixlen = pat_end - star+1;
+            int suffixlen = pat_end - (star+1);
             if(eend - entryp->d_name < suffixlen)
                 continue;
             if(strncmp(eend - suffixlen, star+1, suffixlen))
@@ -84,7 +85,7 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
         qu_ast_node *next = qu_file_newparse(ctx, fn);
         qu_sequence_add(ctx, result, next);
     }
-    if(!entryp) {
+    if(rc) {
         LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
             "Can't read directory");
     }

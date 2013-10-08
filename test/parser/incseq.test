@@ -1,0 +1,9 @@
+fruits: !GlobSeq "incl/fru*.yaml"
+furniture: !GlobSeq "incl/fur*.yaml"
+...
+---
+
+- command-line: quire-tool -Ep /fruits:0/apple
+  output: "yes"
+- command-line: quire-tool -Ep /furniture:0/chair
+  output: "yes"
