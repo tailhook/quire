@@ -2,9 +2,11 @@
 #define _H_CONTEXT
 
 #include <sys/queue.h>
+#include <stdio.h>
 
 #include "options.h"
 #include "metadata.h"
+#include "util/fwdecl.h"
 #include "../yaml/parser.h"
 
 typedef struct qu_nodedata {
@@ -35,16 +37,20 @@ typedef struct qu_nodedata {
 
 
 typedef struct qu_context {
-    qu_parse_context parsing;
+    qu_parse_context parser;
     qu_options_t options;
     qu_metadata_t meta;
     const char *prefix;
     const char *macroprefix;
 
+    struct qu_fwdecl_index fwdecl_index;
+
     TAILQ_HEAD(qu_cli_options, qu_nodedata) cli_options;
 
     int node_level;
     char node_vars[16];
+
+    FILE *out;
 
 	TAILQ_HEAD(qu_array_list, qu_nodedata) arrays;
 	TAILQ_HEAD(qu_mapping_list, qu_nodedata) mappings;

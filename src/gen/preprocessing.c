@@ -6,7 +6,7 @@
 #include "preprocessing.h"
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
-#include "cutil.h"
+#include "util/name.h"
 #include "context.h"
 #include "metadata.h"
 
@@ -25,7 +25,7 @@ static char *typealias[] = {
 static int visitor(struct qu_context *ctx,
     qu_ast_node *node,
     const char *expr, qu_ast_node *expr_parent) {
-    qu_nodedata *data = obstack_alloc(&ctx->parsing.pieces,
+    qu_nodedata *data = obstack_alloc(&ctx->parser.pieces,
                                       sizeof(qu_nodedata));
     memset(data, 0, sizeof(qu_nodedata));
     if(!data)
@@ -56,7 +56,7 @@ static int visitor(struct qu_context *ctx,
         else if(tlen == 8 && !strncmp(tdata, "!Mapping", 8))
             data->type = QU_TYP_MAP;
         else {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                 node->tag, "Unknown type tag");
         }
         switch(data->type) {
@@ -72,7 +72,7 @@ static int visitor(struct qu_context *ctx,
             data->kind = QU_MEMBER_ARRAY;
             qu_ast_node *elem = qu_map_get(node, "element");
             if(!elem) {
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                     node->tag, "Element type not specified");
             }
             visitor(ctx, elem, ".value", expr_parent);
@@ -84,7 +84,7 @@ static int visitor(struct qu_context *ctx,
                     tname = edata->data.custom.typename;
                     break;
                 default:
-                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                         node->tag, "Nested arrays and maps "
                                    "are not supported");
                 }
@@ -105,7 +105,7 @@ static int visitor(struct qu_context *ctx,
             qu_ast_node *kelem = qu_map_get(node, "key-element");
             qu_ast_node *velem = qu_map_get(node, "value-element");
             if(!kelem || !velem) {
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                     node->tag, "Key or value type not specified");
             }
             visitor(ctx, kelem, ".key", expr_parent);
@@ -118,7 +118,7 @@ static int visitor(struct qu_context *ctx,
                     ktname = kedata->data.custom.typename;
                     break;
                 default:
-                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                         node->tag, "Nested arrays and maps "
                                    "are not supported");
                 }
@@ -131,7 +131,7 @@ static int visitor(struct qu_context *ctx,
                     vtname = vedata->data.custom.typename;
                     break;
                 default:
-                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                         node->tag, "Nested arrays and maps "
                                    "are not supported");
                 }
@@ -157,7 +157,7 @@ static int visitor(struct qu_context *ctx,
                 mnode = qu_map_get(node, "=");
                 if(!mnode) mnode = qu_map_get(node, "type");
                 if(!mnode) {
-                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                         node->tag, "Type not specified");
                 }
             }
@@ -182,11 +182,11 @@ static int visitor(struct qu_context *ctx,
             const char *mname = qu_node_content(item->key);
             if(!*mname || *mname == '_')
                 continue;
-            obstack_blank(&ctx->parsing.pieces, 0);
-            obstack_grow(&ctx->parsing.pieces, expr, strlen(expr));
-            obstack_grow(&ctx->parsing.pieces, ".", 1);
-            qu_append_c_name(&ctx->parsing.pieces, mname);
-            const char *nexpr = (char *)obstack_finish(&ctx->parsing.pieces);
+            obstack_blank(&ctx->parser.pieces, 0);
+            obstack_grow(&ctx->parser.pieces, expr, strlen(expr));
+            obstack_grow(&ctx->parser.pieces, ".", 1);
+            qu_append_c_name(&ctx->parser.pieces, mname);
+            const char *nexpr = (char *)obstack_finish(&ctx->parser.pieces);
             visitor(ctx, item->value, nexpr, expr_parent);
         }
         qu_ast_node *vnode = qu_map_get(node, "__value__");
@@ -200,24 +200,24 @@ static int visitor(struct qu_context *ctx,
 
 void qu_config_preprocess(struct qu_context *ctx) {
     int rc;
-    assert(ctx->parsing.errjmp);
+    assert(ctx->parser.errjmp);
 
     qu_parse_metadata(ctx);
 
     ctx->prefix = ctx->options.prefix;
     int len = strlen(ctx->prefix);
-    char * macroprefix = obstack_copy0(&ctx->parsing.pieces,
+    char * macroprefix = obstack_copy0(&ctx->parser.pieces,
         ctx->prefix, len);
     for(int i = 0; i < len; ++i)
         macroprefix[i] = toupper(macroprefix[i]);
     ctx->macroprefix = macroprefix;
 
     TAILQ_INIT(&ctx->cli_options);
-    visitor(ctx, ctx->parsing.document, "", NULL);
-    qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
+    visitor(ctx, ctx->parser.document, "", NULL);
+    qu_ast_node *types = qu_map_get(ctx->parser.document, "__types__");
     if(types) {
         if(types->kind != QU_NODE_MAPPING) {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                 types->tag, "__types__ must be mapping");
         }
         qu_map_member *typ;
@@ -228,13 +228,13 @@ void qu_config_preprocess(struct qu_context *ctx) {
                 TAILQ_FOREACH(item, &tags->val.map_index.items, lst) {
                     if(qu_node_content(item->key)[0] == '_')
                         continue;
-                    obstack_blank(&ctx->parsing.pieces, 0);
-                    obstack_grow(&ctx->parsing.pieces,
+                    obstack_blank(&ctx->parser.pieces, 0);
+                    obstack_grow(&ctx->parser.pieces,
                         ctx->macroprefix, strlen(ctx->macroprefix));
-                    qu_append_c_name(&ctx->parsing.pieces,
+                    qu_append_c_name(&ctx->parser.pieces,
                         qu_node_content(item->key));
                     item->value->userdata = obstack_finish(
-                        &ctx->parsing.pieces);
+                        &ctx->parser.pieces);
                 }
                 tags->userdata = qu_node_content(typ->key);
             }

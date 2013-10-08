@@ -5,7 +5,7 @@
 #include "source.h"
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
-#include "cutil.h"
+#include "util/name.h"
 #include "context.h"
 #include "../quire_int.h"
 
@@ -96,7 +96,7 @@ static int print_default(struct qu_context *ctx, qu_ast_node *node,
         qu_ast_node *defnode = qu_map_get(node, "default");
         if(defnode) {
             qu_ast_node *ctypenode = qu_map_get(
-                qu_map_get(ctx->parsing.document, "__types__"),
+                qu_map_get(ctx->parser.document, "__types__"),
                 data->data.custom.typename);
             assert(ctypenode);
             int rc = print_default(ctx, ctypenode,
@@ -620,7 +620,7 @@ int qu_output_source(struct qu_context *ctx) {
 
     // type-specific functions
     qu_map_member *item;
-    qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
+    qu_ast_node *types = qu_map_get(ctx->parser.document, "__types__");
     if(types) {
         qu_map_member *typ;
         TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
@@ -798,7 +798,7 @@ int qu_output_source(struct qu_context *ctx) {
     ///////////////  config_set_defaults
 
     printf("int %1$sset_defaults(%1$smain_t *cfg) {\n", ctx->prefix);
-    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
         print_default(ctx, item->value, "", item->value);
     }
 
@@ -844,7 +844,7 @@ int qu_output_source(struct qu_context *ctx) {
     printf("// Parsing root elements\n");
     ctx->node_level = 1;
     ctx->node_vars[1] = 0;
-    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
         print_parse_member(ctx, item->value, qu_node_content(item->key));
     }
     printf("return 0;\n");
@@ -924,7 +924,7 @@ int qu_output_source(struct qu_context *ctx) {
     printf("\n");
 
     printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
-    TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
+    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
         if(item->value->userdata) {
             const char *mname = qu_node_content(item->key);
             printf("qu_emit_scalar(ctx, NULL, NULL, "

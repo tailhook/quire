@@ -6,7 +6,7 @@
 #include "../yaml/codes.h"
 
 void qu_parse_metadata(struct qu_context *bigctx) {
-    qu_parse_context *ctx = &bigctx->parsing;
+    qu_parse_context *ctx = &bigctx->parser;
     qu_ast_node *root = ctx->document;
     qu_metadata_t *meta = &bigctx->meta;
     meta->program_name = NULL;

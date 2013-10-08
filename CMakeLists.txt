@@ -23,13 +23,15 @@ ADD_LIBRARY(quire
     )
 
 ADD_EXECUTABLE(quire-gen
+    src/gen/util/print.c
+    src/gen/util/fwdecl.c
+    src/gen/util/name.c
     src/gen/main.c
     src/gen/header.c
     src/gen/source.c
     src/gen/metadata.c
     src/gen/options.c
     src/gen/preprocessing.c
-    src/gen/cutil.c
     )
 TARGET_LINK_LIBRARIES(quire-gen quire)
 
@@ -60,7 +62,7 @@ MACRO(ADD_GEN_EXECUTABLE name)
             --source ${CMAKE_CURRENT_SOURCE_DIR}/config.yaml
             --c-header config.h
             --c-source config.c
-        DEPENDS config.yaml
+        DEPENDS config.yaml quire-gen
         )
     IF(ASTYLE)
         ADD_CUSTOM_COMMAND(

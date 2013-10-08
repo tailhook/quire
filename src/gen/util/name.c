@@ -1,6 +1,6 @@
 #include <ctype.h>
 
-#include "cutil.h"
+#include "name.h"
 #include <stdio.h>
 
 const char *reserved_words[] = {

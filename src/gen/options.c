@@ -33,7 +33,7 @@ void quire_print_usage(FILE *out) {
 };
 
 void quire_parse_options(qu_options_t *opt, int argc, char **argv) {
-    opt->prefix = "cfg_";
+    opt->prefix = "cfg";
     int c;
     int cursect = 0;
     while((c = getopt_long(argc, argv, opt_string, long_options, NULL)) != -1){

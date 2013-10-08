@@ -23,7 +23,7 @@ void qu_context_init(qu_context_t *ctx, jmp_buf *jmp) {
     memset(ctx, 0, sizeof(qu_context_t));
     TAILQ_INIT(&ctx->arrays);
     TAILQ_INIT(&ctx->mappings);
-    qu_parser_init(&ctx->parsing, jmp);
+    qu_parser_init(&ctx->parser, jmp);
 }
 
 
@@ -34,8 +34,8 @@ int main(int argc, char **argv) {
     if(!(rc = setjmp(jmp))) {
         qu_context_init(&ctx, &jmp);
         quire_parse_options(&ctx.options, argc, argv);
-        qu_file_parse(&ctx.parsing, ctx.options.source_file);
-        qu_raw_process(&ctx.parsing);
+        qu_file_parse(&ctx.parser, ctx.options.source_file);
+        qu_raw_process(&ctx.parser);
         qu_config_preprocess(&ctx);
 
         if(ctx.options.output_header) {
@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
             int rc = dup2(fd, 1);
             std_assert(rc);
             close(fd);
+            ctx.out = stdout;  // TODO(tailhook) fix
             std_assert(qu_output_header(&ctx));
             ftruncate(1, ftell(stdout));
         }
@@ -56,16 +57,17 @@ int main(int argc, char **argv) {
             int rc = dup2(fd, 1);
             std_assert(rc);
             close(fd);
+            ctx.out = stdout;  // TODO(tailhook) fix
             std_assert(qu_output_source(&ctx));
             ftruncate(1, ftell(stdout));
         }
 
-        qu_parser_free(&ctx.parsing);
+        qu_parser_free(&ctx.parser);
         return 0;
     } else {
         if(rc > 0) {
-            qu_print_error(&ctx.parsing, stderr);
-            qu_parser_free(&ctx.parsing);
+            qu_print_error(&ctx.parser, stderr);
+            qu_parser_free(&ctx.parser);
             return 1;
         } else if(rc < 0) {
             fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
