@@ -209,7 +209,7 @@ void qu_config_preprocess(struct qu_context *ctx) {
     char * macroprefix = obstack_copy0(&ctx->parsing.pieces,
         ctx->prefix, len);
     for(int i = 0; i < len; ++i)
-        macroprefix[i] = toupper(ctx->macroprefix[i]);
+        macroprefix[i] = toupper(macroprefix[i]);
     ctx->macroprefix = macroprefix;
 
     TAILQ_INIT(&ctx->cli_options);

@@ -1,0 +1,4 @@
+__metadata__:
+  program-name: meta
+  default-config: /etc/__quire_test__/meta.yaml
+  description: Metadata testing config

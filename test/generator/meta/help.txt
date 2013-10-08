@@ -1,0 +1,8 @@
+Usage:
+    meta [options]
+
+Metdatadata testing config
+
+Options:
+    --config,-c FILE  Parse configuration file FILE
+                      [default: /etc/__quire_test__/meta.yaml]
