@@ -15,7 +15,7 @@
 #include "../raw/common.h"
 
 #define std_assert(val) if((val) == -1) {\
-    fprintf(stderr, "coyaml: %s", strerror(errno));\
+    fprintf(stderr, "quire: %s\n", strerror(errno));\
     exit(1); \
     }
 
@@ -41,9 +41,9 @@ int main(int argc, char **argv) {
         if(ctx.options.output_header) {
             fflush(stdout);
             int fd = open(ctx.options.output_header, O_WRONLY|O_CREAT, 0666);
-            std_assert(fd >= 0)
+            std_assert(fd);
             int rc = dup2(fd, 1);
-            std_assert(rc == 0);
+            std_assert(rc);
             close(fd);
             std_assert(qu_output_header(&ctx));
             ftruncate(1, ftell(stdout));
@@ -52,9 +52,9 @@ int main(int argc, char **argv) {
         if(ctx.options.output_source) {
             fflush(stdout);
             int fd = open(ctx.options.output_source, O_WRONLY|O_CREAT, 0666);
-            std_assert(fd >= 0)
+            std_assert(fd);
             int rc = dup2(fd, 1);
-            std_assert(rc == 0);
+            std_assert(rc);
             close(fd);
             std_assert(qu_output_source(&ctx));
             ftruncate(1, ftell(stdout));

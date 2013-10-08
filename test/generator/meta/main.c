@@ -1,8 +1,8 @@
 #include "config.h"
 
 int main(int argc, char **argv) {
-    config_main_t cfg;
-    config_load(&cfg, args, argv);
-    config_free(&cfg);
+    cfg_main_t cfg;
+    cfg_load(&cfg, argc, argv);
+    cfg_free(&cfg);
     return 0;
 }

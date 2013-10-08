@@ -45,79 +45,49 @@ FIND_FILE(ASTYLE astyle)
 
 # MACROS FOR TESTS
 
-MACRO(ADD_TEST_BINARY name)
-    ADD_EXECUTABLE(${name} test/${name}.c ${name}-config.c)
-    ADD_CUSTOM_COMMAND(
-        OUTPUT ${name}-config.h ${name}-config.c
-        COMMAND ${QUIRE_GEN}
-            --source ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}.yaml
-            --c-header ${name}-config.h
-            --c-source ${name}-config.c
-        DEPENDS test/${name}.yaml ${QUIRE_GEN}
-        )
-    IF(ASTYLE)
-        ADD_CUSTOM_COMMAND(
-            TARGET ${name}
-            PRE_BUILD
-            COMMAND ${ASTYLE} -Y ${name}-config.c
-            DEPENDS ${name}-config.c
-            )
-        ADD_CUSTOM_COMMAND(
-            TARGET ${name}
-            PRE_BUILD
-            COMMAND ${ASTYLE} -Y ${name}-config.h
-            DEPENDS ${name}-config.h
-            )
-    ENDIF()
-    SET_SOURCE_FILES_PROPERTIES(${name}-config.h ${name}-config.c
-        PROPERTIES GENERATED 1
-        )
-    SET_SOURCE_FILES_PROPERTIES(test/${name}.c PROPERTIES
-        COMPILE_FLAGS "-I${CMAKE_CURRENT_BINARY_DIR}")
-    TARGET_LINK_LIBRARIES(${name} quire)
-ENDMACRO(ADD_TEST_BINARY)
-
 MACRO(ADD_TOOL_TEST name)
     ADD_TEST(${name} ${CMAKE_SOURCE_DIR}/test_quire_tool
         ${CMAKE_SOURCE_DIR}/test/parser/${name}.test)
 ENDMACRO(ADD_TOOL_TEST)
 
-MACRO(ADD_GEN_TEST name filenames)
+MACRO(ADD_GEN_EXECUTABLE name)
     ADD_EXECUTABLE(test_${name}
-        test/generator/${name}/main.c
-        test/generator/${name}/config.c)
+        main.c
+        config.c)
     ADD_CUSTOM_COMMAND(
-        OUTPUT
-            test/generator/${name}/config.h
-            test/generator/${name}/config.c
+        OUTPUT config.h config.c
         COMMAND ${QUIRE_GEN}
-            --source ${CMAKE_CURRENT_SOURCE_DIR}/test/generator/${name}/config.yaml
-            --c-header test/generator/${name}/config.h
-            --c-source test/generator/${name}/config.c
-        DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/test/generator/${name}/config.yaml
+            --source ${CMAKE_CURRENT_SOURCE_DIR}/config.yaml
+            --c-header config.h
+            --c-source config.c
+        DEPENDS config.yaml
         )
     IF(ASTYLE)
         ADD_CUSTOM_COMMAND(
             TARGET test_${name}
             PRE_BUILD
-            COMMAND ${ASTYLE} -Y test/generator/${name}/config.c
-            DEPENDS test/generator/${name}/config.c
+            COMMAND ${ASTYLE} -Y config.c
+            DEPENDS config.c
             )
         ADD_CUSTOM_COMMAND(
             TARGET test_${name}
             PRE_BUILD
-            COMMAND ${ASTYLE} -Y test/generator/${name}/config.h
-            DEPENDS test/generator/${name}/config.h
+            COMMAND ${ASTYLE} -Y config.h
+            DEPENDS config.h
             )
     ENDIF()
 
     SET_SOURCE_FILES_PROPERTIES(
-        test/generator/${name}/config.h
-        test/generator/${name}/config.c
+        config.h config.c
         PROPERTIES GENERATED 1
         )
+    SET_SOURCE_FILES_PROPERTIES(
+        main.c
+        COMPILE_FLAGS "-I${CMAKE_CURRENT_BINARY_DIR}")
     TARGET_LINK_LIBRARIES(test_${name} quire)
+ENDMACRO(ADD_GEN_EXECUTABLE)
+
+MACRO(ADD_GEN_TEST name)
     ADD_TEST(${name}_help
         ${CMAKE_SOURCE_DIR}/test_quire_gen
         ${CMAKE_SOURCE_DIR}/test/generator/${name}/help.txt
@@ -125,38 +95,39 @@ MACRO(ADD_GEN_TEST name filenames)
         ${CMAKE_BINARY_DIR}/test_${name}
         --help
         )
-    FOREACH(fn ${filenames})
-        ADD_TEST(${name}_${fn}
-            ${CMAKE_SOURCE_DIR}/test_quire_gen
-            ${CMAKE_SOURCE_DIR}/test/generator/${name}/${fn}.raw.txt
-            ${CMAKE_BINARY_DIR}/test_${name}_${fn}.raw.out
-            ${CMAKE_BINARY_DIR}/test_${name}
-            -c ${CMAKE_SOURCE_DIR}/test/generator/${name}/${fn}.yaml
-            --config-print=current
-            )
-        ADD_TEST(${name}_${fn}
-            ${CMAKE_SOURCE_DIR}/test_quire_gen
-            ${CMAKE_SOURCE_DIR}/test/generator/${name}/${fn}.example.txt
-            ${CMAKE_BINARY_DIR}/test_${name}_${fn}.example.out
-            ${CMAKE_BINARY_DIR}/test_${name}
-            --config-print=example
-            )
-        ADD_TEST(${name}_${fn}
-            ${CMAKE_SOURCE_DIR}/test_quire_gen
-            ${CMAKE_SOURCE_DIR}/test/generator/${name}/${fn}.full.txt
-            ${CMAKE_BINARY_DIR}/test_${name}_${fn}.full.out
-            ${CMAKE_BINARY_DIR}/test_${name}
-            -c ${CMAKE_SOURCE_DIR}/test/generator/${name}/${fn}.yaml
-            --config-print=full
-            )
-    ENDFOREACH(fn)
 ENDMACRO(ADD_GEN_TEST)
+
+MACRO(ADD_GEN_TEST_CONFIG name config)
+    ADD_TEST(${name}_${config}
+        ${CMAKE_SOURCE_DIR}/test_quire_gen
+        ${config}.raw.txt
+        ${CMAKE_BINARY_DIR}/test_${name}_${config}.raw.out
+        ${CMAKE_BINARY_DIR}/test_${name}
+        -c ${config}.yaml
+        --config-print=current
+        )
+    ADD_TEST(${name}_${config}
+        ${CMAKE_SOURCE_DIR}/test_quire_gen
+        ${config}.example.txt
+        ${CMAKE_BINARY_DIR}/test_${name}_${config}.example.out
+        ${CMAKE_BINARY_DIR}/test_${name}
+        --config-print=example
+        )
+    ADD_TEST(${name}_${config}
+        ${CMAKE_SOURCE_DIR}/test_quire_gen
+        ${config}.full.txt
+        ${CMAKE_BINARY_DIR}/test_${name}_${config}.full.out
+        ${CMAKE_BINARY_DIR}/test_${name}
+        -c ${config}.yaml
+        --config-print=full
+        )
+ENDMACRO(ADD_GEN_TEST_CONFIG)
 
 INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
 
 # TESTS FOR QUIRE-GEN
 
-ADD_GEN_TEST(meta test_1)
+ADD_SUBDIRECTORY(test/generator/meta)
 
 #ADD_TEST_BINARY(tinytest)
 #ADD_TEST(tinytest ${CMAKE_SOURCE_DIR}/test_quire_gen

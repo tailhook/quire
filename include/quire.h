@@ -2,6 +2,8 @@
 #define QUIRE_MAIN_INCLUDED
 
 #include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <setjmp.h>
 
 // Constants from emitter.h
