@@ -26,12 +26,14 @@ static struct {
 
 
 
-char *qu_join_filenames(qu_parse_context *ctx, char *base, char *target) {
+const char *qu_join_filenames(qu_parse_context *ctx,
+    const char *base, const char *target)
+{
 	if(!target)
 		return NULL;
 	if(*target == '/')
 		return target;
-	char *slash = strrchr(base, '/');
+	const char *slash = strrchr(base, '/');
 	if(!slash)
 		return target;
 	obstack_blank(&ctx->pieces, 0);

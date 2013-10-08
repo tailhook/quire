@@ -11,7 +11,7 @@
 
 
 static int print_default(struct qu_context *ctx, qu_ast_node *node,
-    char *prefix, qu_ast_node *datanode) {
+    const char *prefix, qu_ast_node *datanode) {
     int rc;
     qu_nodedata *data = node->userdata;
     if(!data)
@@ -111,7 +111,7 @@ static int print_default(struct qu_context *ctx, qu_ast_node *node,
 static void print_parser(struct qu_context *ctx, qu_ast_node *node);
 
 static void print_parse_member(struct qu_context *ctx,
-    qu_ast_node *node, char *name) {
+    qu_ast_node *node, const char *name) {
     qu_nodedata *data = node->userdata;
     if(!data)
         return;
@@ -248,7 +248,7 @@ static void print_parser(struct qu_context *ctx, qu_ast_node *node) {
     }
 }
 
-int print_printer(struct qu_context *ctx, qu_ast_node *node, char *tag) {
+int print_printer(struct qu_context *ctx, qu_ast_node *node, const char *tag) {
     qu_nodedata *data = node->userdata;
     if(!data)
         return 0;
@@ -339,7 +339,7 @@ int print_1opt(qu_ast_node *namenode, int arg, int num,
     if(!namenode)
         return 0;
     int res = 0;
-    char *opt = qu_node_content(namenode);
+    const char *opt = qu_node_content(namenode);
     if(opt) {
         if(opt[1] == '-') { // long option
             printf("{\"%s\", 1, NULL, %d},\n", opt+2, num);
@@ -372,7 +372,7 @@ static int print_case(qu_ast_node *namenode, int num) {
     if(!namenode)
         return 0;
     int res = 0;
-    char *opt = qu_node_content(namenode);
+    const char *opt = qu_node_content(namenode);
     if(opt) {
         if(opt[1] == '-') { // long option
             printf("case %d:  // %s\n", num, opt);
@@ -395,9 +395,9 @@ static int print_case(qu_ast_node *namenode, int num) {
     return res;
 }
 
-static char *get_optname(qu_ast_node *namenode) {
-    char *opt = qu_node_content(namenode);
-    char *shortopt = NULL;
+static const char *get_optname(qu_ast_node *namenode) {
+    const char *opt = qu_node_content(namenode);
+    const char *shortopt = NULL;
     if(opt) {
         return opt;
     } else if(namenode->kind == QU_NODE_SEQUENCE) {
@@ -416,8 +416,8 @@ static char *get_optname(qu_ast_node *namenode) {
 
 
 int qu_output_source(struct qu_context *ctx) {
-    char *header = ctx->options.output_source;
-    char *tmp = strrchr(header, '/');
+    const char *header = ctx->options.output_source;
+    const char *tmp = strrchr(header, '/');
     if(tmp) {
         header = tmp + 1;
     }
@@ -626,8 +626,8 @@ int qu_output_source(struct qu_context *ctx) {
         TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
             qu_ast_node *cnode = qu_map_get(typ->value, "__value__");
             qu_ast_node *tnode = qu_map_get(typ->value, "__tags__");
-            char *typname = qu_node_content(typ->key);
-            char *pname = NULL, *defname = NULL;
+            const char *typname = qu_node_content(typ->key);
+            const char *pname = NULL, *defname = NULL;
 
             // set defaults
             printf("void %1$s%2$s_defaults(%1$s%2$s_t *cfg) {\n",
@@ -688,7 +688,7 @@ int qu_output_source(struct qu_context *ctx) {
 
             }
 
-            char *conversion = NULL;
+            const char *conversion = NULL;
             if(cnode && cnode->tag->bytelen == 8 &&
                 !strncmp((char *)cnode->tag->data,
                          "!Convert", cnode->tag->bytelen)) {
@@ -731,7 +731,7 @@ int qu_output_source(struct qu_context *ctx) {
             ctx->node_level = 1;
             ctx->node_vars[1] = 0;
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
-                char *mname = qu_node_content(item->key);
+                const char *mname = qu_node_content(item->key);
                 if(mname && *mname == '_')
                     continue;
                 print_parse_member(ctx, item->value,
@@ -755,7 +755,7 @@ int qu_output_source(struct qu_context *ctx) {
             tagbuf[127] = 0;
             TAILQ_FOREACH(item, &typ->value->val.map_index.items, lst) {
                 if(item->value->userdata) {
-                    char *mname = qu_node_content(item->key);
+                    const char *mname = qu_node_content(item->key);
                     if(mname && *mname == '_')
                         continue;
                     if(first_member) {
@@ -926,7 +926,7 @@ int qu_output_source(struct qu_context *ctx) {
     printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
     TAILQ_FOREACH(item, &ctx->parsing.document->val.map_index.items, lst) {
         if(item->value->userdata) {
-            char *mname = qu_node_content(item->key);
+            const char *mname = qu_node_content(item->key);
             printf("qu_emit_scalar(ctx, NULL, NULL, "
                    "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
             printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");

@@ -9,9 +9,12 @@ ADD_LIBRARY(quire
     src/yaml/parser.c
     src/yaml/access.c
     src/yaml/anchors.c
+    src/yaml/node.c
     src/raw/common.c
     src/raw/fromfile.c
     src/raw/include.c
+    src/raw/globseq.c
+    src/raw/globmap.c
     src/raw/merge.c
     src/cfg/vars.c
     src/cfg/eval.c

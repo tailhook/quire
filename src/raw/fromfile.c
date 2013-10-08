@@ -12,8 +12,8 @@ qu_ast_node *qu_raw_fromfile(qu_parse_context *ctx, qu_ast_node *src) {
     int rc, eno;
     unsigned char *data = NULL;
 
-    char *included_file = qu_node_content(src);
-    char *fn = qu_join_filenames(ctx, src->tag->filename, included_file);
+    const char *included_file = qu_node_content(src);
+    const char *fn = qu_join_filenames(ctx, src->tag->filename, included_file);
 
     int fd = open(fn, O_RDONLY);
     if(fd < 0) {

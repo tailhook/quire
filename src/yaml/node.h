@@ -30,7 +30,7 @@ typedef struct qu_node_s {
     qu_token *start_token;
     qu_token *end_token;
 
-    char *content;  // for scalar nodes or aliases or mappings with "="
+    const char *content;  // for scalar nodes or aliases or mappings with "="
     int content_len;
 
     union {
@@ -41,5 +41,19 @@ typedef struct qu_node_s {
 
     void *userdata;
 } qu_ast_node;
+
+qu_ast_node *qu_new_text_node(struct qu_parse_context_s *ctx, qu_token *tok);
+qu_ast_node *qu_new_raw_text_node(struct qu_parse_context_s *ctx,
+    const char *data);
+qu_ast_node *qu_new_alias_node(struct qu_parse_context_s *ctx,
+    qu_token *tok, qu_ast_node *target);
+qu_ast_node *qu_new_mapping_node(struct qu_parse_context_s *ctx,
+    qu_token *start_tok);
+qu_ast_node *qu_new_sequence_node(struct qu_parse_context_s *ctx,
+    qu_token *start_tok);
+void qu_sequence_add(struct qu_parse_context_s *ctx,
+    qu_ast_node *seq, qu_ast_node *child);
+int qu_mapping_add(struct qu_parse_context_s *ctx,
+    qu_ast_node *map, qu_ast_node *knode, const char *key, qu_ast_node *value);
 
 #endif // QUIRE_H_YAML_NODE

@@ -3,7 +3,7 @@
 #include "cutil.h"
 #include <stdio.h>
 
-char *reserved_words[] = {
+const char *reserved_words[] = {
     "auto",
     "break",
     "case",
@@ -41,13 +41,13 @@ char *reserved_words[] = {
     };
 
 
-char *qu_c_name(struct obstack *ob, char *name) {
+const char *qu_c_name(struct obstack *ob, const char *name) {
     obstack_blank(ob, 0);
     qu_append_c_name(ob, name);
     return obstack_finish(ob);
 }
 
-void qu_append_c_name(struct obstack *ob, char *name) {
+void qu_append_c_name(struct obstack *ob, const char *name) {
     char *namestart = obstack_base(ob) + obstack_object_size(ob);
     if(isdigit(*name))
         obstack_1grow(ob, '_');
@@ -60,7 +60,7 @@ void qu_append_c_name(struct obstack *ob, char *name) {
         ++name;
     }
     int len = (char *)obstack_base(ob) + obstack_object_size(ob) - namestart;
-    for(char **word = reserved_words; *word; ++word) {
+    for(const char **word = reserved_words; *word; ++word) {
         if(!strncmp(namestart, *word, len)) {
             obstack_1grow(ob, '_');
             break;  // can't match keyword twice
@@ -69,7 +69,7 @@ void qu_append_c_name(struct obstack *ob, char *name) {
     obstack_1grow(ob, 0);
 }
 
-void qu_print_c_string(FILE *file, char *str) {
+void qu_print_c_string(FILE *file, const char *str) {
     putc('"', file);
     for(char *c = str; *c; ++c) {
         if(*c < 32) {

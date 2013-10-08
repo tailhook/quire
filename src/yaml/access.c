@@ -7,7 +7,7 @@
 #include "codes.h"
 
 
-char *qu_node_content(qu_ast_node *node) {
+const char *qu_node_content(qu_ast_node *node) {
     if(node->kind == QU_NODE_ALIAS)
         return qu_node_content(node->val.alias_target);
     if(node->kind != QU_NODE_SCALAR) {
@@ -51,7 +51,7 @@ char *qu_node_content(qu_ast_node *node) {
     return node->content;
 }
 
-qu_map_member **qu_find_node(qu_map_member **root, char *value) {
+qu_map_member **qu_find_node(qu_map_member **root, const char *value) {
     while(*root) {
         int cmp = strcmp(qu_node_content((*root)->key), value);
         if(!cmp)
@@ -64,7 +64,7 @@ qu_map_member **qu_find_node(qu_map_member **root, char *value) {
     return root;
 }
 
-qu_ast_node *qu_map_get(qu_ast_node *node, char *key) {
+qu_ast_node *qu_map_get(qu_ast_node *node, const char *key) {
     if(node->kind == QU_NODE_ALIAS)
         return qu_map_get(node->val.alias_target, key);
     if(node->kind != QU_NODE_MAPPING)

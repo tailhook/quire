@@ -455,30 +455,6 @@ void _qu_tokenize(qu_parse_context *ctx) {
 #undef SYNTAX_ERROR
 }
 
-static qu_ast_node *new_node(qu_parse_context *ctx) {
-    qu_ast_node *node = obstack_alloc(&ctx->pieces, sizeof(qu_ast_node));
-    memset(node, 0, sizeof(qu_ast_node));
-    node->kind = QU_NODE_UNKNOWN;
-    node->ctx = ctx;
-    node->anchor = ctx->cur_anchor;
-    if(ctx->cur_anchor) {
-        qu_insert_anchor(ctx, node);
-        ctx->cur_anchor = NULL;
-    }
-    node->tag = ctx->cur_tag;
-    if(ctx->cur_tag)
-        ctx->cur_tag = NULL;
-    return node;
-}
-
-static qu_ast_node *new_text_node(qu_parse_context *ctx, qu_token *tok) {
-    qu_ast_node *node = new_node(ctx);
-    node->kind = QU_NODE_SCALAR;
-    node->start_token = tok;
-    node->end_token = tok;
-    // TODO(tailhook) parse content
-    return node;
-}
 
 #define CTOK (ctx->cur_token)
 #define NTOK (CIRCLEQ_NEXT(CTOK, lst) == (void *)&ctx->tokens ? NULL : CIRCLEQ_NEXT(CTOK, lst))
@@ -505,14 +481,10 @@ static qu_ast_node *new_text_node(qu_parse_context *ctx, qu_token *tok) {
 
 qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
     if(CTOK->kind == QU_TOK_ALIAS) {
-        qu_ast_node *node = new_node(ctx);
-        node->start_token = CTOK;
-        node->end_token = CTOK;
-        node->kind = QU_NODE_ALIAS;
         qu_ast_node *target = qu_find_anchor(ctx,
             (char *)CTOK->data+1, CTOK->bytelen-1);
         if(target) {
-            node->val.alias_target = target;
+            qu_ast_node *node = qu_new_alias_node(ctx, CTOK, target);
             NEXT;
             return node;
         } else {
@@ -535,35 +507,17 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         }
     }
     if(QU_TOK_SCALAR(CTOK)) {
-        qu_ast_node *res = new_text_node(ctx, CTOK);
+        qu_ast_node *res = qu_new_text_node(ctx, CTOK);
         NEXT;
         return res;
     }
     if(CTOK->kind == QU_TOK_FLOW_MAP_START) {
-        qu_ast_node *node = new_node(ctx);
-        node->start_token = CTOK;
-        node->kind = QU_NODE_MAPPING;
-        TAILQ_INIT(&node->val.map_index.items);
-        node->val.map_index.tree = NULL;
+        qu_ast_node *node = qu_new_mapping_node(ctx, CTOK);
         NEXT;
         while(CTOK->kind != QU_TOK_FLOW_MAP_END) {
-            qu_ast_node *knode = new_text_node(ctx, CTOK);
-            char *cont = qu_node_content(knode);
-            qu_map_member **targ;
-            if(cont) {  // duplicate key check
-                targ = qu_find_node(&node->val.map_index.tree, cont);
-                if(*targ) {
-                    LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
-                        "Duplicate mapping key");
-                } else {
-                    *targ = obstack_alloc(&ctx->pieces,
-                                          sizeof(qu_map_member));
-                    (*targ)->key = knode;
-                    (*targ)->left = NULL;
-                    (*targ)->right = NULL;
-                    TAILQ_INSERT_TAIL(&node->val.map_index.items, *targ, lst);
-                }
-            } else {
+            qu_ast_node *knode = qu_new_text_node(ctx, CTOK);
+            const char *cont = qu_node_content(knode);
+            if(!cont) {
                 LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
                     "Only string keys supported");
             }
@@ -572,7 +526,10 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             if(!vnode) {
                 LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
             }
-            (*targ)->value = vnode;
+            if(!qu_mapping_add(ctx, node, knode, cont, vnode)) {
+                LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                    "Duplicate mapping key");
+            }
 
             if(CTOK->kind == QU_TOK_FLOW_MAP_END)
                 break;
@@ -586,17 +543,11 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         return node;
     }
     if(CTOK->kind == QU_TOK_FLOW_SEQ_START) {
-        qu_ast_node *node = new_node(ctx);
-        node->kind = QU_NODE_SEQUENCE;
-        node->start_token = CTOK;
-        TAILQ_INIT(&node->val.seq_index.items);
+        qu_ast_node *node = qu_new_sequence_node(ctx, CTOK);
         NEXT;
         while(CTOK->kind != QU_TOK_FLOW_SEQ_END) {
             qu_ast_node *child = parse_flow_node(ctx);
-            qu_seq_member *mem = obstack_alloc(&ctx->pieces,
-                                               sizeof(qu_map_member));
-            mem->value = child;
-            TAILQ_INSERT_TAIL(&node->val.seq_index.items, mem, lst);
+            qu_sequence_add(ctx, node, child);
             if(CTOK->kind == QU_TOK_FLOW_SEQ_END)
                 break;
             if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
@@ -609,7 +560,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
         return node;
     }
     if(CTOK->kind == QU_TOK_DOC_END) {
-        return new_text_node(ctx, NULL);
+        return qu_new_text_node(ctx, NULL);
     }
     LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unknown syntax");
 }
@@ -617,14 +568,10 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
 qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
     //printf("PARSE_NODE "); print_token(CTOK, stdout);
     if(CTOK->kind == QU_TOK_ALIAS) {
-        qu_ast_node *node = new_node(ctx);
-        node->start_token = CTOK;
-        node->end_token = CTOK;
-        node->kind = QU_NODE_ALIAS;
         qu_ast_node *target = qu_find_anchor(ctx,
             (char *)CTOK->data+1, CTOK->bytelen-1);
         if(target) {
-            node->val.alias_target = target;
+            qu_ast_node *node = qu_new_alias_node(ctx, CTOK, target);
             NEXT;
             return node;
         } else {
@@ -652,14 +599,10 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
             && NTOK->start_line == CTOK->start_line) {
             //printf("STARTING MAP "); print_token(CTOK, stdout);
             if(CTOK->indent <= ctx->cur_mapping)
-                return new_text_node(ctx, NULL);  // null node
+                return qu_new_text_node(ctx, NULL);  // null node
             //printf("OK\n");
             // MAPPING
-            qu_ast_node *node = new_node(ctx);
-            node->start_token = CTOK;
-            node->kind = QU_NODE_MAPPING;
-            TAILQ_INIT(&node->val.map_index.items);
-            node->val.map_index.tree = NULL;
+            qu_ast_node *node = qu_new_mapping_node(ctx, CTOK);
             int mapping_indent = CTOK->indent;
             int oldmap = ctx->cur_mapping;
             ctx->cur_mapping = CTOK->indent;
@@ -668,49 +611,34 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
                 && NTOK->start_line == CTOK->start_line
                 && CTOK->indent == mapping_indent) {
                 //printf("MAP KEY "); print_token(CTOK, stdout);
-                qu_ast_node *knode = new_text_node(ctx, CTOK);
-                char *cont = qu_node_content(knode);
-                qu_map_member **targ;
-                if(cont) {  // duplicate key check
-                    targ = qu_find_node(&node->val.map_index.tree, cont);
-                    if(*targ) {
-                        LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
-                            "Duplicate key in mapping");
-                    } else {
-                        *targ = obstack_alloc(&ctx->pieces,
-                                              sizeof(qu_map_member));
-                        (*targ)->key = knode;
-                        (*targ)->left = NULL;
-                        (*targ)->right = NULL;
-                        TAILQ_INSERT_TAIL(&node->val.map_index.items,
-                                          *targ, lst);
-                    }
-                } else {
+                qu_ast_node *knode = qu_new_text_node(ctx, CTOK);
+                const char *cont = qu_node_content(knode);
+                if(!cont) {  // duplicate key check
                     LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
                         "Only scalar keys allowed");
                 }
                 NEXT; NEXT;
                 qu_ast_node *vnode = parse_node(ctx, mapping_indent);
                 assert(vnode);
-                (*targ)->value = vnode;
+                if(!qu_mapping_add(ctx, node, knode, cont, vnode)) {
+                    LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                        "Duplicate key in mapping");
+                }
             }
             //printf("END MAP\n");
             ctx->cur_mapping = oldmap;
             node->end_token = CIRCLEQ_PREV(CTOK, lst);
             return node;
         } else { // SCALAR
-            qu_ast_node *res = new_text_node(ctx, CTOK);
+            qu_ast_node *res = qu_new_text_node(ctx, CTOK);
             NEXT;
             return res;
         }
     }
     if(CTOK->kind == QU_TOK_SEQUENCE_ENTRY) {
         if(CTOK->indent <= ctx->cur_sequence)
-            return new_text_node(ctx, NULL);  // null node
-        qu_ast_node *node = new_node(ctx);
-        node->kind = QU_NODE_SEQUENCE;
-        node->start_token = CTOK;
-        TAILQ_INIT(&node->val.seq_index.items);
+            return qu_new_text_node(ctx, NULL);  // null node
+        qu_ast_node *node = qu_new_sequence_node(ctx, CTOK);
         int sequence_indent = CTOK->indent;
         int oldseq = ctx->cur_sequence;
         ctx->cur_sequence = sequence_indent;
@@ -719,10 +647,7 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
               && CTOK->indent == sequence_indent) {
             NEXT;
             qu_ast_node *child = parse_node(ctx, sequence_indent);
-            qu_seq_member *mem = obstack_alloc(&ctx->pieces,
-                                               sizeof(qu_map_member));
-            mem->value = child;
-            TAILQ_INSERT_TAIL(&node->val.seq_index.items, mem, lst);
+            qu_sequence_add(ctx, node, child);
         }
         ctx->cur_sequence = oldseq;
         node->end_token = CIRCLEQ_PREV(CTOK, lst);
@@ -775,6 +700,8 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
         _qu_load_file(ctx, filename);
         _qu_tokenize(ctx);
         ctx->document = _qu_parse(ctx);
+        assert (ctx->cur_anchor = NULL);
+        assert (ctx->cur_tag = NULL);
     } else {
         ctx->errjmp = NULL;
         return rc;
