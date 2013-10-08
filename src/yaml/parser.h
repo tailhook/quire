@@ -9,6 +9,7 @@ struct qu_parse_context_s;
 
 #include "node.h"
 #include "map.h"
+#include "anchors.h"
 
 #define MAX_FLOW_STACK 128
 #define MAX_NODE_STACK 256
@@ -25,7 +26,7 @@ typedef struct qu_parse_context_s {
 
     CIRCLEQ_HEAD(qu_token_list, qu_token_s) tokens;
     qu_ast_node *document;
-    struct qu_anchor_index *anchor_index;
+    struct qu_anchor_index anchor_index;
 
     int linestart; // boolean flag if we are still at indentation
     int curline;
@@ -48,12 +49,12 @@ typedef struct qu_parse_context_s {
 
 } qu_parse_context;
 
-qu_ast_node *qu_file_newparse(qu_parse_context *ctx, char *filename);
+qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename);
 
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-int qu_file_parse(qu_parse_context *ctx, char *filename);
+int qu_file_parse(qu_parse_context *ctx, const char *filename);
 void qu_parser_init(qu_parse_context *ctx);
 void qu_parser_free(qu_parse_context *ctx);
 

@@ -30,7 +30,7 @@ struct qu_variable {
 };
 
 static struct qu_variable **qu_var_find(struct qu_vars_index *idx,
-    char *name, int nlen)
+    const char *name, int nlen)
 {
     struct qu_variable **node = &idx->root;
     while(*node) {
@@ -47,7 +47,8 @@ static struct qu_variable **qu_var_find(struct qu_vars_index *idx,
     return node;
 }
 
-static struct qu_variable *qu_var_new(qu_config_context *ctx, char *name) {
+static struct qu_variable *qu_var_new(qu_config_context *ctx, const char *name)
+{
     struct qu_variable *var = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_variable) + strlen(name) + 1);
     var->left = NULL;
@@ -59,7 +60,7 @@ static struct qu_variable *qu_var_new(qu_config_context *ctx, char *name) {
     return var;
 }
 
-int qu_set_string(qu_config_context *ctx, char *name, char *data) {
+int qu_set_string(qu_config_context *ctx, const char *name, const char *data) {
 	int dlen = strlen(data);
     struct qu_variable **var = qu_var_find(&ctx->variables, name, strlen(name));
     if(!*var)
@@ -70,7 +71,7 @@ int qu_set_string(qu_config_context *ctx, char *name, char *data) {
     return 0;
 }
 
-int qu_set_integer(qu_config_context *ctx, char *name, long value) {
+int qu_set_integer(qu_config_context *ctx, const char *name, long value) {
     struct qu_variable **var = qu_var_find(&ctx->variables, name, strlen(name));
     if(!*var)
         *var = qu_var_new(ctx, name);
@@ -79,13 +80,14 @@ int qu_set_integer(qu_config_context *ctx, char *name, long value) {
     return 0;
 }
 
-int qu_get_string(qu_config_context *ctx, char *name,
-    char **data, int *dlen) {
+int qu_get_string(qu_config_context *ctx, const char *name,
+    const char **data, int *dlen) {
     return qu_get_string_len(ctx, name, strlen(name), data, dlen);
 }
 
-int qu_get_string_len(qu_config_context *ctx, char *name, int nlen,
-    char **data, int *dlen) {
+int qu_get_string_len(qu_config_context *ctx, const char *name, int nlen,
+    const char **data, int *dlen) {
+    char *buf;
     struct qu_variable **ptr = qu_var_find(&ctx->variables, name, nlen);
     struct qu_variable *var = *ptr;
     if(var) {
@@ -99,8 +101,9 @@ int qu_get_string_len(qu_config_context *ctx, char *name, int nlen,
                 *dlen = var->data.string.value_len;
                 return 0;
             case QU_VAR_INTEGER:
-                *data = obstack_alloc(&ctx->parser.pieces, 24);
-                *dlen = sprintf(*data, "%ld", var->data.integer.value);
+                buf = obstack_alloc(&ctx->parser.pieces, 24);
+                *data = buf;
+                *dlen = sprintf(buf, "%ld", var->data.integer.value);
                 return 0;
             default:
                 return -1; // maybe will fix this

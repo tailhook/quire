@@ -102,6 +102,7 @@ static void *parser_chunk_alloc(qu_parse_context *ctx, int size) {
 }
 
 static void obstack_chunk_free(qu_parse_context *ctx, void *ptr) {
+    (void) ctx;
     free(ptr);
 }
 
@@ -118,7 +119,7 @@ void qu_parser_init(qu_parse_context *ctx) {
 	_qu_context_reinit(ctx);
 }
 
-void _qu_load_file(qu_parse_context *ctx, char *filename) {
+void _qu_load_file(qu_parse_context *ctx, const char *filename) {
     ctx->filename = obstack_copy0(&ctx->pieces,
         filename, strlen(filename));
     int rc, eno;
@@ -566,6 +567,7 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
 }
 
 qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
+    (void) current_indent;
     //printf("PARSE_NODE "); print_token(CTOK, stdout);
     if(CTOK->kind == QU_TOK_ALIAS) {
         qu_ast_node *target = qu_find_anchor(ctx,
@@ -692,7 +694,7 @@ void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
     }
 }
 
-int qu_file_parse(qu_parse_context *ctx, char *filename) {
+int qu_file_parse(qu_parse_context *ctx, const char *filename) {
     int rc;
     assert(!ctx->errjmp);
     ctx->errjmp = &ctx->errjmp_buf;
@@ -700,8 +702,8 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
         _qu_load_file(ctx, filename);
         _qu_tokenize(ctx);
         ctx->document = _qu_parse(ctx);
-        assert (ctx->cur_anchor = NULL);
-        assert (ctx->cur_tag = NULL);
+        assert (ctx->cur_anchor == NULL);
+        assert (ctx->cur_tag == NULL);
     } else {
         ctx->errjmp = NULL;
         return rc;
@@ -710,7 +712,7 @@ int qu_file_parse(qu_parse_context *ctx, char *filename) {
     return 0;
 }
 
-qu_ast_node *qu_file_newparse(qu_parse_context *ctx, char *filename) {
+qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename) {
     int rc;
 	if(!ctx->errjmp) {
 		ctx->errjmp = &ctx->errjmp_buf;

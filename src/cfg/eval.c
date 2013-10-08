@@ -22,7 +22,7 @@ typedef struct variable_s {
     union {
         long intvalue;
         struct {
-            char *value;
+            const char *value;
             int length;
         } str;
     } data;
@@ -47,10 +47,10 @@ typedef enum {
 
 typedef struct eval_context_s {
     qu_config_context *info;
-    char *data;
-    char *token;
-    char *next;
-    char *end;
+    const char *data;
+    const char *token;
+    const char *next;
+    const char *end;
     token_t curtok;
 } eval_context_t;
 
@@ -70,7 +70,7 @@ static struct char_token_s {
     };
 
 static struct unit_s {
-    char *unit;
+    const char *unit;
     size_t value;
 } units[] = {
     {"k", 1000L},
@@ -88,8 +88,8 @@ static struct unit_s {
     {NULL, 0},
     };
 
-static token_t _next_tok(char **data, char *end) {
-    char *cur = *data;
+static token_t _next_tok(const char **data, const char *end) {
+    const char *cur = *data;
     while(isspace(*cur)) ++cur;
     for(int i = 0; i < sizeof(char_token)/sizeof(char_token[0]); ++i) {
         if(char_token[i].chvalue == *cur) {
@@ -126,8 +126,8 @@ static void next_tok(eval_context_t *ctx) {
     }
 }
 
-static char *parse_int(char *value, long *result) {
-    char *end;
+static const char *parse_int(const char *value, long *result) {
+    const char *end;
     long val = strtol(value, (char **)&end, 0);
     if(*end) {
         for(struct unit_s *unit = units; unit->unit; ++unit) {
@@ -142,8 +142,8 @@ static char *parse_int(char *value, long *result) {
     return end;
 }
 
-static char *parse_double(char *value, double *result) {
-    char *end;
+static const char *parse_double(const char *value, double *result) {
+    const char *end;
     double val = strtod(value, (char **)&end);
     if(*end) {
         for(struct unit_s *unit = units; unit->unit; ++unit) {
@@ -188,10 +188,11 @@ static int var_to_string(variable_t **var) {
     if(len <= 0) return -1;
     variable_t *nvar = realloc(*var, sizeof(variable_t)+len+1);
     if(!nvar) return -1;
+    char *data = (char*)nvar + sizeof(variable_t);
+    memcpy(data, buf, len);
+    data[len] = 0;
     nvar->type = VAR_STRING;
-    nvar->data.str.value = (char*)nvar + sizeof(variable_t);
-    memcpy(nvar->data.str.value, buf, len);
-    nvar->data.str.value[len] = 0;
+    nvar->data.str.value = data;
     nvar->data.str.length = len;
     *var = nvar;
     return 0;
@@ -223,14 +224,15 @@ static variable_t *eval_atom(eval_context_t *ctx) {
             + ctx->next - ctx->token - 1);
         if(!res) return NULL;
         res->type = VAR_STRING;
-        res->data.str.value = (char *)res + sizeof(variable_t);
+        char *data = (char *)res + sizeof(variable_t);
+        memcpy(data, ctx->token+1, ctx->next - ctx->token - 1);
+        data[ctx->next - ctx->token - 2] = 0;
+        res->data.str.value = data;
         res->data.str.length = ctx->next - ctx->token;
-        memcpy(res->data.str.value, ctx->token+1, ctx->next - ctx->token - 1);
-        res->data.str.value[ctx->next - ctx->token - 2] = 0;
         next_tok(ctx);
         return res;
     } else if(ctx->curtok == TOK_IDENT) {
-        char *value;
+        const char *value;
         int value_len;
         if(qu_get_string_len(ctx->info, ctx->token, ctx->next - ctx->token,
             &value, &value_len) < 0) {
@@ -306,7 +308,9 @@ static variable_t *eval_sum(eval_context_t *ctx) {
     return left;
 }
 
-static variable_t *evaluate(qu_config_context *info, char *data, int dlen) {
+static variable_t *evaluate(qu_config_context *info,
+    const char *data, int dlen)
+{
     eval_context_t eval = {
         info: info,
         data: data,
@@ -325,14 +329,14 @@ static variable_t *evaluate(qu_config_context *info, char *data, int dlen) {
     return res;
 }
 
-void qu_eval_int(qu_config_context *info, char *value,
+void qu_eval_int(qu_config_context *info, const char *value,
     int interp, long *result)
 {
     if(interp && strchr(value, '$')) {
-        char *data;
+        const char *data;
         size_t dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
-        char *end = parse_int(data, result);
+        const char *end = parse_int(data, result);
         obstack_free(&info->parser.pieces, data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -341,7 +345,7 @@ void qu_eval_int(qu_config_context *info, char *value,
 
         return;
     }
-    char *end = parse_int(value, result);
+    const char *end = parse_int(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
         LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -349,14 +353,14 @@ void qu_eval_int(qu_config_context *info, char *value,
     }
 }
 
-void qu_eval_float(qu_config_context *info, char *value,
+void qu_eval_float(qu_config_context *info, const char *value,
     int interp, double *result)
 {
     if(interp && strchr(value, '$')) {
-        char *data;
+        const char *data;
         size_t dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
-        char *end = parse_double(data, result);
+        const char *end = parse_double(data, result);
         obstack_free(&info->parser.pieces, data);
         if(end != data + dlen) {
 			LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -364,7 +368,7 @@ void qu_eval_float(qu_config_context *info, char *value,
 		}
         return;
     }
-    char *end = parse_double(value, result);
+    const char *end = parse_double(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
 		LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -373,10 +377,11 @@ void qu_eval_float(qu_config_context *info, char *value,
 }
 
 void qu_eval_str(qu_config_context *info,
-    char *data, int interp, char **result, size_t *rlen) {
+    const char *data, int interp, const char **result, size_t *rlen)
+{
     if(interp && strchr(data, '$')) {
         obstack_blank(&info->parser.pieces, 0);
-        for(char *c = data; *c;) {
+        for(const char *c = data; *c;) {
             if(*c != '$' && *c != '\\') {
                 obstack_1grow(&info->parser.pieces, *c);
                 ++c;
@@ -393,7 +398,7 @@ void qu_eval_str(qu_config_context *info,
                 continue;
             }
             ++c;
-            char *name = c;
+            const char *name = c;
             int nlen;
             if(*c == '{') {
                 ++c;
@@ -424,7 +429,7 @@ void qu_eval_str(qu_config_context *info,
                     obstack_1grow(&info->parser.pieces, '$');
                     continue;
                 }
-                char *value;
+                const char *value;
                 int value_len;
                 if(!qu_get_string_len(info, name, nlen, &value, &value_len)) {
                     obstack_grow(&info->parser.pieces, value, strlen(value));
@@ -444,20 +449,20 @@ void qu_eval_str(qu_config_context *info,
 
 
 void qu_node_to_int(qu_config_context *ctx, qu_ast_node *node, long *result) {
-    char *content = qu_node_content(node);
+    const char *content = qu_node_content(node);
     if(content)
         qu_eval_int(ctx, content, 1, result);
 }
 void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
     double *result)
 {
-    char *content = qu_node_content(node);
+    const char *content = qu_node_content(node);
     if(content)
         qu_eval_float(ctx, content, 1, result);
 }
 void qu_node_to_str(qu_config_context *ctx, qu_ast_node *node,
-    char **result, size_t *rlen) {
-    char *content = qu_node_content(node);
+    const char **result, size_t *rlen) {
+    const char *content = qu_node_content(node);
     if(content)
         qu_eval_str(ctx, content, 1, result, rlen);
 }

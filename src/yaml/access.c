@@ -76,7 +76,7 @@ qu_ast_node *qu_map_get(qu_ast_node *node, const char *key) {
 }
 
 int qu_get_boolean(qu_ast_node *node, int *value) {
-    char *content = qu_node_content(node);
+    const char *content = qu_node_content(node);
     if(!content)
         return -1;
     if(!*content

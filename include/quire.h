@@ -102,11 +102,11 @@ void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
 void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
     double *result);
 void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
-    char **result, size_t *rlen);
+    const char **result, size_t *rlen);
 
 // Methods from cfg/vars.h
-int qu_set_string(qu_config_context *ctx, char *name, char *data);
-int qu_set_integer(qu_config_context *ctx, char *name, long value);
+int qu_set_string(qu_config_context *ctx, const char *name, const char *data);
+int qu_set_integer(qu_config_context *ctx, const char *name, long value);
 
 // Methods from error.c
 int qu_has_error(qu_parse_context *);

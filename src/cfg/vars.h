@@ -15,15 +15,16 @@ struct qu_vars_index {
     struct qu_variable *root;
 };
 
-int qu_get_string(qu_config_context *ctx, char *name, char **data, int *dlen);
+int qu_get_string(qu_config_context *ctx,
+    const char *name, const char **data, int *dlen);
 int qu_get_string_len(qu_config_context *ctx,
-    char *name, int name_len, char **data, int *dlen);
+    const char *name, int name_len, const char **data, int *dlen);
 int qu_print_variables(qu_config_context *ctx);
 
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-int qu_set_string(qu_config_context *ctx, char *name, char *data);
-int qu_set_integer(qu_config_context *ctx, char *name, long value);
+int qu_set_string(qu_config_context *ctx, const char *name, const char *data);
+int qu_set_integer(qu_config_context *ctx, const char *name, long value);
 
 #endif //_H_VARS

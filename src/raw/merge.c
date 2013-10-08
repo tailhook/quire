@@ -7,7 +7,7 @@ static void qu_raw_merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
     qu_ast_node *source, qu_map_member *after) {
     qu_map_member *item;
     TAILQ_FOREACH(item, &source->val.map_index.items, lst) {
-        char *key = qu_node_content(item->key);
+        const char *key = qu_node_content(item->key);
         qu_map_member **tmp = NULL;
         if(strcmp(key, "<<")) {
             // we already know that merge key is in the mapping
