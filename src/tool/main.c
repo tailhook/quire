@@ -6,13 +6,13 @@
 #include <string.h>
 #include <sys/queue.h>
 
-#include "yparser.h"
-#include "error.h"
-#include "access.h"
-#include "codes.h"
-#include "emitter.h"
-#include "../objpath/objpath.h"
-#include "maputil.h"
+#include "../yaml/parser.h"
+#include "../error.h"
+#include "../yaml/access.h"
+#include "../yaml/codes.h"
+#include "../raw/common.h"
+#include "../emitter.h"
+#include "../../objpath/objpath.h"
 
 char short_options[] = "Ehf:vkp";
 struct option long_options[] = {
@@ -273,8 +273,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     if(options.plain) {
-        _qu_merge_maps(&ctx,
-            QU_MFLAG_MAPMERGE|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);
+        qu_raw_process(&ctx);
     }
     execute_action(argv + optind, ctx.document);
     qu_parser_free(&ctx);

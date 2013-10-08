@@ -117,27 +117,16 @@ void qu_report_error(qu_parse_context *, qu_ast_node *node, char *text);
 int qu_emit_init(qu_emit_context *, FILE *stream);
 int qu_emit_done(qu_emit_context *);
 
-int qu_emit_scalar(qu_emit_context *, char *tag, char *anchor,
-    int style, char *data, int len);
-int qu_emit_printf(qu_emit_context *, char *tag, char *anchor,
-    int style, char *format, ...);
-int qu_emit_comment(qu_emit_context *, int flags, char *data, int len);
-int qu_emit_commentf(qu_emit_context *, int flags, char *format, ...);
+int qu_emit_scalar(qu_emit_context *, const char *tag, const char *anchor,
+    int style, const char *data, int len);
+int qu_emit_printf(qu_emit_context *, const char *tag, const char *anchor,
+    int style, const char *format, ...);
+int qu_emit_comment(qu_emit_context *, int flags, const char *data, int len);
+int qu_emit_commentf(qu_emit_context *, int flags, const char *format, ...);
 int qu_emit_whitespace(qu_emit_context *, int kind, int count);
-int qu_emit_opcode(qu_emit_context *, char *tag, char *anchor,
+int qu_emit_opcode(qu_emit_context *, const char *tag, const char *anchor,
     int code);
-int qu_emit_alias(qu_emit_context *, char *name);
-
-// Methods & constants from maputil.c
-#define QU_MFLAG_MAPMERGE 1
-#define QU_MFLAG_SEQMERGE 2
-#define QU_MFLAG_RESOLVEALIAS 4
-int qu_merge_maps(qu_parse_context *ctx, int flags);
-#define QU_IFLAG_FROMFILE 1
-#define QU_IFLAG_INCLUDE  2
-#define QU_IFLAG_GLOBSEQ  3
-#define QU_IFLAG_GLOBMAP  4
-int qu_process_includes(qu_parse_context *ctx, int flags);
+int qu_emit_alias(qu_emit_context *, const char *name);
 
 
 #endif // QUIRE_MAIN_INCLUDED

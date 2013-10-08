@@ -65,15 +65,15 @@ _Static_assert(sizeof(qu_emit_context) < 512,
 int qu_emit_init(qu_emit_context *, FILE *stream);
 int qu_emit_done(qu_emit_context *);
 
-int qu_emit_scalar(qu_emit_context *, char *tag, char *anchor,
-    int style, char *data, int len);
-int qu_emit_printf(qu_emit_context *, char *tag, char *anchor,
-    int style, char *format, ...);
-int qu_emit_comment(qu_emit_context *, int flags, char *data, int len);
-int qu_emit_commentf(qu_emit_context *, int flags, char *format, ...);
+int qu_emit_scalar(qu_emit_context *, const char *tag, const char *anchor,
+    int style, const char *data, int len);
+int qu_emit_printf(qu_emit_context *, const char *tag, const char *anchor,
+    int style, const char *format, ...);
+int qu_emit_comment(qu_emit_context *, int flags, const char *data, int len);
+int qu_emit_commentf(qu_emit_context *, int flags, const char *format, ...);
 int qu_emit_whitespace(qu_emit_context *, int kind, int count);
-int qu_emit_opcode(qu_emit_context *, char *tag, char *anchor, int code);
-int qu_emit_alias(qu_emit_context *, char *name);
+int qu_emit_opcode(qu_emit_context *, const char *tag, const char *anchor, int code);
+int qu_emit_alias(qu_emit_context *, const char *name);
 // End of PUBLIC API
 
 

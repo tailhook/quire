@@ -58,7 +58,7 @@ static int _space_check(qu_emit_context *ctx) {
     return 0;
 }
 
-int qu_emit_comment(qu_emit_context *ctx, int flags, char *data, int len) {
+int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len) {
     // TODO(tailhook) implement comment reformatting
     if(len < 0) {
         fprintf(ctx->stream, "# %s\n", data);
@@ -92,7 +92,7 @@ int qu_emit_whitespace(qu_emit_context *ctx, int kind, int count) {
     return 0;
 }
 
-int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
+int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, int code) {
     switch(code) {
         case QU_EMIT_MAP_START:
             if(!ctx->doc_start) {
@@ -175,8 +175,8 @@ int qu_emit_opcode(qu_emit_context *ctx, char *tag, char *anchor, int code) {
     return 0;
 }
 
-int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
-    char *data, int len) {
+int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, int kind,
+    const char *data, int len) {
     int need_quotes;
     if(!len || !data || !*data) {
         if(ctx->doc_start) {
@@ -260,8 +260,8 @@ int qu_emit_scalar(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     return 0;
 }
 
-int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
-    char *format, ...) {
+int qu_emit_printf(qu_emit_context *ctx, const char *tag, const char *anchor, int kind,
+    const char *format, ...) {
     if(tag) {
         _space_check(ctx);
         fprintf(ctx->stream, tag);
@@ -288,7 +288,7 @@ int qu_emit_printf(qu_emit_context *ctx, char *tag, char *anchor, int kind,
     return 0;
 }
 
-int qu_emit_alias(qu_emit_context *ctx, char *name) {
+int qu_emit_alias(qu_emit_context *ctx, const char *name) {
     _space_check(ctx);
     fprintf(ctx->stream, name);
     ctx->pending_newline -= 1;
