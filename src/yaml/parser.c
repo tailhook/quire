@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <errno.h>
+#include <setjmp.h>
 
 #include "parser.h"
 #include "access.h"
@@ -112,10 +113,10 @@ static void _qu_context_reinit(qu_parse_context *ctx) {
     ctx->error_kind = 0;
 }
 
-void qu_parser_init(qu_parse_context *ctx) {
+void qu_parser_init(qu_parse_context *ctx, jmp_buf *jmp) {
+    ctx->errjmp = jmp;
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
-	ctx->errjmp = NULL;
     ctx->anchor_index.node = NULL;
 	_qu_context_reinit(ctx);
 }
@@ -696,42 +697,19 @@ void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
 }
 
 int qu_file_parse(qu_parse_context *ctx, const char *filename) {
-    int rc;
-    assert(!ctx->errjmp);
-    ctx->errjmp = &ctx->errjmp_buf;
-    if(!(rc = setjmp(ctx->errjmp_buf))) {
-        _qu_load_file(ctx, filename);
-        _qu_tokenize(ctx);
-        ctx->document = _qu_parse(ctx);
-        assert (ctx->cur_anchor == NULL);
-        assert (ctx->cur_tag == NULL);
-    } else {
-        ctx->errjmp = NULL;
-        return rc;
-    }
-    ctx->errjmp = NULL;
+    assert(ctx->errjmp);
+    _qu_load_file(ctx, filename);
+    _qu_tokenize(ctx);
+    ctx->document = _qu_parse(ctx);
+    assert (ctx->cur_anchor == NULL);
+    assert (ctx->cur_tag == NULL);
     return 0;
 }
 
 qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename) {
-    int rc;
-	if(!ctx->errjmp) {
-		ctx->errjmp = &ctx->errjmp_buf;
-		qu_ast_node *node = NULL;
-		if(!(rc = setjmp(ctx->errjmp_buf))) {
-			_qu_context_reinit(ctx);
-			_qu_load_file(ctx, filename);
-			_qu_tokenize(ctx);
-			node = _qu_parse(ctx);
-		}
-		ctx->errjmp = NULL;
-		return node;
-	} else {
-		_qu_context_reinit(ctx);
-		_qu_load_file(ctx, filename);
-		_qu_tokenize(ctx);
-		return _qu_parse(ctx);
-	}
+    assert(ctx->errjmp);
+    _qu_context_reinit(ctx);
+    _qu_load_file(ctx, filename);
+    _qu_tokenize(ctx);
+    return _qu_parse(ctx);
 }
-
-

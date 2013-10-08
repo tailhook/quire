@@ -11,26 +11,26 @@ typedef struct qu_nodedata {
     int kind;
     int type;
     qu_ast_node *node;
-    char *expression;
+    const char *expression;
     qu_ast_node *expr_parent;
 
     union {
         struct {
-            char *typename;
+            const char *typename;
         } custom;
 		struct {
 			TAILQ_ENTRY(qu_nodedata) lst;
-			char *membername;
+			const char *membername;
 		} array;
 		struct {
 			TAILQ_ENTRY(qu_nodedata) lst;
-			char *keyname;
-			char *valuename;
+			const char *keyname;
+			const char *valuename;
 		} mapping;
     } data;
 
     TAILQ_ENTRY(qu_nodedata) cli_lst;
-    char *cli_name;
+    const char *cli_name;
 } qu_nodedata;
 
 
@@ -38,8 +38,8 @@ typedef struct qu_context {
     qu_parse_context parsing;
     qu_options_t options;
     qu_metadata_t meta;
-    char *prefix;
-    char *macroprefix;
+    const char *prefix;
+    const char *macroprefix;
 
     TAILQ_HEAD(qu_cli_options, qu_nodedata) cli_options;
 

@@ -2,6 +2,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include "globmap.h"
 #include "../yaml/access.h"
@@ -32,7 +33,7 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
     const char *c;
     for (c = star-1; c >= pattern && *c != '/'; --c);
     const char *pat_start = c+1;
-    for (c = star+1; *c && *c != '/'; --c);
+    for (c = star+1; *c && *c != '/'; ++c);
     const char *pat_end = c;
     int taillen = strlen(pat_end);
 
@@ -42,11 +43,49 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
         // TODO(tailhook) strip off the brackets
         dirlen = pat_start - pattern;
         dir = alloca(dirlen + 1);
-        memcpy(dir, pattern, dirlen);
-        dir[dirlen] = 0;
+        const char *c;
+        char *t = dir;
+        for(c = pattern; c < pat_start; ++c)
+            if(*c != '(')
+                *t++ = *c;
+        *t = 0;
+        dirlen = t - dir;
     } else {
         dir = ".";
         dirlen = 1;
+    }
+
+    char *prefix;
+    char prefix_len;
+    if(pat_start == star) {
+        prefix = "";
+        prefix_len = 0;
+    } else {
+        prefix = alloca(star - pat_start + 1);
+        const char *c;
+        char *t = prefix;
+        for(c = pat_start; c < star; ++c)
+            if(*c != '(')
+                *t++ = *c;
+        *t = 0;
+        prefix_len = t - prefix;
+    }
+
+    char *suffix;
+    char suffix_len;
+    printf("STAR ``%s'' PATEND ``%s''\n", star, pat_end);
+    if(pat_end == star+1) {
+        suffix = "";
+        suffix_len = 0;
+    } else {
+        suffix = alloca(pat_end - (star+1) + 1);
+        const char *c;
+        char *t = suffix;
+        for(c = pat_start; c < star; ++c)
+            if(*c != '(')
+                *t++ = *c;
+        *t = 0;
+        suffix_len = t - dir;
     }
 
     DIR *d = opendir(dir);
@@ -62,23 +101,24 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
         name_max = 255;         /* Take a guess */
     int len = offsetof(struct dirent, d_name) + name_max + 1;
     struct dirent *entryp = alloca(len);
-    while(!readdir_r(d, entryp, &entryp)) {
+    int rc;
+    while(!(rc = readdir_r(d, entryp, &entryp)) && entryp) {
         // Prefix match
-        if(pat_start == star) { //  dir/* shouldn't match hidden files
+        if(prefix_len == 0) { //  dir/* shouldn't match hidden files
             if(entryp->d_name[0] == '.')
                 continue;
         } else {
-            if(strncmp(entryp->d_name, pat_start, star - pat_start))
+            if(strncmp(entryp->d_name, prefix, prefix_len))
                 continue;
         }
 
         // Suffix match
-        char *eend = entryp->d_name + strlen(entryp->d_name);
-        if(pat_end > star+1) {
-            int suffixlen = pat_end - star+1;
-            if(eend - entryp->d_name < suffixlen)
+        printf("ENTRY ``%s'' ``%.*s''\n", entryp->d_name, suffix_len, suffix);
+        if(suffix_len) {
+            char *eend = entryp->d_name + strlen(entryp->d_name);
+            if(eend - entryp->d_name < suffix_len)
                 continue;
-            if(strncmp(eend - suffixlen, star+1, suffixlen))
+            if(strncmp(eend - suffix_len, suffix, suffix_len))
                 continue;
         }
 
@@ -113,10 +153,11 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
         char *name = obstack_finish(&ctx->pieces);
 
         qu_ast_node *knode = qu_new_raw_text_node(ctx, name);
+        assert(ctx->errjmp);
         qu_ast_node *next = qu_file_newparse(ctx, fn);
         qu_mapping_add(ctx, result, knode, name, next);
     }
-    if(!entryp) {
+    if(rc) {
         LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
             "Can't read directory");
     }

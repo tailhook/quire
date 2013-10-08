@@ -19,7 +19,7 @@ void qu_parse_metadata(struct qu_context *bigctx) {
         return;
 
     qu_ast_node *tnode;
-    char *tdata;
+    const char *tdata;
 
     tnode = qu_map_get(mnode, "program-name");
     if(tnode) {

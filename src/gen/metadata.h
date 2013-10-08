@@ -2,9 +2,9 @@
 #define QUIRE_H_GEN_METADATA
 
 typedef struct qu_metadata_s {
-    char *program_name;
-    char *default_config;
-    char *description;
+    const char *program_name;
+    const char *default_config;
+    const char *description;
     int has_arguments;
     int mixed_arguments;
 } qu_metadata_t;

@@ -1,0 +1,32 @@
+world: !Include "mergemap.test"
+...
+---
+
+- command-line: quire-tool -Ep /world/fruits/apple
+  output: "yes"
+- command-line: quire-tool -Ep /world/furniture/chair
+  output: "yes"
+- command-line: quire-tool -Ep /world/fruits2/apple
+  output: "yes"
+- command-line: quire-tool -Ep /world/fruits2/banana
+  output: "yes"
+- command-line: quire-tool -Ep /world/fruits2/cherry
+  output: "no"
+- command-line: quire-tool -Ep /world/fruits2/something
+  output: ""
+- command-line: quire-tool -Ep /world/eatable/apple
+  output: "yes"
+- command-line: quire-tool -Ep /world/eatable/cherry
+  output: "yes"
+- command-line: quire-tool -Ep /world/things/apple
+  output: "yes"
+- command-line: quire-tool -Ep /world/things/banana
+  output: "yes"
+- command-line: quire-tool -Ep /world/things/cherry
+  output: "no"
+- command-line: quire-tool -Ep /world/things/chair
+  output: "yes"
+- command-line: quire-tool -Ep /world/things2/apple
+  output: "yes"
+- command-line: quire-tool -Ep /world/things2/cherry
+  output: "yes"

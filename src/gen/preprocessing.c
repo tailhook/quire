@@ -24,7 +24,7 @@ static char *typealias[] = {
 
 static int visitor(struct qu_context *ctx,
     qu_ast_node *node,
-    char *expr, qu_ast_node *expr_parent) {
+    const char *expr, qu_ast_node *expr_parent) {
     qu_nodedata *data = obstack_alloc(&ctx->parsing.pieces,
                                       sizeof(qu_nodedata));
     memset(data, 0, sizeof(qu_nodedata));
@@ -77,7 +77,7 @@ static int visitor(struct qu_context *ctx,
             }
             visitor(ctx, elem, ".value", expr_parent);
             qu_nodedata *edata = elem->userdata;
-            char *tname = typealias[edata->type];
+            const char *tname = typealias[edata->type];
             if(tname == NULL) {
                 switch(edata->kind) {
                 case QU_MEMBER_CUSTOM:
@@ -111,7 +111,7 @@ static int visitor(struct qu_context *ctx,
             visitor(ctx, kelem, ".key", expr_parent);
             visitor(ctx, velem, ".value", expr_parent);
             qu_nodedata *kedata = kelem->userdata;
-            char *ktname = typealias[kedata->type];
+            const char *ktname = typealias[kedata->type];
             if(ktname == NULL) {
                 switch(kedata->kind) {
                 case QU_MEMBER_CUSTOM:
@@ -124,7 +124,7 @@ static int visitor(struct qu_context *ctx,
                 }
             }
             qu_nodedata *vedata = velem->userdata;
-            char *vtname = typealias[vedata->type];
+            const char *vtname = typealias[vedata->type];
             if(vtname == NULL) {
                 switch(vedata->kind) {
                 case QU_MEMBER_CUSTOM:
@@ -161,7 +161,7 @@ static int visitor(struct qu_context *ctx,
                         node->tag, "Type not specified");
                 }
             }
-            char *typename = qu_node_content(mnode);
+            const char *typename = qu_node_content(mnode);
             data->data.custom.typename = typename;
             break;
         }
@@ -179,14 +179,14 @@ static int visitor(struct qu_context *ctx,
         data->kind = QU_MEMBER_STRUCT;
         qu_map_member *item;
         TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
-            char *mname = qu_node_content(item->key);
+            const char *mname = qu_node_content(item->key);
             if(!*mname || *mname == '_')
                 continue;
             obstack_blank(&ctx->parsing.pieces, 0);
             obstack_grow(&ctx->parsing.pieces, expr, strlen(expr));
             obstack_grow(&ctx->parsing.pieces, ".", 1);
             qu_append_c_name(&ctx->parsing.pieces, mname);
-            char *nexpr = (char *)obstack_finish(&ctx->parsing.pieces);
+            const char *nexpr = (char *)obstack_finish(&ctx->parsing.pieces);
             visitor(ctx, item->value, nexpr, expr_parent);
         }
         qu_ast_node *vnode = qu_map_get(node, "__value__");
@@ -198,55 +198,47 @@ static int visitor(struct qu_context *ctx,
     return 0;
 }
 
-int qu_config_preprocess(struct qu_context *ctx) {
+void qu_config_preprocess(struct qu_context *ctx) {
     int rc;
-    assert(!ctx->parsing.errjmp);
-    ctx->parsing.errjmp = &ctx->parsing.errjmp_buf;
-    if(!(rc = setjmp(ctx->parsing.errjmp_buf))) {
+    assert(ctx->parsing.errjmp);
 
-        qu_parse_metadata(ctx);
+    qu_parse_metadata(ctx);
 
-        ctx->prefix = ctx->options.prefix;
-        int len = strlen(ctx->prefix);
-        ctx->macroprefix = obstack_copy0(&ctx->parsing.pieces,
-            ctx->prefix, len);
-        for(int i = 0; i < len; ++i)
-            ctx->macroprefix[i] = toupper(ctx->macroprefix[i]);
+    ctx->prefix = ctx->options.prefix;
+    int len = strlen(ctx->prefix);
+    char * macroprefix = obstack_copy0(&ctx->parsing.pieces,
+        ctx->prefix, len);
+    for(int i = 0; i < len; ++i)
+        macroprefix[i] = toupper(ctx->macroprefix[i]);
+    ctx->macroprefix = macroprefix;
 
-        TAILQ_INIT(&ctx->cli_options);
-        visitor(ctx, ctx->parsing.document, "", NULL);
-        qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
-        if(types) {
-            if(types->kind != QU_NODE_MAPPING) {
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
-                    types->tag, "__types__ must be mapping");
-            }
-            qu_map_member *typ;
-            TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
-                qu_ast_node *tags = qu_map_get(typ->value, "__tags__");
-                if(tags && !tags->userdata) {
-                    qu_map_member *item;
-                    TAILQ_FOREACH(item, &tags->val.map_index.items, lst) {
-                        if(qu_node_content(item->key)[0] == '_')
-                            continue;
-                        obstack_blank(&ctx->parsing.pieces, 0);
-                        obstack_grow(&ctx->parsing.pieces,
-                            ctx->macroprefix, strlen(ctx->macroprefix));
-                        qu_append_c_name(&ctx->parsing.pieces,
-                            qu_node_content(item->key));
-                        item->value->userdata = obstack_finish(
-                            &ctx->parsing.pieces);
-                    }
-                    tags->userdata = qu_node_content(typ->key);
-                }
-                visitor(ctx, typ->value, "", NULL);
-            }
+    TAILQ_INIT(&ctx->cli_options);
+    visitor(ctx, ctx->parsing.document, "", NULL);
+    qu_ast_node *types = qu_map_get(ctx->parsing.document, "__types__");
+    if(types) {
+        if(types->kind != QU_NODE_MAPPING) {
+            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parsing,
+                types->tag, "__types__ must be mapping");
         }
-
-    } else {
-        ctx->parsing.errjmp = NULL;
-        return rc;
+        qu_map_member *typ;
+        TAILQ_FOREACH(typ, &types->val.map_index.items, lst) {
+            qu_ast_node *tags = qu_map_get(typ->value, "__tags__");
+            if(tags && !tags->userdata) {
+                qu_map_member *item;
+                TAILQ_FOREACH(item, &tags->val.map_index.items, lst) {
+                    if(qu_node_content(item->key)[0] == '_')
+                        continue;
+                    obstack_blank(&ctx->parsing.pieces, 0);
+                    obstack_grow(&ctx->parsing.pieces,
+                        ctx->macroprefix, strlen(ctx->macroprefix));
+                    qu_append_c_name(&ctx->parsing.pieces,
+                        qu_node_content(item->key));
+                    item->value->userdata = obstack_finish(
+                        &ctx->parsing.pieces);
+                }
+                tags->userdata = qu_node_content(typ->key);
+            }
+            visitor(ctx, typ->value, "", NULL);
+        }
     }
-    ctx->parsing.errjmp = NULL;
-    return 0;
 }

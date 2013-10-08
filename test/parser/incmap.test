@@ -1,0 +1,10 @@
+world: !GlobMap "incl/(*).yaml"
+...
+---
+
+- command-line: quire-tool -Ep /world/fruits/apple
+  output: "yes"
+- command-line: quire-tool -Ep /world/fruits/cherry
+  output: "no"
+- command-line: quire-tool -Ep /world/furniture/chair
+  output: "yes"

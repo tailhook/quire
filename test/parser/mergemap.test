@@ -1,0 +1,48 @@
+fruits: &fruits
+    apple: yes
+    banana: yes
+    cherry: no
+furniture: &furniture
+    chair: yes
+    table: yes
+fruits2:
+    <<: *fruits
+eatable:
+    <<: *fruits
+    cherry: yes
+things:
+    <<: [*fruits, *furniture]
+things2:
+    <<: [*fruits, *furniture]
+    cherry: yes
+...
+---
+
+- command-line: quire-tool -Ep /fruits/apple
+  output: "yes"
+- command-line: quire-tool -Ep /furniture/chair
+  output: "yes"
+- command-line: quire-tool -Ep /fruits2/apple
+  output: "yes"
+- command-line: quire-tool -Ep /fruits2/banana
+  output: "yes"
+- command-line: quire-tool -Ep /fruits2/cherry
+  output: "no"
+- command-line: quire-tool -Ep /fruits2/something
+  output: ""
+- command-line: quire-tool -Ep /eatable/apple
+  output: "yes"
+- command-line: quire-tool -Ep /eatable/cherry
+  output: "yes"
+- command-line: quire-tool -Ep /things/apple
+  output: "yes"
+- command-line: quire-tool -Ep /things/banana
+  output: "yes"
+- command-line: quire-tool -Ep /things/cherry
+  output: "no"
+- command-line: quire-tool -Ep /things/chair
+  output: "yes"
+- command-line: quire-tool -Ep /things2/apple
+  output: "yes"
+- command-line: quire-tool -Ep /things2/cherry
+  output: "yes"

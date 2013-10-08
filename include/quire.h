@@ -90,11 +90,12 @@ void qu_config_mapping_insert(void **head, void **tail,
 						    qu_mapping_head *member);
 void *qu_config_mapping_next(void *elem);
 
-// Methods from yparser.c
+// Methods from yaml/parser.c
 int qu_file_parse(qu_parse_context *ctx, char *filename)
     __attribute__((warn_unused_result));
 void qu_parser_init(qu_parse_context *ctx);
 void qu_parser_free(qu_parse_context *ctx);
+jmp_buf *qu_parser_jmpbuf(qu_parse_context *ctx);
 
 // Methods from eval.c
 void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,

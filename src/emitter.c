@@ -109,7 +109,7 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, in
             }
             if(tag) {
                 _space_check(ctx);
-                fprintf(ctx->stream, tag);
+                fprintf(ctx->stream, "%s", tag);
                 ctx->need_space = 1;
                 ctx->pending_newline = 0;
             }
@@ -203,7 +203,7 @@ int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, in
     }
     if(tag) {
         _space_check(ctx);
-        fprintf(ctx->stream, tag);
+        fprintf(ctx->stream, "%s", tag);
         ctx->need_space = 1;
     }
     _space_check(ctx);
@@ -264,7 +264,7 @@ int qu_emit_printf(qu_emit_context *ctx, const char *tag, const char *anchor, in
     const char *format, ...) {
     if(tag) {
         _space_check(ctx);
-        fprintf(ctx->stream, tag);
+        fprintf(ctx->stream, "%s", tag);
         ctx->need_space = 1;
     }
     _space_check(ctx);
@@ -290,7 +290,7 @@ int qu_emit_printf(qu_emit_context *ctx, const char *tag, const char *anchor, in
 
 int qu_emit_alias(qu_emit_context *ctx, const char *name) {
     _space_check(ctx);
-    fprintf(ctx->stream, name);
+    fprintf(ctx->stream, "%s", name);
     ctx->pending_newline -= 1;
     ctx->line_start = 0;
     return 0;

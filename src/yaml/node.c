@@ -3,6 +3,7 @@
 #include "codes.h"
 #include "anchors.h"
 #include "access.h"
+#include "assert.h"
 
 
 static qu_ast_node *qu_new_node(qu_parse_context *ctx) {
@@ -78,6 +79,7 @@ void qu_sequence_add(struct qu_parse_context_s *ctx,
 int qu_mapping_add(struct qu_parse_context_s *ctx,
     qu_ast_node *map, qu_ast_node *knode, const char *key, qu_ast_node *value)
 {
+    assert(value);
     qu_map_member **targ;
     targ = qu_find_node(&map->val.map_index.tree, key);
     if(*targ) {

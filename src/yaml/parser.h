@@ -19,7 +19,6 @@ struct qu_parse_context_s;
 typedef struct qu_parse_context_s {
     struct obstack pieces;
     jmp_buf *errjmp;
-    jmp_buf errjmp_buf;
     char *filename;
     unsigned char *buf;
     int buflen;
@@ -55,7 +54,7 @@ qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename);
 // Keep in sync with quire.h
 // Think about ABI compatibility
 int qu_file_parse(qu_parse_context *ctx, const char *filename);
-void qu_parser_init(qu_parse_context *ctx);
+void qu_parser_init(qu_parse_context *ctx, jmp_buf *jmpbuf);
 void qu_parser_free(qu_parse_context *ctx);
 
 

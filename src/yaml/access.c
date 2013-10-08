@@ -148,6 +148,7 @@ void qu_config_array_insert(qu_array_head **head, qu_array_head **tail,
     } else {
         *tail = *head = member;
     }
+    *list_size += 1;
 }
 
 qu_array_head *qu_config_array_next(qu_array_head *elem) {
@@ -155,7 +156,7 @@ qu_array_head *qu_config_array_next(qu_array_head *elem) {
 }
 
 void qu_config_mapping_insert(qu_mapping_head **head, qu_mapping_head **tail,
-        int *list_size, qu_mapping_head *member) {
+        int *map_size, qu_mapping_head *member) {
     member->next = NULL;
     if(*tail) {
         (*tail)->next = member;
@@ -163,6 +164,7 @@ void qu_config_mapping_insert(qu_mapping_head **head, qu_mapping_head **tail,
     } else {
         *tail = *head = member;
     }
+    *map_size += 1;
 }
 
 qu_mapping_head *qu_config_mapping_next(qu_mapping_head *elem) {

@@ -258,24 +258,28 @@ void execute_action(char **argv, qu_ast_node *root) {
 }
 
 int main(int argc, char **argv) {
+    int rc;
+    jmp_buf jmp;
     parse_options(argc, argv);
     assert(argc >= 2);
     qu_parse_context ctx;
-    int rc;
-    qu_parser_init(&ctx);
-    rc = qu_file_parse(&ctx, options.filename);
-    if(rc == 1) {
-        qu_print_error(&ctx, stderr);
-        return 1;
-    } else if(rc < 0) {
-        fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
-            options.filename, strerror(-rc));
-        return 1;
+    if(!(rc = setjmp(jmp))) {
+        qu_parser_init(&ctx, &jmp);
+        qu_file_parse(&ctx, options.filename);
+        if(options.plain) {
+            qu_raw_process(&ctx);
+        }
+        execute_action(argv + optind, ctx.document);
+        qu_parser_free(&ctx);
+        return 0;
+    } else {
+        if(rc == 1) {
+            qu_print_error(&ctx, stderr);
+            return 1;
+        } else if(rc < 0) {
+            fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",
+                options.filename, strerror(-rc));
+            return 1;
+        }
     }
-    if(options.plain) {
-        qu_raw_process(&ctx);
-    }
-    execute_action(argv + optind, ctx.document);
-    qu_parser_free(&ctx);
-    return 0;
 }

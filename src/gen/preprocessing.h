@@ -3,6 +3,6 @@
 
 struct qu_context;
 
-int qu_config_preprocess(struct qu_context *ctx);
+void qu_config_preprocess(struct qu_context *ctx);
 
 #endif // _H_PREPROCESSING
