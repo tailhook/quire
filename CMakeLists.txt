@@ -26,12 +26,17 @@ ADD_EXECUTABLE(quire-gen
     src/gen/util/print.c
     src/gen/util/fwdecl.c
     src/gen/util/name.c
+    src/gen/special/special.c
+    src/gen/special/types.c
+    src/gen/classes/classes.c
+    src/gen/context.c
+    src/gen/struct.c
+    src/gen/process.c
     src/gen/main.c
     src/gen/header.c
     src/gen/source.c
     src/gen/metadata.c
     src/gen/options.c
-    src/gen/preprocessing.c
     )
 TARGET_LINK_LIBRARIES(quire-gen quire)
 

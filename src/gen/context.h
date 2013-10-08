@@ -7,6 +7,7 @@
 #include "options.h"
 #include "metadata.h"
 #include "util/fwdecl.h"
+#include "special/types.h"
 #include "../yaml/parser.h"
 
 typedef struct qu_nodedata {
@@ -44,6 +45,8 @@ typedef struct qu_context {
     const char *macroprefix;
 
     struct qu_fwdecl_index fwdecl_index;
+    struct qu_class_index class_index;
+    struct qu_config_struct *root;
 
     TAILQ_HEAD(qu_cli_options, qu_nodedata) cli_options;
 
@@ -58,5 +61,7 @@ typedef struct qu_context {
 
 _Static_assert(sizeof(qu_context_t) < 4096,
     "Context size is greater than defined in quire.h");
+
+void qu_context_init(qu_context_t *ctx, jmp_buf *jmp);
 
 #endif // _H_CONTEXT
