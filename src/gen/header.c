@@ -168,26 +168,30 @@ int qu_output_header(qu_context_t *ctx) {
     */
 
 
-    printf("typedef struct %smain_s {\n", ctx->prefix);
-	printf("qu_config_head head;\n");
+    qu_code_print(ctx,
+        "struct `pref`_main {\n"
+        "    qu_config_head head;\n"
+        , NULL);
     qu_map_member *item;
     TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
         print_member(ctx, item->value);
     }
-    printf("} %smain_t;\n", ctx->prefix);
-
-    printf("\n");  //end of types
+    qu_code_print(ctx,
+        "};\n"
+        "\n",
+        NULL);
 
     qu_code_print(ctx,
-        "int `pref`load(`pref`main_t *cfg, int argc, char **argv);\n",
-        "int `pref`cli_parse(qu_parse_context *ctx, `pref`cli_t *cli, "
+        "int `pref`_load(struct `pref`_main *cfg, int argc, char **argv);\n"
+        "int `pref`_cli_parse(qu_parse_context *ctx, struct `pref`_cli *cli, "
                             "int argc, char **argv);\n"
-        "int `pref`cli_apply(`pref`main_t *cfg, `pref`cli_t *cli);\n"
-        "int `pref`do_parse(qu_parse_context *ctx, `pref`cli_t *cli, "
-                            "`pref`main_t *cfg);\n"
-        "int `pref`set_defaults(`pref`main_t *cfg);\n"
-        "int `pref`print(`pref`main_t *cfg, int flags, FILE *);\n",
-        "int `pref`free(`pref`main_t *cfg);\n"
+        "int `pref`_cli_apply(struct `pref`_main *cfg, "
+                             "struct `pref`_cli *cli);\n"
+        "int `pref`_do_parse(qu_parse_context *ctx, struct `pref`_cli *cli, "
+                            "struct `pref`_main *cfg);\n"
+        "int `pref`_set_defaults(struct `pref`_main *cfg);\n"
+        "int `pref`_print(struct `pref`_main *cfg, int flags, FILE *);\n"
+        "int `pref`_free(struct `pref`_main *cfg);\n"
         "\n"
         "#endif  // HEADER_`mpref`\n"
         , NULL);

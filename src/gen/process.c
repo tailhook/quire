@@ -17,6 +17,17 @@ static void qu_visit_struct_children(struct qu_context *ctx,
         const char *mname = qu_node_content(item->key);
         if(!*mname || *mname == '_') {
             qu_special_parse(ctx, mname, item->value);
+            continue;
+        }
+        if(!item->value->tag) {
+            if(item->value->kind == QU_NODE_MAPPING) {
+                struct qu_config_struct *child = qu_struct_new(ctx, str);
+                qu_visit_struct_children(ctx, item->value, child);
+            } else {
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
+                    item->value->start_token,
+                    "Untagged straw scalar");
+            }
         }
     }
 }

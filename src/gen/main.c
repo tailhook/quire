@@ -23,6 +23,7 @@
 
 int main(int argc, char **argv) {
     int rc;
+    int outputting = 0;
     struct qu_context ctx;
     jmp_buf jmp;
     if(!(rc = setjmp(jmp))) {
@@ -40,8 +41,10 @@ int main(int argc, char **argv) {
             std_assert(rc);
             close(fd);
             ctx.out = stdout;  // TODO(tailhook) fix
+            ftruncate(1, 0);
+            outputting = 1;
             std_assert(qu_output_header(&ctx));
-            ftruncate(1, ftell(stdout));
+            outputting = 0;
         }
 
         if(ctx.options.output_source) {
@@ -52,13 +55,19 @@ int main(int argc, char **argv) {
             std_assert(rc);
             close(fd);
             ctx.out = stdout;  // TODO(tailhook) fix
+            ftruncate(1, 0);
+            outputting = 1;
             std_assert(qu_output_source(&ctx));
-            ftruncate(1, ftell(stdout));
+            outputting = 0;
         }
 
         qu_parser_free(&ctx.parser);
         return 0;
     } else {
+        if(outputting) {
+            fprintf(ctx.out,
+                "\n#error Code generation failed. Don't use this file\n");
+        }
         if(rc > 0) {
             qu_print_error(&ctx.parser, stderr);
             qu_parser_free(&ctx.parser);

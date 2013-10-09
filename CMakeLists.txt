@@ -110,26 +110,26 @@ MACRO(ADD_GEN_TEST name)
 ENDMACRO(ADD_GEN_TEST)
 
 MACRO(ADD_GEN_TEST_CONFIG name config)
-    ADD_TEST(${name}_${config}
+    ADD_TEST(${name}_${config}_raw
         ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${config}.raw.txt
-        ${CMAKE_BINARY_DIR}/test_${name}_${config}.raw.out
-        ${CMAKE_BINARY_DIR}/test_${name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.raw.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${config}.raw.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
         -c ${config}.yaml
         --config-print=current
         )
-    ADD_TEST(${name}_${config}
+    ADD_TEST(${name}_${config}_example
         ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${config}.example.txt
-        ${CMAKE_BINARY_DIR}/test_${name}_${config}.example.out
-        ${CMAKE_BINARY_DIR}/test_${name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.example.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${config}.example.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
         --config-print=example
         )
-    ADD_TEST(${name}_${config}
+    ADD_TEST(${name}_${config}_full
         ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${config}.full.txt
-        ${CMAKE_BINARY_DIR}/test_${name}_${config}.full.out
-        ${CMAKE_BINARY_DIR}/test_${name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.full.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${config}.full.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
         -c ${config}.yaml
         --config-print=full
         )
@@ -140,44 +140,6 @@ INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
 # TESTS FOR QUIRE-GEN
 
 ADD_SUBDIRECTORY(test/generator/meta)
-
-#ADD_TEST_BINARY(tinytest)
-#ADD_TEST(tinytest ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/tinytest
-#    ${CMAKE_BINARY_DIR}/tinytest.out
-#    ${CMAKE_SOURCE_DIR}/examples/tinyexample.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/tinyexample.yaml -vv -C -P)
-#ADD_TEST_BINARY(vartest)
-#ADD_TEST(vartest ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/vartest
-#    ${CMAKE_BINARY_DIR}/vartest.out
-#    ${CMAKE_SOURCE_DIR}/examples/varexample.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/varexample.yaml -C -P)
-#ADD_TEST_BINARY(comprehensive)
-#ADD_TEST(comprtest ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/comprehensive
-#    ${CMAKE_BINARY_DIR}/compexample.out
-#    ${CMAKE_SOURCE_DIR}/examples/compexample.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -P
-#    --config-var clivar=CLI)
-#ADD_TEST(comprtest_comments ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/comprehensive
-#    ${CMAKE_BINARY_DIR}/compexample_comments.out
-#    ${CMAKE_SOURCE_DIR}/examples/compexample_comments.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -PP
-#    --config-var clivar=CLI)
-#ADD_TEST(comprtest_2 ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/comprehensive
-#    ${CMAKE_BINARY_DIR}/compr.out
-#    ${CMAKE_SOURCE_DIR}/examples/compr.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/compexample.yaml -C -PP
-#    --config-var clivar=CLI)
-#ADD_TEST_BINARY(recursive)
-#ADD_TEST(recursive ${CMAKE_SOURCE_DIR}/test_quire_gen
-#    ${CMAKE_BINARY_DIR}/recurcive
-#    ${CMAKE_BINARY_DIR}/recexample.out
-#    ${CMAKE_SOURCE_DIR}/examples/recexample.out
-#    -c ${CMAKE_SOURCE_DIR}/examples/recexample.yaml -C -P)
 
 # TESTS FOR QUIRE-TOOL
 

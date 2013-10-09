@@ -3,5 +3,5 @@ original="$1"
 output="$2"
 binary="$3"
 shift 3
-$binary $* > $output
+eval "$binary $* > $output"
 exec diff -u $original $output
