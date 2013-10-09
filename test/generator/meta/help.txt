@@ -1,5 +1,5 @@
 Usage:
-    meta [options]
+    meta [-c CONFIG_PATH] [options]
 
 Metadata testing config
 

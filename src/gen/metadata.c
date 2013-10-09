@@ -12,8 +12,6 @@ void qu_parse_metadata(struct qu_context *bigctx) {
     meta->program_name = NULL;
     meta->default_config = NULL;
     meta->description = NULL;
-    meta->has_arguments = 0;
-    meta->mixed_arguments = 0;
     qu_ast_node *mnode = qu_map_get(root, "__meta__");
     if(!mnode)
         return;

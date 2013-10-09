@@ -35,6 +35,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/classes/enum.c
     src/gen/classes/struct.c
     src/gen/classes/scalar.c
+    src/gen/types/types.c
     src/gen/cli.c
     src/gen/context.c
     src/gen/struct.c

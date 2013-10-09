@@ -13,23 +13,54 @@ void qu_code_putval(const char *val, FILE *out, const char *fmt) {
 	} else {
 		if(fmt[1] == 'q') {
 			fputc('"', out);
-			 /*  TODO(tailhook) quote  */
-			fputs(val, out);
+            for(const char *c = val; *c; ++c) {
+                if(*c < 32) {
+                    switch(*c) {
+                    case '\r': fprintf(out, "\\r"); break;
+                    case '\n': fprintf(out, "\\n"); break;
+                    case '\t': fprintf(out, "\\t"); break;
+                    default: fprintf(out, "\\x%02x", *c); break;
+                    }
+                    continue;
+                } else if(*c == '\\' || *c == '"') {
+                    putc('\\', out);
+                    putc(*c, out);
+                } else {
+                    putc(*c, out);
+                }
+            }
 			fputc('"', out);
 		}
 	}
 }
 
-void qu_code_growval(const char *val, struct qu_context *ctx, const char *fmt)
+void qu_code_growval(const char *val, struct obstack *buf, const char *fmt)
 {
 	if(fmt == NULL) {
-		obstack_grow(&ctx->parser.pieces, fmt, strlen(fmt));
+		obstack_grow(buf, val, strlen(val));
 	} else {
 		if(fmt[1] == 'q') {
-			obstack_1grow(&ctx->parser.pieces, '"');
-			 /*  TODO(tailhook) quote  */
-			obstack_grow(&ctx->parser.pieces, val, strlen(val));
-			obstack_1grow(&ctx->parser.pieces, '"');
+			obstack_1grow(buf, '"');
+            for(const char *c = val; *c; ++c) {
+                if(*c < 32) {
+                    char tbuf[8];
+                    int tlen;
+                    switch(*c) {
+                    case '\r': tlen = sprintf(tbuf, "\\r"); break;
+                    case '\n': tlen = sprintf(tbuf, "\\n"); break;
+                    case '\t': tlen = sprintf(tbuf, "\\t"); break;
+                    default: tlen = sprintf(tbuf, "\\x%02x", *c); break;
+                    }
+                    obstack_grow(buf, tbuf, tlen);
+                    continue;
+                } else if(*c == '\\' || *c == '"') {
+                    obstack_1grow(buf, '\\');
+                    obstack_1grow(buf, *c);
+                } else {
+                    obstack_1grow(buf, *c);
+                }
+            }
+			obstack_1grow(buf, '"');
 		}
 	}
 }
@@ -76,12 +107,9 @@ void qu_code_print(struct qu_context *ctx, const char *template, ...) {
     va_end (args);
 }
 
-const char *qu_template_alloc(struct qu_context *ctx,
-    const char *template, ...)
+const char *qu_template_grow_va(struct qu_context *ctx,
+    const char *template, va_list args)
 {
-    va_list args;
-    va_start (args, template);
-    obstack_blank(&ctx->parser.pieces, 0);
     const char *c;
     for(c = template; *c; ++c) {
         if(*c == '`') {
@@ -96,9 +124,9 @@ const char *qu_template_alloc(struct qu_context *ctx,
             int var_len = (fmt ? fmt : varend) - var;
             assert(varend);
             if(slice_equal(var, var_len, "pref"))
-                qu_code_growval(ctx->prefix, ctx, fmt);
+                qu_code_growval(ctx->prefix, &ctx->parser.pieces, fmt);
             else if(slice_equal(var, var_len, "mpref"))
-                qu_code_growval(ctx->macroprefix, ctx, fmt);
+                qu_code_growval(ctx->macroprefix, &ctx->parser.pieces, fmt);
             else {
                 va_list vars;
                 va_copy (vars, args);
@@ -108,7 +136,7 @@ const char *qu_template_alloc(struct qu_context *ctx,
                         break;
                     const char *value = va_arg(vars, char *);
                     if(slice_equal(var, var_len, name)) {
-                        qu_code_growval(value, ctx, fmt);
+                        qu_code_growval(value, &ctx->parser.pieces, fmt);
                     }
                 }
                 va_end (vars);
@@ -118,7 +146,29 @@ const char *qu_template_alloc(struct qu_context *ctx,
             obstack_1grow(&ctx->parser.pieces, *c);
         }
     }
+}
+
+const char *qu_template_alloc(struct qu_context *ctx,
+    const char *template, ...)
+{
+    va_list args;
+    va_start (args, template);
+    obstack_blank(&ctx->parser.pieces, 0);
+
+    qu_template_grow_va(ctx, template, args);
+
     va_end (args);
     obstack_1grow(&ctx->parser.pieces, 0);
     return obstack_finish(&ctx->parser.pieces);
+}
+
+void qu_template_grow(struct qu_context *ctx,
+    const char *template, ...)
+{
+    va_list args;
+    va_start (args, template);
+
+    qu_template_grow_va(ctx, template, args);
+
+    va_end (args);
 }

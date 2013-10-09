@@ -25,6 +25,10 @@ static struct qu_fwdecl_node **qu_fwdecl_find(struct qu_fwdecl_index *idx,
     return node;
 }
 
+void qu_fwdecl_init(struct qu_context *ctx) {
+    ctx->fwdecl_index.root = NULL;
+}
+
 static void qu_fwdecl_node_init(struct qu_fwdecl_node *node, const char *name) {
     node->left = NULL;
     node->right = NULL;

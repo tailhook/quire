@@ -768,25 +768,15 @@ int qu_output_source(struct qu_context *ctx) {
 
 
     ///////////////  config_help
-    qu_code_print(ctx,
-        "void ${pref}_help(FILE *stream) {\n"
-        "   fprintf(stream, `Usage:\\n`);\n"
-        "   fprintf(stream, `    ${progname} [options]\\n`);\n"
-        "   fprintf(stream, `\\n`);\n"
-        "   fprintf(stream, `${descr}\\n`);\n"
-        "   fprintf(stream, `\\n`);\n"
-        "   fprintf(stream, `Options:\\n`);\n"
-        "   fprintf(stream, `    --config,-c FILE  Parse configuration file FILE\\n`);\n"
-        "   fprintf(stream, `                      [default: /etc/__quire_test__/meta.yaml]\\n`);\n"
-        "\n",
-        "progname", ctx->meta.program_name,
-        "descr", ctx->meta.description,
-        NULL);
 
     qu_code_print(ctx,
-        "}\n"
+        "void ${pref}_help(FILE *stream) {\n"
+        "   fprintf(stream, ${usage:q});\n"
         "\n"
-        , NULL);
+        "}\n"
+        "\n",
+        "usage", qu_cli_format_usage(ctx),
+        NULL);
 
     ///////////////  config_print
 
