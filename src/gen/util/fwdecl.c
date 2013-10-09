@@ -49,7 +49,7 @@ static void qu_fwdecl_print_visit(struct qu_context *ctx,
         return;
     qu_fwdecl_print_visit(ctx, node->left);
     qu_code_print(ctx,
-        "struct `sname`;\n",
+        "struct ${sname};\n",
         "sname", node,
         NULL);
     qu_fwdecl_print_visit(ctx, node->right);

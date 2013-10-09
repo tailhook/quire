@@ -617,7 +617,7 @@ int qu_output_source(struct qu_context *ctx) {
     ///////////////  config_set_defaults
 
     qu_code_print(ctx,
-        "int `pref`_set_defaults(struct `pref`_main *cfg) {\n"
+        "int ${pref}_set_defaults(struct ${pref}_main *cfg) {\n"
         , NULL);
     /*
     TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
@@ -682,17 +682,17 @@ int qu_output_source(struct qu_context *ctx) {
     */
 
     qu_code_print(ctx,
-        "int `pref`_load(struct `pref`_main *cfg, int argc, char **argv) {\n"
+        "int ${pref}_load(struct ${pref}_main *cfg, int argc, char **argv) {\n"
         "int rc;\n"
         "jmp_buf jmp;\n"
         "struct qu_config_context *ctx = NULL;\n"
-        "struct `pref`_cli cli;\n"
+        "struct ${pref}_cli cli;\n"
         "\n"
         "qu_config_init(cfg, sizeof(*cfg));\n"
-        "`pref`_set_defaults(cfg);\n"
+        "${pref}_set_defaults(cfg);\n"
         "if(!(rc = setjmp(jmp))) {\n"
         "ctx = qu_config_parser(&jmp);\n"
-        "`pref`_cli_parse(ctx, &cli, argc, argv);\n"
+        "${pref}_cli_parse(ctx, &cli, argc, argv);\n"
         , NULL);
 
     /*
@@ -738,11 +738,11 @@ int qu_output_source(struct qu_context *ctx) {
         "       rc = -1;\n"
         "       break;\n"
         "    case QU_CLI_PRINT_CONFIG:\n"
-        "       `pref`_print(cfg, cli.print_flags, stdout);\n"
+        "       ${pref}_print(cfg, cli.print_flags, stdout);\n"
         "       rc = -1;\n"
         "       break;\n"
         "    case QU_CLI_PRINT_HELP:\n"
-        "       `pref`_help(stdout);\n"
+        "       ${pref}_help(stdout);\n"
         "       rc = -1;\n"
         "       break;\n"
         "}"
@@ -759,7 +759,7 @@ int qu_output_source(struct qu_context *ctx) {
     ///////////////  config_free
 
     qu_code_print(ctx,
-        "int `pref`_free(struct `pref`_main *cfg) {\n"
+        "int ${pref}_free(struct ${pref}_main *cfg) {\n"
         "qu_config_free(cfg);\n"
         "return 0;\n"
         "}\n"
@@ -769,15 +769,15 @@ int qu_output_source(struct qu_context *ctx) {
 
     ///////////////  config_help
     qu_code_print(ctx,
-        "void `pref`_help(FILE *stream) {\n"
-        "   fprintf(stream, \"Usage:\\n\");\n"
-        "   fprintf(stream, \"    `progname` [options]\\n\");\n"
-        "   fprintf(stream, \"\\n\");\n"
-        "   fprintf(stream, \"`descr`\\n\");\n"
-        "   fprintf(stream, \"\\n\");\n"
-        "   fprintf(stream, \"Options:\\n\");\n"
-        "   fprintf(stream, \"    --config,-c FILE  Parse configuration file FILE\\n\");\n"
-        "   fprintf(stream, \"                      [default: /etc/__quire_test__/meta.yaml]\\n\");\n"
+        "void ${pref}_help(FILE *stream) {\n"
+        "   fprintf(stream, `Usage:\\n`);\n"
+        "   fprintf(stream, `    ${progname} [options]\\n`);\n"
+        "   fprintf(stream, `\\n`);\n"
+        "   fprintf(stream, `${descr}\\n`);\n"
+        "   fprintf(stream, `\\n`);\n"
+        "   fprintf(stream, `Options:\\n`);\n"
+        "   fprintf(stream, `    --config,-c FILE  Parse configuration file FILE\\n`);\n"
+        "   fprintf(stream, `                      [default: /etc/__quire_test__/meta.yaml]\\n`);\n"
         "\n",
         "progname", ctx->meta.program_name,
         "descr", ctx->meta.description,
@@ -796,17 +796,17 @@ int qu_output_source(struct qu_context *ctx) {
     underline[underlen] = 0;
 
     qu_code_print(ctx,
-        "void `pref`_print(struct `pref`_main *cfg, int flags, FILE *stream) {\n"
+        "void ${pref}_print(struct ${pref}_main *cfg, int flags, FILE *stream) {\n"
         "qu_emit_context cctx;\n"
         "qu_emit_context *ctx = &cctx;\n"
         "qu_emit_init(ctx, stream);\n"
         "\n"
         "if(flags & QU_PRINT_COMMENTS) {\n"
-        "qu_emit_comment(ctx, 0, \"`name`\", -1);\n"
-        "qu_emit_comment(ctx, 0, \"`underline`\", -1);\n"
-        "qu_emit_comment(ctx, 0, \"\", 0);\n"
-        "qu_emit_comment(ctx, 0, \"`description`\", -1);\n"
-        "qu_emit_comment(ctx, 0, \"\", 0);\n"
+        "qu_emit_comment(ctx, 0, ${name:q}, -1);\n"
+        "qu_emit_comment(ctx, 0, ${underline:q}, -1);\n"
+        "qu_emit_comment(ctx, 0, ``, 0);\n"
+        "qu_emit_comment(ctx, 0, ${description:q}, -1);\n"
+        "qu_emit_comment(ctx, 0, ``, 0);\n"
         "qu_emit_whitespace(ctx, QU_WS_ENDLINE, 1);\n"
         "}\n"
         "\n",

@@ -21,7 +21,7 @@ static void qu_struct_init(struct qu_context *ctx, struct qu_class *cls) {
         sizeof(struct qu_class_struct));
     cls->classdata = self;
     self->body = NULL;
-    self->typename = qu_template_alloc(ctx, "`pref`_`name`",
+    self->typename = qu_template_alloc(ctx, "${pref}_${name}",
         "name", cls->name,
         NULL);
     qu_fwdecl_add(ctx, self->typename);
