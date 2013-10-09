@@ -44,6 +44,7 @@ static void qu_config_set_prefix(struct qu_context *ctx) {
 
 void qu_config_preprocess(struct qu_context *ctx) {
     qu_parse_metadata(ctx);
+    assert (ctx->meta.program_name);
     qu_config_set_prefix(ctx);
     ctx->root = qu_struct_new_root(ctx);
     qu_visit_struct_children(ctx, ctx->parser.document, ctx->root);

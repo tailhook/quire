@@ -1,8 +1,13 @@
+#include <setjmp.h>
+
 #include "context.h"
 
-void qu_context_init(qu_context_t *ctx, jmp_buf *jmp) {
-    memset(ctx, 0, sizeof(qu_context_t));
-    TAILQ_INIT(&ctx->arrays);
-    TAILQ_INIT(&ctx->mappings);
-    qu_parser_init(&ctx->parser, jmp);
+void qu_config_context_init(struct qu_config_context *ctx, jmp_buf *jmp) {
+	ctx->parser.errjmp = jmp;
+	qu_parser_init(&ctx->parser);
+	qu_vars_init(ctx);
+}
+void qu_config_context_free(struct qu_config_context *ctx) {
+	qu_parser_free(&ctx->parser);
+	/*  Everhing else will be freed with obstack in ctx->parser  */
 }

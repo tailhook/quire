@@ -20,6 +20,7 @@ int qu_get_string(qu_config_context *ctx,
 int qu_get_string_len(qu_config_context *ctx,
     const char *name, int name_len, const char **data, int *dlen);
 int qu_print_variables(qu_config_context *ctx);
+void qu_vars_init(struct qu_config_context *ctx);
 
 // PUBLIC API
 // Keep in sync with quire.h

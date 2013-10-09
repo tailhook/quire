@@ -144,3 +144,7 @@ int qu_print_variables(qu_config_context *ctx) {
     qu_print_var(ctx->variables.root);
     return 0;
 }
+
+void qu_vars_init(struct qu_config_context *ctx) {
+	ctx->variables.root = NULL;
+}

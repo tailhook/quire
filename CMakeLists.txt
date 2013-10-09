@@ -18,6 +18,8 @@ ADD_LIBRARY(quire
     src/raw/merge.c
     src/cfg/vars.c
     src/cfg/eval.c
+    src/cfg/context.c
+    src/cfg/api.c
     src/error.c
     src/emitter.c
     )
@@ -102,9 +104,9 @@ ENDMACRO(ADD_GEN_EXECUTABLE)
 MACRO(ADD_GEN_TEST name)
     ADD_TEST(${name}_help
         ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${CMAKE_SOURCE_DIR}/test/generator/${name}/help.txt
-        ${CMAKE_BINARY_DIR}/test_${name}.help.out
-        ${CMAKE_BINARY_DIR}/test_${name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/help.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/help.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
         --help
         )
 ENDMACRO(ADD_GEN_TEST)

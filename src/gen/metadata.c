@@ -51,29 +51,4 @@ void qu_parse_metadata(struct qu_context *bigctx) {
         meta->description = tdata;
     }
 
-    tnode = qu_map_get(mnode, "has-arguments");
-    if(tnode) {
-        int value;
-        if(qu_get_boolean(tnode, &value) == -1) {
-            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
-                "__meta__.has-arguments must be boolean");
-        }
-        meta->has_arguments = value;
-    }
-
-    tnode = qu_map_get(mnode, "mixed-arguments");
-    if(tnode) {
-        int value;
-        if(qu_get_boolean(tnode, &value) == -1) {
-            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
-                "__meta__.mixed-arguments must be boolean");
-        }
-        if(value && !meta->has_arguments) {
-            LONGJUMP_WITH_CONTENT_ERROR(ctx, tnode->start_token,
-                "__meta__.mixed-arguments without has-arguments"
-                " is useless");
-        }
-        meta->mixed_arguments = value;
-    }
-
 }

@@ -167,6 +167,11 @@ int qu_output_header(qu_context_t *ctx) {
 	}
     */
 
+	qu_code_print(ctx,
+        "\n"
+        "/*  Main configuration structure  */\n"
+        "\n"
+        , NULL);
 
     qu_code_print(ctx,
         "struct `pref`_main {\n"
@@ -181,19 +186,17 @@ int qu_output_header(qu_context_t *ctx) {
         "\n",
         NULL);
 
+    qu_cli_print_fwdecl(ctx);
     qu_code_print(ctx,
         "int `pref`_load(struct `pref`_main *cfg, int argc, char **argv);\n"
-        "int `pref`_cli_parse(qu_parse_context *ctx, struct `pref`_cli *cli, "
-                            "int argc, char **argv);\n"
-        "int `pref`_cli_apply(struct `pref`_main *cfg, "
-                             "struct `pref`_cli *cli);\n"
-        "int `pref`_do_parse(qu_parse_context *ctx, struct `pref`_cli *cli, "
+        "int `pref`_do_parse(struct qu_config_context *ctx, struct `pref`_cli *cli, "
                             "struct `pref`_main *cfg);\n"
         "int `pref`_set_defaults(struct `pref`_main *cfg);\n"
-        "int `pref`_print(struct `pref`_main *cfg, int flags, FILE *);\n"
+        "void `pref`_print(struct `pref`_main *cfg, int flags, FILE *);\n"
+        "void `pref`_help(FILE *);\n"
         "int `pref`_free(struct `pref`_main *cfg);\n"
         "\n"
-        "#endif  // HEADER_`mpref`\n"
+        "#endif  /*  HEADER_`mpref`  */\n"
         , NULL);
     return 0;
 }

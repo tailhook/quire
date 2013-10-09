@@ -264,7 +264,8 @@ int main(int argc, char **argv) {
     assert(argc >= 2);
     qu_parse_context ctx;
     if(!(rc = setjmp(jmp))) {
-        qu_parser_init(&ctx, &jmp);
+		ctx.errjmp = &jmp;
+        qu_parser_init(&ctx);
         qu_file_parse(&ctx, options.filename);
         if(options.plain) {
             qu_raw_process(&ctx);

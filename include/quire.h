@@ -34,21 +34,19 @@
 
 #define QU_FLAGS_VARS       1
 
-#define QU_MODE_NORMAL      1
+#define QU_CLI_RUN          0
+#define QU_CLI_CHECK_CONFIG 1
+#define QU_CLI_PRINT_CONFIG 2
+#define QU_CLI_PRINT_HELP   3
+
+#define QU_PRINT_EXAMPLE  1
+#define QU_PRINT_COMMENTS 2
+#define QU_PRINT_FULL     4
 
 typedef struct qu_config_head {
 	jmp_buf safejump;
     char data[512 - sizeof(jmp_buf)];
 } qu_config_head;
-
-typedef struct qu_parse_context {
-    char data[4096];
-} qu_parse_context;
-
-typedef struct qu_config_context {
-    qu_parse_context parser;
-    char data[512];
-} qu_config_context;
 
 typedef struct qu_emit_context {
     char data[512];
@@ -67,7 +65,7 @@ typedef struct qu_seq_member qu_seq_member;
 typedef struct qu_map_member qu_map_member;
 
 // Methods from access.c
-qu_ast_node *qu_get_root(qu_parse_context *ctx);
+qu_ast_node *qu_config_root(struct qu_config_context *ctx);
 qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
 int qu_get_boolean(qu_ast_node *node, int *value);
 char *qu_node_content(qu_ast_node *node);
@@ -92,29 +90,26 @@ void qu_config_mapping_insert(void **head, void **tail,
 						    qu_mapping_head *member);
 void *qu_config_mapping_next(void *elem);
 
-// Methods from yaml/parser.c
-int qu_file_parse(qu_parse_context *ctx, char *filename)
-    __attribute__((warn_unused_result));
-void qu_parser_init(qu_parse_context *ctx);
-void qu_parser_free(qu_parse_context *ctx);
-jmp_buf *qu_parser_jmpbuf(qu_parse_context *ctx);
+// Methods from cfg/api.c
+struct qu_config_context *qu_config_parser(jmp_buf *jmp);
+void qu_config_parser_free(struct qu_config_context *ctx);
 
 // Methods from eval.c
-void qu_node_to_int(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
     long *result);
-void qu_node_to_float(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
     double *result);
-void qu_node_to_str(qu_parse_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
     const char **result, size_t *rlen);
 
 // Methods from cfg/vars.h
-int qu_set_string(qu_config_context *ctx, const char *name, const char *data);
-int qu_set_integer(qu_config_context *ctx, const char *name, long value);
+int qu_set_string(struct qu_config_context *ctx, const char *name, const char *data);
+int qu_set_integer(struct qu_config_context *ctx, const char *name, long value);
 
 // Methods from error.c
-int qu_has_error(qu_parse_context *);
-int qu_print_error(qu_parse_context *, FILE *err);
-void qu_report_error(qu_parse_context *, qu_ast_node *node, char *text);
+int qu_has_error(struct qu_config_context *);
+int qu_print_error(struct qu_config_context *, FILE *err);
+void qu_report_error(struct qu_config_context *, qu_ast_node *node, char *text);
 
 // Methods from emitter.c
 int qu_emit_init(qu_emit_context *, FILE *stream);

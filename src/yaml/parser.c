@@ -113,8 +113,7 @@ static void _qu_context_reinit(qu_parse_context *ctx) {
     ctx->error_kind = 0;
 }
 
-void qu_parser_init(qu_parse_context *ctx, jmp_buf *jmp) {
-    ctx->errjmp = jmp;
+void qu_parser_init(qu_parse_context *ctx) {
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
     ctx->anchor_index.node = NULL;

@@ -1,7 +1,7 @@
 Usage:
     meta [options]
 
-Metdatadata testing config
+Metadata testing config
 
 Options:
     --config,-c FILE  Parse configuration file FILE

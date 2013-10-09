@@ -61,9 +61,14 @@ static int _space_check(qu_emit_context *ctx) {
 int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len) {
     // TODO(tailhook) implement comment reformatting
     if(len < 0) {
-        fprintf(ctx->stream, "# %s\n", data);
+		fprintf(ctx->stream, "# %s\n", data);
     } else {
-        fprintf(ctx->stream, "# %.*s\n", len, data);
+		if(len == 0) {
+			/*  Empty line for beauty  */
+			fprintf(ctx->stream, "#\n");
+		} else {
+			fprintf(ctx->stream, "# %.*s\n", len, data);
+		}
     }
     return 0;
 }

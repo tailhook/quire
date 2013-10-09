@@ -14,5 +14,8 @@ struct qu_cli_options {
 };
 
 void qu_cli_print_struct(struct qu_context *ctx);
+void qu_cli_print_parser(struct qu_context *ctx);
+void qu_cli_print_applier(struct qu_context *ctx);
+void qu_cli_print_fwdecl(struct qu_context *ctx);
 
 #endif  // QUIRE_H_GEN_CLI
