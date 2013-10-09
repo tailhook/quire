@@ -15,12 +15,13 @@ static struct {
     {"!Enum", &qu_class_vptr_enum},
     {"!TagScalar", &qu_class_vptr_scalar}
 };
+const int qu_vpointers_num = sizeof(qu_vpointers)/sizeof(qu_vpointers[0]);
 
 struct qu_class_vptr *qu_class_get_vptr(const char *name, int namelen)
 {
     int i;
-    for(i = 0; i < sizeof(qu_vpointers)/sizeof(qu_vpointers[0]); ++i) {
-        if(strlen(qu_vpointers[i].name) == namelen &&
+    for(i = 0; i < qu_vpointers_num; ++i) {
+        if((int)strlen(qu_vpointers[i].name) == namelen &&
            !strncmp(qu_vpointers[i].name, name, namelen))
             return qu_vpointers[i].ptr;
     }

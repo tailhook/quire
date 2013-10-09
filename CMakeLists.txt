@@ -29,6 +29,10 @@ ADD_EXECUTABLE(quire-gen
     src/gen/special/special.c
     src/gen/special/types.c
     src/gen/classes/classes.c
+    src/gen/classes/alter.c
+    src/gen/classes/enum.c
+    src/gen/classes/struct.c
+    src/gen/classes/scalar.c
     src/gen/context.c
     src/gen/struct.c
     src/gen/process.c

@@ -204,14 +204,6 @@ void qu_config_preprocess(struct qu_context *ctx) {
 
     qu_parse_metadata(ctx);
 
-    ctx->prefix = ctx->options.prefix;
-    int len = strlen(ctx->prefix);
-    char * macroprefix = obstack_copy0(&ctx->parser.pieces,
-        ctx->prefix, len);
-    for(int i = 0; i < len; ++i)
-        macroprefix[i] = toupper(macroprefix[i]);
-    ctx->macroprefix = macroprefix;
-
     TAILQ_INIT(&ctx->cli_options);
     visitor(ctx, ctx->parser.document, "", NULL);
     qu_ast_node *types = qu_map_get(ctx->parser.document, "__types__");
