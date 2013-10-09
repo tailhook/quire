@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "options.h"
+#include "cli.h"
 #include "metadata.h"
 #include "util/fwdecl.h"
 #include "special/types.h"
@@ -46,9 +47,9 @@ typedef struct qu_context {
 
     struct qu_fwdecl_index fwdecl_index;
     struct qu_class_index class_index;
-    struct qu_config_struct *root;
+    struct qu_cli_options cli_options;
 
-    TAILQ_HEAD(qu_cli_options, qu_nodedata) cli_options;
+    struct qu_config_struct *root;
 
     int node_level;
     char node_vars[16];

@@ -94,28 +94,12 @@ int qu_output_header(qu_context_t *ctx) {
 
     qu_fwdecl_print_all(ctx);
 
-	printf("// Real declarations\n");
-    printf("typedef struct %scli_s {\n", ctx->prefix);
-    printf("char *cfg_filename;\n");
-    printf("uint64_t cfg_flags;\n");
-    printf("int cfg_mode;\n");
-    qu_nodedata *data;
-    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
-        printf("unsigned %s_set:1;\n", data->cli_name);
-    }
-    TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
-        if(data->kind != QU_MEMBER_SCALAR)
-            assert(0);  // non scalar command-line not supported
-        printf("%s %s;\n", typenames[data->type], data->cli_name);
-        if(qu_map_get(data->node, "command-line-incr")
-           || qu_map_get(data->node, "command-line-decr")) {
-            printf("%s %s_delta;\n", typenames[data->type],
-                data->cli_name);
-            printf("unsigned %s_delta_set;\n", data->cli_name);
-        }
-    }
-    printf("} %scli_t;\n", ctx->prefix);
-    printf("\n");
+	qu_code_print(ctx,
+        "\n"
+        "/*  Intermediate command-line storage  */\n"
+        "\n"
+        , NULL);
+    qu_cli_print_struct(ctx);
 
     /*
     qu_ast_node *types = NULL; // TODO(tailhook) remove the stub

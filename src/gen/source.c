@@ -444,6 +444,7 @@ int qu_output_source(struct qu_context *ctx) {
 
     printf("int %1$scli_parse(qu_parse_context *ctx, %1$scli_t *cfg,"
            "int argc, char **argv) {\n", ctx->prefix);
+    /*
     char options[128] = "hc:D:PC";
     int optlen = strlen(options);
     int optnum = 1000;
@@ -563,13 +564,14 @@ int qu_output_source(struct qu_context *ctx) {
     printf("return -1;\n");
     printf("}\n");
     printf("}\n");
-
+    */
     printf("return 0;\n");
     printf("}\n");
     printf("\n");
 
     printf("int %1$scli_apply(%1$smain_t *cfg, %1$scli_t *cli) {\n",
         ctx->prefix);
+    /*
     TAILQ_FOREACH(data, &ctx->cli_options, cli_lst) {
         int ci = !!qu_map_get(data->node, "command-line");
         int ce = !!qu_map_get(data->node, "command-line-enable");
@@ -612,7 +614,7 @@ int qu_output_source(struct qu_context *ctx) {
             printf("}\n");
         }
     }
-
+    */
     printf("return 0;\n");
     printf("}\n");
     printf("\n");

@@ -5,7 +5,7 @@
 #include "../context.h"
 
 #define slice_equal(start, len, val) \
-    ((len) == strlen((val)) && !strncmp((val), (start), (len)))
+    ((len) == (int)strlen((val)) && !strncmp((val), (start), (len)))
 
 void qu_code_print(struct qu_context *ctx, const char *template, ...) {
     va_list args;
