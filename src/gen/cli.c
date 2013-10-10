@@ -6,7 +6,7 @@
 struct qu_cli_group {
     const char *name;
     TAILQ_ENTRY(qu_cli_grp_lst) lst;
-    TAILQ_HEAD(qu_cli_options_lst, qu_cli_option) children;
+    TAILQ_HEAD(qu_cli_options_lst, qu_cli_optref) children;
 };
 
 struct qu_cli_optref {
@@ -18,7 +18,7 @@ struct qu_cli_optref {
     struct qu_option *opt;
 
     /*  List by group in definition order  */
-    TAILQ_ENTRY(qu_cli_option) lst;
+    TAILQ_ENTRY(qu_cli_optref) lst;
     /*  Tree by option name  */
     struct qu_cli_optref *left;
     struct qu_cli_optref *right;
@@ -210,6 +210,10 @@ void qu_cli_add_quire(struct qu_context *ctx) {
                "`current`, `details`, `example`, `all`, `full`");
 }
 
+static int qu_cmp(const char *a, const char *b) {
+    return (a == b || (a && b && !strcmp(a, b)));
+}
+
 const char *qu_cli_format_usage(struct qu_context *ctx) {
     struct obstack *buf = &ctx->parser.pieces;
     obstack_blank(buf, 0);
@@ -229,14 +233,42 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
             "\n${groupname}:\n",
             "groupname", grp->name,
             NULL);
-        struct qu_cli_optref *opt;
-        TAILQ_FOREACH(opt, &grp->children, lst) {
+        struct qu_cli_optref *opt, *nxt;
+        for(opt = TAILQ_FIRST(&grp->children); opt; opt = nxt) {
+            int startoff = obstack_object_size(buf);
             qu_template_grow(ctx,
-                " ${opt}\n",
+                "  ${opt}",
                 "opt", opt->name,
                 NULL);
+            nxt = TAILQ_NEXT(opt, lst);
+            while(nxt && nxt->opt == opt->opt
+               && qu_cmp(nxt->action, opt->action)
+               && qu_cmp(nxt->metavar, opt->metavar)
+               && qu_cmp(nxt->group, opt->group)
+               && qu_cmp(nxt->description, opt->description)) {
+                qu_template_grow(ctx,
+                    ",${opt}",
+                    "opt", nxt->name,
+                    NULL);
+                nxt = TAILQ_NEXT(nxt, lst);
+            }
+            if(opt->metavar)
+                qu_template_grow(ctx,
+                    " ${var}",
+                    "var", opt->metavar,
+                    NULL);
+            int endoff = obstack_object_size(buf);
+            if(endoff - startoff > 18) {
+                obstack_grow(buf, "\n                    ", 21);
+            } else {
+                obstack_grow(buf,
+                    "                    ", 20 - (endoff - startoff));
+            }
+            obstack_grow(buf, opt->description, strlen(opt->description));
+            obstack_1grow(buf, '\n');
         }
     }
+    obstack_1grow(buf, 0);
 
     return obstack_finish(buf);
 }

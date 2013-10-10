@@ -16,6 +16,7 @@ void qu_cli_print_struct(struct qu_context *ctx);
 void qu_cli_print_parser(struct qu_context *ctx);
 void qu_cli_print_applier(struct qu_context *ctx);
 void qu_cli_print_fwdecl(struct qu_context *ctx);
+void qu_cli_add_quire(struct qu_context *ctx);
 
 const char *qu_cli_format_usage(struct qu_context *ctx);
 
