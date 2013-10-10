@@ -202,9 +202,10 @@ void qu_cli_add_quire(struct qu_context *ctx) {
 
     struct qu_option *print = qu_option_new(ctx, &qu_cli_print_vptr);
     qu_cli_add(ctx, "-P", "incr", NULL, print,
-        group, "Print configuration after reading and exit. The configuration "
-               "printed by this option includes values overriden from "
-               "command-line. Double flag `-PP` prints comments.");
+        group, "Print configuration after reading, then exit. "
+               "The configuration printed by this option includes values "
+               "overriden from command-line. Double flag `-PP` prints "
+               "comments.");
     qu_cli_add(ctx, "--config-print", NULL, "TYPE", print,
         group, "Print configuration file after reading. TYPE maybe "
                "`current`, `details`, `example`, `all`, `full`");
@@ -215,17 +216,22 @@ static int qu_cmp(const char *a, const char *b) {
 }
 
 const char *qu_cli_format_usage(struct qu_context *ctx) {
+    const char *ptr, *end;
     struct obstack *buf = &ctx->parser.pieces;
     obstack_blank(buf, 0);
     qu_template_grow(ctx,
         "Usage:\n"
         "    ${prog} [-c CONFIG_PATH] [options]\n"
-        "\n"
-        "${descr}\n",
+        "\n",
         "prog", ctx->meta.program_name,
         "fn", ctx->meta.default_config,
-        "descr", ctx->meta.description,
         NULL);
+    ptr = ctx->meta.description;
+    end = ptr + strlen(ptr);
+    while(ptr < end) {
+        ptr = qu_line_grow(buf, ptr, end, 80);
+        obstack_1grow(buf, '\n');
+    }
 
     struct qu_cli_group *grp;
     TAILQ_FOREACH(grp, &ctx->cli_options.groups, lst) {
@@ -264,7 +270,13 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
                 obstack_grow(buf,
                     "                    ", 20 - (endoff - startoff));
             }
-            obstack_grow(buf, opt->description, strlen(opt->description));
+            ptr = opt->description;
+            end = ptr + strlen(ptr);
+            ptr = qu_line_grow(buf, ptr, end, 60);
+            while(ptr < end) {
+                obstack_grow(buf, "\n                    ", 21);
+                ptr = qu_line_grow(buf, ptr, end, 60);
+            }
             obstack_1grow(buf, '\n');
         }
     }

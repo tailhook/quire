@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include "print.h"
 #include "../context.h"
@@ -117,4 +118,37 @@ void qu_code_print(struct qu_context *ctx, const char *template, ...) {
     const char *data = obstack_finish(&ctx->parser.pieces);
     fwrite(data, 1, clen, ctx->out);
     obstack_free(&ctx->parser.pieces, data);
+}
+
+const char *qu_line_grow(struct obstack *buf,
+    const char *ptr, const char *endptr, int width)
+{
+    const char *wordend;
+    int left = width;
+    while(1) {
+        while(isblank(*ptr) && ptr < endptr) ++ptr;
+        wordend = ptr;
+        if(*ptr == '[') {
+            while(*wordend != ']' && wordend < endptr) ++wordend;
+            if(wordend < endptr)
+                ++wordend;
+        } else {
+            while(!isblank(*wordend) && wordend < endptr) ++wordend;
+        }
+        int wlen = wordend - ptr;
+        if(left == width) {
+            obstack_grow(buf, ptr, wlen);
+            left -= wlen;
+        } else if(wlen+1 <= left) {
+            obstack_1grow(buf, ' ');
+            left -= 1;
+            obstack_grow(buf, ptr, wlen);
+            left -= wlen;
+        } else {
+            return ptr;
+        }
+        ptr = wordend;
+        if(left <= 0 || ptr == endptr)
+            return ptr;
+    }
 }
