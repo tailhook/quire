@@ -337,7 +337,6 @@ static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
     } else if(node->kind == QU_NODE_SEQUENCE) {
         names = node;
     }
-    printf("DESCR ``%s''\n", descr);
     if(!descr && !action) {
         descr = opt->description;
     }
