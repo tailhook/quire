@@ -1,0 +1,12 @@
+# int
+# ===
+#
+# Integer type test
+#
+
+int: # required Int
+# Small integer limited by minimum and maximum value
+smallint: 5
+# The most comprehensive integer value
+val3: 8
+

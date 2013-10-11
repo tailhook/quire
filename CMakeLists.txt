@@ -108,33 +108,23 @@ MACRO(ADD_GEN_TEST name)
         ${CMAKE_CURRENT_SOURCE_DIR}/help.txt
         ${CMAKE_CURRENT_BINARY_DIR}/help.out
         ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
-        --help
-        )
+        --help)
+    ADD_TEST(${name}_example
+        ${CMAKE_SOURCE_DIR}/test_quire_gen
+        ${CMAKE_CURRENT_SOURCE_DIR}/example.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/example.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
+        --config-print=example)
 ENDMACRO(ADD_GEN_TEST)
 
-MACRO(ADD_GEN_TEST_CONFIG name config)
-    ADD_TEST(${name}_${config}_raw
+MACRO(ADD_GEN_TEST_CONFIG name config mode)
+    ADD_TEST(${name}_${config}_${mode}
         ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.raw.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/${config}.raw.out
+        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.${mode}.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${config}.${mode}.out
         ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
         -c ${config}.yaml
-        --config-print=current
-        )
-    ADD_TEST(${name}_${config}_example
-        ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.example.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/${config}.example.out
-        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
-        --config-print=example
-        )
-    ADD_TEST(${name}_${config}_full
-        ${CMAKE_SOURCE_DIR}/test_quire_gen
-        ${CMAKE_CURRENT_SOURCE_DIR}/${config}.full.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/${config}.full.out
-        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
-        -c ${config}.yaml
-        --config-print=full
+        --config-print=${mode}
         )
 ENDMACRO(ADD_GEN_TEST_CONFIG)
 
@@ -143,6 +133,7 @@ INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
 # TESTS FOR QUIRE-GEN
 
 ADD_SUBDIRECTORY(test/generator/meta)
+ADD_SUBDIRECTORY(test/generator/int)
 
 # TESTS FOR QUIRE-TOOL
 

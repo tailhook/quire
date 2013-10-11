@@ -1,0 +1,18 @@
+# int
+# ===
+#
+# Integer type test
+#
+
+int: 1234
+int10: 10
+# Small integer limited by minimum and maximum value
+smallint: 123
+val1: 0
+# An integer controlled from the command line with increments
+val2: 0
+val3: The most comprehensive integer value
+nested:
+    val: 0
+    # Nested value 2
+    val2: 1234

@@ -1,0 +1,48 @@
+__meta__:
+  program-name: int
+  default-config: /etc/__quire_test__/int.yaml
+  description: Integer type test
+
+int: !Int
+int10: !Int 10
+smallint: !Int
+  description: Small integer limited by minimum and maximum value
+  min: 1
+  max: 10
+  example: 5
+val1: !Int
+  default: 0
+  command-line: --val1
+val2: !Int
+  default: 0
+  description: An integer controlled from the command line with increments
+  command-line: [-v, --val2]
+  command-line-group: Integers
+  command-line-incr: [-i, --val2-incr]
+  command-line-decr: [-d, --val2-decr]
+val3: !Int
+  default: 7
+  min: 5
+  max: 10
+  example: 8
+  description: The most comprehensive integer value
+
+  command-line: [-3, --val3]
+  command-line-group: Integers
+  command-line-mevavar: NUM
+  command-line-descr:  Set the value to NUM
+
+  command-line-incr: [-I, --val3-incr]
+  command-line-incr-descr:  Increment third value
+  command-line-incr-group: Modifiers
+  command-line-decr: [-D, --val3-decr]
+  command-line-decr-descr:  Decrement third value
+  command-line-decr-group: Modifiers
+
+nested:
+  val: !Int
+    default: 0
+    command-line: --nested-val
+  val2: !Int
+    default: 1234
+    description: Nested value 2
