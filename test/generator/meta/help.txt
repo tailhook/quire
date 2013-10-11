@@ -17,4 +17,4 @@ Configuration Options:
                     comments.
   --config-print TYPE
                     Print configuration file after reading. TYPE maybe
-                    `current`, `details`, `example`, `all`, `full`
+                    "current", "details", "example", "all", "full"

@@ -17,6 +17,7 @@ struct qu_struct_member {
 struct qu_config_struct {
     TAILQ_HEAD(qu_config_s_list, qu_config_struct) children;
     struct qu_config_struct *parent;
+    const char *path;
 };
 
 struct qu_config_struct *qu_struct_new_root(struct qu_context *ctx);

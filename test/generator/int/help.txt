@@ -17,19 +17,18 @@ Configuration Options:
                     comments.
   --config-print TYPE
                     Print configuration file after reading. TYPE maybe
-                    `current`, `details`, `example`, `all`, `full`
+                    "current", "details", "example", "all", "full"
 
 Options:
-  --val1 INT        Set `val1`
-  --nested-val INT  Set `nested.val`
+  --val1 INT        Set "val1"
+  --nested-val INT  Set "nested.val"
 
 Integers:
-  -v,--val2 INT     An ingeger controlled from the command line with increments
-  -i,--val2-incr    Increment the `val2`
-  -d,--val2-decr    Decrement the `val2`
+  -v,--val2 INT     An integer controlled from the command line with increments
+  -i,--val2-incr    Increment "val2"
+  -d,--val2-decr    Decrement "val2"
   -3,--val3 NUM     Set the value to NUM
 
 Modifiers:
-  -I,--val3-incr    Increment third value
-  -D,--val3-decr    Decrement third value
-
+  --val3-incr       Increment third value
+  --val3-decr       Decrement third value

@@ -9,6 +9,15 @@
 #include "struct.h"
 #include "context.h"
 
+static void qu_parse_common(struct qu_context *ctx, struct qu_option *opt,
+    qu_ast_node *node) {
+    qu_ast_node *tmp;
+    if((tmp = qu_map_get(node, "description")))
+        opt->description = qu_node_content(tmp);
+    if((tmp = qu_map_get(node, "example")))
+        opt->example = tmp;
+}
+
 static void qu_visit_struct_children(struct qu_context *ctx,
     qu_ast_node *node, struct qu_config_struct *str)
 {
@@ -32,9 +41,13 @@ static void qu_visit_struct_children(struct qu_context *ctx,
             }
         } else {
             struct qu_option *opt = qu_option_resolve(ctx,
-                item->value->tag->data, item->value->tag->bytelen);
+                (char *)item->value->tag->data, item->value->tag->bytelen);
             qu_struct_add_option(ctx, str, mname, opt);
-            opt->vp->parse(ctx, opt, node);
+            qu_parse_common(ctx, opt, item->value);
+            opt->vp->parse(ctx, opt, item->value);
+            if(item->value->kind == QU_NODE_MAPPING) {
+                qu_cli_parse(ctx, opt, item->value);
+            }
         }
     }
 }

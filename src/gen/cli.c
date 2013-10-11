@@ -1,7 +1,11 @@
+#include <ctype.h>
+#include <assert.h>
+
 #include "cli.h"
 #include "context.h"
 #include "util/print.h"
 #include "types/types.h"
+#include "../yaml/access.h"
 
 struct qu_cli_group {
     const char *name;
@@ -26,14 +30,24 @@ struct qu_cli_optref {
 
 
 static struct qu_option_vptr qu_cli_help_vptr = {
+    /* parse */ NULL,
+    /* cli_support */ NULL  // TODO
     };
 static struct qu_option_vptr qu_cli_config_vptr = {
+    /* parse */ NULL,
+    /* cli_support */ NULL  // TODO
     };
 static struct qu_option_vptr qu_cli_define_vptr = {
+    /* parse */ NULL,
+    /* cli_support */ NULL  // TODO
     };
 static struct qu_option_vptr qu_cli_check_vptr = {
+    /* parse */ NULL,
+    /* cli_support */ NULL  // TODO
     };
 static struct qu_option_vptr qu_cli_print_vptr = {
+    /* parse */ NULL,
+    /* cli_support */ NULL  // TODO
     };
 
 void qu_cli_init(struct qu_context *ctx) {
@@ -139,6 +153,7 @@ int qu_cli_add(struct qu_context *ctx, const char *opt, const char *action,
     const char *metavar, struct qu_option *option,
     const char *group, const char *descr)
 {
+    assert (opt && *opt);
     struct qu_cli_optref **place = qu_cli_find(ctx, opt);
     if(*place)
         return 0;
@@ -208,7 +223,7 @@ void qu_cli_add_quire(struct qu_context *ctx) {
                "comments.");
     qu_cli_add(ctx, "--config-print", NULL, "TYPE", print,
         group, "Print configuration file after reading. TYPE maybe "
-               "`current`, `details`, `example`, `all`, `full`");
+               "\"current\", \"details\", \"example\", \"all\", \"full\"");
 }
 
 static int qu_cmp(const char *a, const char *b) {
@@ -283,4 +298,99 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
     obstack_1grow(buf, 0);
 
     return obstack_finish(buf);
+}
+
+static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
+    struct qu_option *opt, const char *action, struct qu_cli_action *act,
+    qu_ast_node *node, qu_ast_node *defnode)
+{
+    qu_ast_node *tmp;
+    const char *descr = NULL;
+    const char *group = "Options";
+    const char *metavar = act->metavar;
+    qu_ast_node *name = NULL;
+    qu_ast_node *names = NULL;
+
+    if((tmp = qu_map_get(defnode, "group")))
+        group = qu_node_content(tmp);
+
+    struct qu_cli_optref *ref = obstack_alloc(&ctx->parser.pieces,
+        sizeof(struct qu_cli_optref));
+
+    if(node->kind == QU_NODE_MAPPING) {
+        name = qu_map_get(node, "name");
+        names = qu_map_get(node, "names");
+        if((tmp = qu_map_get(node, "="))) {
+            if(tmp->kind == QU_NODE_SEQUENCE)
+                names = tmp;
+            else
+                name = tmp;
+        }
+        if((tmp = qu_map_get(node, "metavar")))
+            metavar = qu_node_content(tmp);
+        if((tmp = qu_map_get(node, "descr")))
+            descr = qu_node_content(tmp);
+        if((tmp = qu_map_get(node, "group")))
+            group = qu_node_content(tmp);
+    } else if(node->kind == QU_NODE_SCALAR) {
+        name = node;
+    } else if(node->kind == QU_NODE_SEQUENCE) {
+        names = node;
+    }
+    printf("DESCR ``%s''\n", descr);
+    if(!descr && !action) {
+        descr = opt->description;
+    }
+    if(!descr) {
+        descr = qu_template_alloc(ctx, act->descr,
+            "name", opt->path,
+            NULL);
+    }
+    if(name) {
+        const char *oname = qu_node_content(name);
+        qu_cli_add(ctx, oname, action, metavar, opt, group, descr);
+    }
+    if(names) {
+        qu_seq_member *item;
+        TAILQ_FOREACH(item, &names->val.seq_index.items, lst) {
+            const char *oname = qu_node_content(item->value);
+            qu_cli_add(ctx, oname, action, metavar, opt, group, descr);
+        }
+    }
+
+    return ref;
+}
+
+void qu_cli_parse(struct qu_context *ctx,
+	struct qu_option *opt, qu_ast_node *node)
+{
+    const int clen = strlen("command-line");
+    qu_ast_node *clinode = qu_map_get(node, "command-line");
+    struct qu_cli_action *act = opt->vp->cli_action(opt, NULL);
+
+    if(clinode) {
+        if(!act) {
+            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
+                clinode->start_token,
+                "Unsupported command-line action");
+        }
+        qu_cli_parse_ref(ctx, opt, NULL, act, clinode, clinode);
+    }
+
+    qu_map_member *item;
+    TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
+        const char *mname = qu_node_content(item->key);
+        int mname_len = strlen(mname);
+        if(strncmp(mname, "command-line-", clen+1)) {
+            continue;
+        }
+        const char *action = mname + clen + 1;
+        act = opt->vp->cli_action(opt, action);
+        if(!act) {
+            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
+                item->key->start_token,
+                "Unsupported command-line action");
+        }
+        qu_cli_parse_ref(ctx, opt, action, act, item->value, clinode);
+    }
 }

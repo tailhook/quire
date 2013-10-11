@@ -1,5 +1,6 @@
 #include "int.h"
 #include "types.h"
+#include "../cli.h"
 #include "../context.h"
 #include "../../util/parse.h"
 #include "../../yaml/access.h"
@@ -7,9 +8,12 @@
 
 static void qu_int_parse(struct qu_context *ctx,
     struct qu_option *opt, qu_ast_node *node);
+static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
+    const char *action);
 
 struct qu_option_vptr qu_int_vptr = {
-    /* parse */ qu_int_parse
+    /* parse */ qu_int_parse,
+    /* cli_action */ qu_int_cli_action
 };
 
 struct qu_int_option {
@@ -75,4 +79,19 @@ static void qu_int_parse(struct qu_context *ctx,
         LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
             "Int type must contain either integer or mapping");
     }
+}
+
+static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
+    const char *action)
+{
+    static struct qu_cli_action set = {1, "Set ${name:q}", "INT"};
+    static struct qu_cli_action incr = {0, "Increment ${name:q}", NULL};
+    static struct qu_cli_action decr = {0, "Decrement ${name:q}", NULL};
+    if(action == NULL)  /*  Bare set  */
+        return &set;
+    if(!strcmp(action, "incr"))
+        return &incr;
+    if(!strcmp(action, "decr"))
+        return &decr;
+    return NULL;
 }

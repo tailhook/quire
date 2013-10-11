@@ -26,6 +26,9 @@ struct qu_option *qu_option_resolve(struct qu_context *ctx,
     int i;
     struct qu_option *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_option));
+    self->description = NULL;
+    self->typedata = NULL;
+    self->example = NULL;
 
     for(i = 0; i < qu_types_num; ++i) {
         if(strlen(qu_types_table[i].tag) == taglen
