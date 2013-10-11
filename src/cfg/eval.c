@@ -7,6 +7,7 @@
 #include "eval.h"
 #include "vars.h"
 #include "context.h"
+#include "../util/parse.h"
 #include "../yaml/access.h"
 #include "../quire_int.h"
 
@@ -126,21 +127,6 @@ static void next_tok(eval_context_t *ctx) {
     }
 }
 
-static const char *parse_int(const char *value, long *result) {
-    const char *end;
-    long val = strtol(value, (char **)&end, 0);
-    if(*end) {
-        for(struct unit_s *unit = units; unit->unit; ++unit) {
-            if(!strcmp(end, unit->unit)) {
-                val *= unit->value;
-                end += strlen(unit->unit);
-                break;
-            }
-        }
-    }
-    *result = val;
-    return end;
-}
 
 static const char *parse_double(const char *value, double *result) {
     const char *end;
@@ -336,7 +322,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
         const char *data;
         size_t dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
-        const char *end = parse_int(data, result);
+        const char *end = qu_parse_int(data, result);
         obstack_free(&info->parser.pieces, data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -345,7 +331,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
 
         return;
     }
-    const char *end = parse_int(value, result);
+    const char *end = qu_parse_int(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
         LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,

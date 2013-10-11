@@ -6,6 +6,7 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu99")
 
 
 ADD_LIBRARY(quire
+	src/util/parse.c
     src/yaml/parser.c
     src/yaml/access.c
     src/yaml/anchors.c
@@ -36,6 +37,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/classes/struct.c
     src/gen/classes/scalar.c
     src/gen/types/types.c
+    src/gen/types/int.c
     src/gen/cli.c
     src/gen/context.c
     src/gen/struct.c

@@ -4,6 +4,7 @@
 #include "metadata.h"
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
+#include "types/types.h"
 #include "special/special.h"
 #include "struct.h"
 #include "context.h"
@@ -21,13 +22,19 @@ static void qu_visit_struct_children(struct qu_context *ctx,
         }
         if(!item->value->tag) {
             if(item->value->kind == QU_NODE_MAPPING) {
-                struct qu_config_struct *child = qu_struct_new(ctx, str);
+                struct qu_config_struct *child;
+                child = qu_struct_substruct(ctx, str, mname);
                 qu_visit_struct_children(ctx, item->value, child);
             } else {
                 LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                     item->value->start_token,
                     "Untagged straw scalar");
             }
+        } else {
+            struct qu_option *opt = qu_option_resolve(ctx,
+                item->value->tag->data, item->value->tag->bytelen);
+            qu_struct_add_option(ctx, str, mname, opt);
+            opt->vp->parse(ctx, opt, node);
         }
     }
 }
