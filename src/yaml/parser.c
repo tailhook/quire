@@ -695,14 +695,14 @@ void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
     }
 }
 
-int qu_file_parse(qu_parse_context *ctx, const char *filename) {
+void qu_file_parse(qu_parse_context *ctx, const char *filename) {
     assert(ctx->errjmp);
     _qu_load_file(ctx, filename);
     _qu_tokenize(ctx);
     ctx->document = _qu_parse(ctx);
     assert (ctx->cur_anchor == NULL);
     assert (ctx->cur_tag == NULL);
-    return 0;
+    assert (ctx->document != NULL);
 }
 
 qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename) {

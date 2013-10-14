@@ -631,38 +631,14 @@ int qu_output_source(struct qu_context *ctx) {
         "\n"
         , NULL);
 
-    /*
 	///////////////  config_do_parse
-    printf("int %1$sdo_parse(qu_parse_context *ctx, %1$scli_t *cli, "
-		"%1$smain_t *cfg) {\n", ctx->prefix);
+    qu_code_print(ctx,
+        "int ${pref}_parse(struct qu_config_context *ctx, "
+            "struct ${pref}_cli *cli, struct ${pref}_main *cfg) {\n"
+        "qu_ast_node *root = qu_config_parse_yaml(ctx, cli->cfg_filename);\n"
+        , NULL);
 
-    printf("\n");
-    printf("// Prepare the AST\n");
-    printf("int rc;\n");
-    printf("rc = qu_file_parse(ctx, cli->cfg_filename);\n");
-    printf("if(rc < 0) {\n");
-    printf("    qu_print_error(ctx, stderr);\n");
-    printf("    exit(127);\n");
-    printf("};\n");
-
-    printf("if(rc > 0) {\n");
-    printf("    qu_print_error(ctx, stderr);\n");
-    printf("    exit(126);\n");
-    printf("}\n");
-    printf("\n");
-    printf("rc = qu_process_includes(ctx, QU_IFLAG_FROMFILE"
-        "|QU_IFLAG_INCLUDE|QU_IFLAG_GLOBSEQ|QU_IFLAG_GLOBMAP);\n");
-    printf("if(rc < 0) {\n");
-    printf("    qu_print_error(ctx, stderr);\n");
-    printf("    exit(127);\n");
-    printf("}\n");
-    printf("rc = qu_merge_maps(ctx, QU_MFLAG_MAPMERGE"
-        "|QU_MFLAG_SEQMERGE|QU_MFLAG_RESOLVEALIAS);\n");
-    printf("if(rc < 0) {\n");
-    printf("    qu_print_error(ctx, stderr);\n");
-    printf("    exit(127);\n");
-    printf("}\n");
-    printf("\n");
+    /*
     printf("qu_ast_node *node0 = qu_get_root(ctx);\n");
     printf("%smain_t *targ = cfg; // same for root element\n", ctx->prefix);
 
@@ -672,14 +648,17 @@ int qu_output_source(struct qu_context *ctx) {
     TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
         print_parse_member(ctx, item->value, qu_node_content(item->key));
     }
-    printf("return 0;\n");
-    printf("}\n");
-    printf("\n");
+    */
+
+    qu_code_print(ctx,
+        "return 0;\n"
+        "}\n"
+        "\n"
+        , NULL);
 
 
     ///////////////  config_load
 
-    */
 
     qu_code_print(ctx,
         "int ${pref}_load(struct ${pref}_main *cfg, int argc, char **argv) {\n"
@@ -691,8 +670,9 @@ int qu_output_source(struct qu_context *ctx) {
         "qu_config_init(cfg, sizeof(*cfg));\n"
         "${pref}_set_defaults(cfg);\n"
         "if(!(rc = setjmp(jmp))) {\n"
-        "ctx = qu_config_parser(&jmp);\n"
-        "${pref}_cli_parse(ctx, &cli, argc, argv);\n"
+        "    ctx = qu_config_parser(&jmp);\n"
+        "    ${pref}_cli_parse(ctx, &cli, argc, argv);\n"
+	    "    ${pref}_parse(ctx, &cli, cfg);\n"
         , NULL);
 
     /*

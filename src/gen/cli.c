@@ -58,6 +58,7 @@ void qu_cli_init(struct qu_context *ctx) {
 void qu_cli_print_struct(struct qu_context *ctx) {
     qu_code_print(ctx,
         "struct ${pref}_cli {\n"
+        "    const char *cfg_filename;\n"
         "    int action;\n"
         "    uint32_t print_flags;\n"
         , NULL);

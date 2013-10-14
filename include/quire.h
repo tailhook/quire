@@ -93,6 +93,10 @@ void *qu_config_mapping_next(void *elem);
 // Methods from cfg/api.c
 struct qu_config_context *qu_config_parser(jmp_buf *jmp);
 void qu_config_parser_free(struct qu_config_context *ctx);
+qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
+                                  const char *filename);
+
+// Methods from yaml/parser.c
 
 // Methods from eval.c
 void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
