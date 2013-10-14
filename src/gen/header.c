@@ -189,8 +189,8 @@ int qu_output_header(qu_context_t *ctx) {
     qu_cli_print_fwdecl(ctx);
     qu_code_print(ctx,
         "int ${pref}_load(struct ${pref}_main *cfg, int argc, char **argv);\n"
-        "int ${pref}_do_parse(struct qu_config_context *ctx, struct ${pref}_cli *cli, "
-                            "struct ${pref}_main *cfg);\n"
+        "int ${pref}_parse(struct qu_config_context *ctx, struct ${pref}_cli *cli, "
+                          "struct ${pref}_main *cfg);\n"
         "int ${pref}_set_defaults(struct ${pref}_main *cfg);\n"
         "void ${pref}_print(struct ${pref}_main *cfg, int flags, FILE *);\n"
         "void ${pref}_help(FILE *);\n"

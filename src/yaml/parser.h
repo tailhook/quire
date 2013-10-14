@@ -50,7 +50,7 @@ typedef struct qu_parse_context_s {
 
 qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename);
 
-int qu_file_parse(qu_parse_context *ctx, const char *filename);
+void qu_file_parse(qu_parse_context *ctx, const char *filename);
 void qu_parser_init(qu_parse_context *ctx);
 void qu_parser_free(qu_parse_context *ctx);
 
