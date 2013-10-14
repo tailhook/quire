@@ -19,7 +19,7 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
 #define LONGJUMP_WITH_ERRNO(ctx) LONGJUMP_WITH_ERRCODE((ctx), (errno))
 #define LONGJUMP_WITH_ERRCODE(ctx, code) {\
     if((ctx)->errjmp) { \
-        longjmp(*(ctx)->errjmp, -(code)); \
+        longjmp(*(ctx)->errjmp, (code)); \
     } else { \
         fprintf(stderr, "Runtime error: %s\n", strerror(code)); \
         abort(); \
@@ -29,7 +29,7 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
         (ctx)->error_kind = YAML_SCANNER_ERROR; \
         (ctx)->error_text = (text); \
         (ctx)->error_token = (token); \
-        longjmp(*(ctx)->errjmp, 1); \
+        longjmp(*(ctx)->errjmp, QU_YAML_ERROR); \
     } else { \
         fprintf(stderr, "Scanner error: %s\n", (text)); \
         abort(); \
@@ -39,7 +39,7 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
         (ctx)->error_kind = YAML_CONTENT_ERROR; \
         (ctx)->error_text = (text); \
         (ctx)->error_token = (token); \
-        longjmp(*(ctx)->errjmp, 1); \
+        longjmp(*(ctx)->errjmp, QU_YAML_ERROR); \
     } else { \
         fprintf(stderr, "Parser error: %s\n", (text)); \
         abort(); \
@@ -49,7 +49,7 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
         (ctx)->error_kind = YAML_PARSER_ERROR; \
         (ctx)->error_text = (text); \
         (ctx)->error_token = (token); \
-        longjmp(*(ctx)->errjmp, 1); \
+        longjmp(*(ctx)->errjmp, QU_YAML_ERROR); \
     } else { \
         fprintf(stderr, "Parser error: %s\n", (text)); \
         abort(); \
@@ -60,7 +60,7 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
         (ctx)->error_kind = YAML_SYSTEM_ERROR; \
         (ctx)->error_text = (text); \
         (ctx)->error_token = (token); \
-        longjmp(*(ctx)->errjmp, 1); \
+        longjmp(*(ctx)->errjmp, QU_YAML_ERROR); \
     } else { \
         fprintf(stderr, "System error: %s\n", (text)); \
         abort(); \

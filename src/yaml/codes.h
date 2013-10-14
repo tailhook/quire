@@ -23,6 +23,8 @@
 #define QU_IFLAG_GLOBSEQ  3
 #define QU_IFLAG_GLOBMAP  4
 
+#define QU_YAML_ERROR       97156
+
 typedef enum qu_token_kind_enum {
     // Keep in sync with strings in yparser.c
     QU_TOK_ERROR,

@@ -43,6 +43,8 @@
 #define QU_PRINT_COMMENTS 2
 #define QU_PRINT_FULL     4
 
+#define QU_YAML_ERROR       97156
+
 typedef struct qu_config_head {
 	jmp_buf safejump;
     char data[512 - sizeof(jmp_buf)];
@@ -113,7 +115,8 @@ int qu_set_integer(struct qu_config_context *ctx, const char *name, long value);
 // Methods from error.c
 int qu_has_error(struct qu_config_context *);
 int qu_print_error(struct qu_config_context *, FILE *err);
-void qu_report_error(struct qu_config_context *, qu_ast_node *node, char *text);
+void qu_report_error(struct qu_config_context *, qu_ast_node *node,
+    const char *text);
 
 // Methods from emitter.c
 int qu_emit_init(qu_emit_context *, FILE *stream);

@@ -55,3 +55,36 @@ void qu_struct_add_option(struct qu_context *ctx,
         option->path = name;
     }
 }
+
+void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
+    const char *prefix, int level)
+{
+    qu_code_print(ctx,
+        "qu_ast_node *node${level:d};\n",
+        "level:d", level+1,
+        NULL);
+    struct qu_struct_member *mem;
+    TAILQ_FOREACH(mem, &str->children, lst) {
+        qu_code_print(ctx,
+            "if((node${nlevel:d} = qu_map_get(node${level:d}, ${name:q}))) {\n",
+            "nlevel:d", level+1,
+            "level:d", level,
+            "name", mem->name,
+            NULL);
+        qu_code_print(ctx,
+            "}\n",
+            NULL);
+    }
+}
+
+void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
+    const char *prefix)
+{
+    qu_code_print(ctx,
+        "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n"
+        , NULL);
+    qu_code_print(ctx,
+        "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n"
+        , NULL);
+}
+

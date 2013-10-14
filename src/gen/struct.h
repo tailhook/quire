@@ -26,6 +26,10 @@ struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
 void qu_struct_add_option(struct qu_context *ctx,
     struct qu_config_struct *parent, const char *name,
     struct qu_option *option);
+void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
+    const char *prefix, int level);
+void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
+    const char *prefix);
 
 
 #endif  // QUIRE_H_GEN_STRUCT

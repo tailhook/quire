@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
         qu_parser_free(&ctx);
         return 0;
     } else {
-        if(rc == 1) {
+        if(rc == QU_YAML_ERROR) {
             qu_print_error(&ctx, stderr);
             return 1;
         } else if(rc < 0) {

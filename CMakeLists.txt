@@ -125,7 +125,7 @@ MACRO(ADD_GEN_TEST_CONFIG name config mode)
         ${CMAKE_CURRENT_SOURCE_DIR}/${config}.${mode}.txt
         ${CMAKE_CURRENT_BINARY_DIR}/${config}.${mode}.out
         ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
-        -c ${config}.yaml
+        -c ${CMAKE_CURRENT_SOURCE_DIR}/${config}.yaml
         --config-print=${mode}
         )
 ENDMACRO(ADD_GEN_TEST_CONFIG)

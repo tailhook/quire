@@ -1,14 +1,12 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "print.h"
 #include "../context.h"
 
-#define slice_equal(start, len, val) \
-    ((len) == (int)strlen((val)) && !strncmp((val), (start), (len)))
-
-static void qu_code_growval(const char *val, struct obstack *buf,
+static void qu_code_growstr(const char *val, struct obstack *buf,
     const char *fmt)
 {
 	if(fmt == NULL) {
@@ -40,7 +38,7 @@ static void qu_code_growval(const char *val, struct obstack *buf,
 	}
 }
 
-static const char *qu_template_grow_va(struct qu_context *ctx,
+void qu_template_grow_va(struct qu_context *ctx,
     const char *template, va_list args)
 {
     const char *c;
@@ -56,10 +54,10 @@ static const char *qu_template_grow_va(struct qu_context *ctx,
 				fmt = NULL;
             int var_len = (fmt ? fmt : varend) - var;
             assert(varend);
-            if(slice_equal(var, var_len, "pref"))
-                qu_code_growval(ctx->prefix, &ctx->parser.pieces, fmt);
-            else if(slice_equal(var, var_len, "mpref"))
-                qu_code_growval(ctx->macroprefix, &ctx->parser.pieces, fmt);
+            if(var_len == 4 && !strncmp(var, "pref", 4))
+                qu_code_growstr(ctx->prefix, &ctx->parser.pieces, fmt);
+            else if(var_len == 5 && !strncmp(var, "mpref", 5))
+                qu_code_growstr(ctx->macroprefix, &ctx->parser.pieces, fmt);
             else {
                 va_list vars;
                 va_copy (vars, args);
@@ -67,9 +65,23 @@ static const char *qu_template_grow_va(struct qu_context *ctx,
                     const char *name = va_arg(vars, char *);
                     if(!name)
                         break;
-                    const char *value = va_arg(vars, char *);
-                    if(slice_equal(var, var_len, name)) {
-                        qu_code_growval(value, &ctx->parser.pieces, fmt);
+                    int ivalue;
+                    const char *cvalue;
+                    const char *typ = strchr(name, ':');
+                    if(typ && typ[1] == 'd') {
+                        ivalue = va_arg(vars, int);
+                    } else {
+                        cvalue = va_arg(vars, const char *);
+                    }
+                    if(var_len == (typ ? typ - name : strlen(name)) &&
+                        !strncmp(var, name, var_len)) {
+                        if(typ && typ[1] == 'd') {
+                            char buf[8];
+                            int blen = sprintf(buf, "%d", ivalue);
+                            obstack_grow(&ctx->parser.pieces, buf, blen);
+                        } else {
+                            qu_code_growstr(cvalue, &ctx->parser.pieces, fmt);
+                        }
                     }
                 }
                 va_end (vars);

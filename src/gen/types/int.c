@@ -10,10 +10,13 @@ static void qu_int_parse(struct qu_context *ctx,
     struct qu_option *opt, qu_ast_node *node);
 static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
     const char *action);
+static void qu_int_cli_parser(struct qu_context *ctx,
+    struct qu_option *opt, const char *action, const char *argname);
 
 struct qu_option_vptr qu_int_vptr = {
     /* parse */ qu_int_parse,
-    /* cli_action */ qu_int_cli_action
+    /* cli_action */ qu_int_cli_action,
+    /* cli_parser */ qu_int_cli_parser
 };
 
 struct qu_int_option {
@@ -94,4 +97,18 @@ static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
     if(!strcmp(action, "decr"))
         return &decr;
     return NULL;
+}
+
+static void qu_int_cli_parser(struct qu_context *ctx,
+    struct qu_option *opt, const char *action, const char *argname)
+{
+    if(action == NULL) {  /*  Bare set  */
+        return;
+    }
+    if(!strcmp(action, "incr")) {
+        return;
+    }
+    if(!strcmp(action, "decr")) {
+        return;
+    }
 }

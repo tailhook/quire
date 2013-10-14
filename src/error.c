@@ -27,6 +27,12 @@ int qu_print_error(qu_parse_context *ctx, FILE *stream) {
     return 0;
 }
 
-void qu_report_error(qu_parse_context *ctx, qu_ast_node *node, char *text) {
-    LONGJUMP_WITH_CONTENT_ERROR(ctx, node->start_token, text);
+void qu_report_error(qu_parse_context *ctx, qu_ast_node *node,
+    const char *text)
+{
+    if(node) {
+        LONGJUMP_WITH_CONTENT_ERROR(ctx, node->start_token, text);
+    } else {
+        LONGJUMP_WITH_CONTENT_ERROR(ctx, NULL, text);
+    }
 }

@@ -10,6 +10,6 @@
 // Think about ABI compatibility
 int qu_has_error(qu_parse_context *);
 int qu_print_error(qu_parse_context *, FILE *err);
-void qu_report_error(qu_parse_context *, qu_ast_node *, char *text);
+void qu_report_error(qu_parse_context *, qu_ast_node *, const char *text);
 
 #endif //_H_ERROR

@@ -635,20 +635,12 @@ int qu_output_source(struct qu_context *ctx) {
     qu_code_print(ctx,
         "int ${pref}_parse(struct qu_config_context *ctx, "
             "struct ${pref}_cli *cli, struct ${pref}_main *cfg) {\n"
-        "qu_ast_node *root = qu_config_parse_yaml(ctx, cli->cfg_filename);\n"
+        "qu_ast_node *node0 = qu_config_parse_yaml(ctx, cli->cfg_filename);\n"
         , NULL);
 
-    /*
-    printf("qu_ast_node *node0 = qu_get_root(ctx);\n");
-    printf("%smain_t *targ = cfg; // same for root element\n", ctx->prefix);
-
-    printf("// Parsing root elements\n");
-    ctx->node_level = 1;
-    ctx->node_vars[1] = 0;
-    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
-        print_parse_member(ctx, item->value, qu_node_content(item->key));
+    if(ctx->root) {
+        qu_struct_parser(ctx, ctx->root, "cfg->", 0);
     }
-    */
 
     qu_code_print(ctx,
         "return 0;\n"
@@ -673,43 +665,7 @@ int qu_output_source(struct qu_context *ctx) {
         "    ctx = qu_config_parser(&jmp);\n"
         "    ${pref}_cli_parse(ctx, &cli, argc, argv);\n"
 	    "    ${pref}_parse(ctx, &cli, cfg);\n"
-        , NULL);
-
-    /*
-
-    printf("// Parsing command-line options\n");
-    printf("%scli_t ccli;\n", ctx->prefix);
-    printf("%scli_t *cli = &ccli;\n", ctx->prefix);
-    printf("memset(cli, 0, sizeof(%scli_t));\n", ctx->prefix);
-    printf("rc = %scli_parse(ctx, cli, argc, argv);\n", ctx->prefix);
-    printf("if(rc < 0) {\n");  // Error is already reported
-    printf("    exit(127);\n");
-    printf("}\n");
-
-	printf("rc = %1$sdo_parse(ctx, cli, cfg);\n", ctx->prefix);
-    printf("if(rc < 0) {\n");
-    printf("    qu_print_error(ctx, stderr);\n");
-    printf("    exit(127);\n");
-    printf("}\n");
-
-    printf("// Overlay command-line options on top\n");
-    printf("rc = %scli_apply(cfg, cli);\n", ctx->prefix);
-    printf("if(rc < 0) {\n");
-    printf("    perror(\"%s: libquire: Error applying command-line args\");\n",
-        ctx->meta.program_name);
-    printf("    exit(127);\n");
-    printf("}\n");
-
-    printf("\n");
-    printf("// Free resources\n");
-    printf("qu_parser_free(ctx);\n");
-
-    // Temporary
-    printf("%1$sprint(cfg, 0, stdout);\n", ctx->prefix);
-
-    */
-
-    qu_code_print(ctx,
+        "    //${pref}_cli_apply(ctx, &cliv);\n"
         "switch(cli.action) {\n"
         "    case QU_CLI_RUN:\n"
         "       break;\n"
@@ -729,8 +685,11 @@ int qu_output_source(struct qu_context *ctx) {
 
         "}  /*  end of setjmp */\n"
         // TODO(tailhook) print errors
-        "if(ctx)\n"
+        "if(ctx) {\n"
         "    qu_config_parser_free(ctx);\n"
+        "    if(rc > 0)\n"
+        "        qu_print_error(ctx, stderr);\n"
+        "}\n"
         "return rc;\n"
         "}\n"
         "\n"
@@ -785,19 +744,9 @@ int qu_output_source(struct qu_context *ctx) {
         "underline", underline,
         NULL);
 
-    /*
-    printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n");
-    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
-        if(item->value->userdata) {
-            const char *mname = qu_node_content(item->key);
-            printf("qu_emit_scalar(ctx, NULL, NULL, "
-                   "QU_STYLE_PLAIN, \"%s\", -1);\n", mname);
-            printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n");
-            print_printer(ctx, item->value, "NULL");
-        }
+    if(ctx->root) {
+        qu_struct_printer(ctx, ctx->root, "cfg->");
     }
-    printf("qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n");
-    */
 
     qu_code_print(ctx,
         "qu_emit_done(ctx);\n"
