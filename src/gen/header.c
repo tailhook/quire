@@ -194,7 +194,7 @@ int qu_output_header(qu_context_t *ctx) {
         "int ${pref}_set_defaults(struct ${pref}_main *cfg);\n"
         "void ${pref}_print(struct ${pref}_main *cfg, int flags, FILE *);\n"
         "void ${pref}_help(FILE *);\n"
-        "int ${pref}_free(struct ${pref}_main *cfg);\n"
+        "void ${pref}_free(struct ${pref}_main *cfg);\n"
         "\n"
         "#endif  /*  HEADER_${mpref}  */\n"
         , NULL);
