@@ -620,11 +620,10 @@ int qu_output_source(struct qu_context *ctx) {
     qu_code_print(ctx,
         "int ${pref}_set_defaults(struct ${pref}_main *cfg) {\n"
         , NULL);
-    /*
-    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
-        print_default(ctx, item->value, "", item->value);
+
+    if(ctx->root) {
+        qu_struct_default_setter(ctx, ctx->root, "cfg->");
     }
-    */
 
     qu_code_print(ctx,
         "return 0;\n"

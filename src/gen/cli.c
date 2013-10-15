@@ -58,7 +58,8 @@ static struct qu_option_vptr qu_cli_config_vptr = {
     /* cli_parser */ qu_config_parser,
     /* parser */ NULL,
     /* definition */ NULL,
-    /* printer */ NULL
+    /* printer */ NULL,
+    /* default_setter */ NULL
     };
 static struct qu_option_vptr qu_cli_define_vptr = {
     /* parse */ NULL,
@@ -66,7 +67,8 @@ static struct qu_option_vptr qu_cli_define_vptr = {
     /* cli_parser */ qu_define_parser,
     /* parser */ NULL,
     /* definition */ NULL,
-    /* printer */ NULL
+    /* printer */ NULL,
+    /* default_setter */ NULL
     };
 static struct qu_option_vptr qu_cli_check_vptr = {
     /* parse */ NULL,
@@ -74,7 +76,8 @@ static struct qu_option_vptr qu_cli_check_vptr = {
     /* cli_parser */ qu_check_parser,
     /* parser */ NULL,
     /* definition */ NULL,
-    /* printer */ NULL
+    /* printer */ NULL,
+    /* default_setter */ NULL
     };
 static struct qu_option_vptr qu_cli_print_vptr = {
     /* parse */ NULL,
@@ -82,7 +85,8 @@ static struct qu_option_vptr qu_cli_print_vptr = {
     /* cli_parser */ qu_print_parser,
     /* parser */ NULL,
     /* definition */ NULL,
-    /* printer */ NULL
+    /* printer */ NULL,
+    /* default_setter */ NULL
     };
 
 void qu_cli_init(struct qu_context *ctx) {

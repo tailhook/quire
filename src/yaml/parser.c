@@ -674,7 +674,9 @@ qu_ast_node *_qu_parse(qu_parse_context *ctx) {
     }
     if(!CTOK) return NULL;
     if(CTOK->kind == QU_TOK_DOC_START) NEXT;
-    if(CTOK->kind == QU_TOK_DOC_END) return NULL;
+    if(CTOK->kind == QU_TOK_DOC_END) {
+        return qu_new_text_node(ctx, NULL);
+    }
 
     qu_ast_node *node = parse_node(ctx, -1);
 
@@ -683,7 +685,6 @@ qu_ast_node *_qu_parse(qu_parse_context *ctx) {
     if(CTOK->kind != QU_TOK_DOC_END) {
         LONGJUMP_WITH_PARSER_ERROR(ctx, CTOK, "Unexpected token");
     }
-
 	return node;
 }
 

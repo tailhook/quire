@@ -1,9 +1,9 @@
 int: 1234
 int10: 10
-smallint: 123
+smallint: 0
 val1: 0
 val2: 0
-val3:
+val3: 7
 nested:
     val: 0
     val2: 1234

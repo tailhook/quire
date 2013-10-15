@@ -7,12 +7,12 @@
 int: 1234
 int10: 10
 # Small integer limited by minimum and maximum value
-smallint: 123
+smallint: 0
 val1: 0
 # An integer controlled from the command line with increments
 val2: 0
 # The most comprehensive integer value
-val3:
+val3: 7
 nested:
     val: 0
     # Nested value 2

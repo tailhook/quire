@@ -19,6 +19,8 @@ static void qu_int_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_int_printer(struct qu_context *ctx,
     struct qu_option *opt, const char *expr);
+static void qu_int_default_setter(struct qu_context *ctx,
+    struct qu_option *opt, const char *expr);
 
 struct qu_option_vptr qu_int_vptr = {
     /* parse */ qu_int_parse,
@@ -26,7 +28,8 @@ struct qu_option_vptr qu_int_vptr = {
     /* cli_parser */ qu_int_cli_parser,
     /* parse */ qu_int_parser,
     /* definition */ qu_int_definition,
-    /* printer */ qu_int_printer
+    /* printer */ qu_int_printer,
+    /* default_setter */ qu_int_default_setter
 };
 
 struct qu_int_option {
@@ -154,5 +157,21 @@ static void qu_int_printer(struct qu_context *ctx,
         "int vlen = sprintf(buf, `%ld`, ${expr});\n"
         "qu_emit_scalar(ctx, NULL, NULL, 0, buf, vlen);\n",
         "expr", expr,
+        NULL);
+}
+
+static void qu_int_default_setter(struct qu_context *ctx,
+    struct qu_option *opt, const char *expr)
+{
+    struct qu_int_option *self = opt->typedata;
+    long defvalue = self->defvalue;
+    if(!self->defvalue_set) {
+        /*  Reset value to zero to be on the safe side  */
+        defvalue = 0;
+    }
+    qu_code_print(ctx,
+        "${expr} = ${defvalue:l};\n",
+        "expr", expr,
+        "defvalue:l", defvalue,
         NULL);
 }

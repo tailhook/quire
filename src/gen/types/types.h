@@ -21,6 +21,8 @@ struct qu_option_vptr {
         struct qu_option *opt, const char *varname);
     void (*printer)(struct qu_context *ctx,
         struct qu_option *opt, const char *expression);
+    void (*default_setter)(struct qu_context *ctx,
+        struct qu_option *opt, const char *expression);
 };
 
 struct qu_option {

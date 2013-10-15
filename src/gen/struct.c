@@ -73,6 +73,22 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
     }
 }
 
+void qu_struct_default_setter(struct qu_context *ctx,
+    struct qu_config_struct *str, const char *prefix)
+{
+    struct qu_struct_member *mem;
+    TAILQ_FOREACH(mem, &str->children, lst) {
+        const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
+            "prefix", prefix,
+            "memname", mem->name,
+            NULL);
+        if(mem->is_struct) {
+        } else {
+            mem->p.opt->vp->default_setter(ctx, mem->p.opt, expr);
+        }
+    }
+}
+
 void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
     const char *prefix, int level)
 {
