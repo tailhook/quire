@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "types.h"
 #include "../context.h"
 
@@ -32,11 +33,13 @@ struct qu_option *qu_option_resolve(struct qu_context *ctx,
     self->typedata = NULL;
     self->example = NULL;
     self->has_default = 0;
+    self->vp = NULL;
 
     for(i = 0; i < qu_types_num; ++i) {
         if((int)strlen(qu_types_table[i].tag) == taglen
            && !strncmp(qu_types_table[i].tag, tag, taglen)) {
             self->vp = qu_types_table[i].vp;
+            break;
         }
     }
 

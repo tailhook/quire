@@ -44,6 +44,11 @@ static void qu_visit_struct_children(struct qu_context *ctx,
         } else {
             struct qu_option *opt = qu_option_resolve(ctx,
                 (char *)item->value->tag->data, item->value->tag->bytelen);
+            if(!opt->vp) {
+                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
+                    item->value->start_token,
+                    "Unknown object type");
+            }
             qu_struct_add_option(ctx, str, mname, opt);
             qu_parse_common(ctx, opt, item->value);
             opt->vp->parse(ctx, opt, item->value);
