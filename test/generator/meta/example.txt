@@ -4,3 +4,4 @@
 # Metadata testing config
 #
 
+{}

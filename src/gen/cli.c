@@ -97,9 +97,39 @@ void qu_cli_parser_visit_long(struct qu_context *ctx,
 
     if(opt->name[1] == '-') {
         qu_code_print(ctx,
-            "if(0){ //!qu_opt_cmp(*arg, ${optname:q})) {\n",
+            "if(!strncmp(*arg, ${optname:q}, ${optlen:d}) && "
+            "((*arg)[${optlen:d}] == 0 || (*arg)[${optlen:d}] == '=')) {\n",
             "optname", opt->name,
+            "optlen:d", strlen(opt->name),
             NULL);
+        struct qu_cli_action *act;
+        act = opt->opt->vp->cli_action(opt->opt, opt->action);
+        if(act->has_arg) {
+            qu_code_print(ctx,
+                "const char  *value;\n"
+                "if((*arg)[${optlen:d}] == '=') {\n"
+                "   value = *arg + ${optlen:d} + 1;\n"
+                "} else {\n"
+                "    value = *(++arg);\n"
+                "    argc -= 1;\n"
+                "    if(!argc)\n"
+                "        qu_report_error(ctx, NULL, "
+                        "`Option ${optname} needs an argument`);\n"
+                "}\n",
+                "optname", opt->name,
+                "optlen:d", strlen(opt->name),
+                NULL);
+            opt->opt->vp->cli_parser(ctx, opt->opt, opt->action, "value");
+        } else {
+            qu_code_print(ctx,
+                "if((*arg)[${optlen:d}] == '=')\n"
+                "    qu_report_error(ctx, NULL, "
+                        "`Option ${optname} doesn't accept an argument`);\n",
+                "optname", opt->name,
+                "optlen:d", strlen(opt->name),
+                NULL);
+            opt->opt->vp->cli_parser(ctx, opt->opt, opt->action, NULL);
+        }
         qu_code_print(ctx,
             "    continue;\n"
             "}\n"
@@ -127,8 +157,9 @@ void qu_cli_parser_visit_short(struct qu_context *ctx,
             qu_code_print(ctx,
                 "if(!*sarg) {\n"
                 "    sarg = *(++arg);\n"
-                "    argc -= 1;\n"
-                "    if(!argc)\n"
+                "    arg += 1;\n"
+                "    argc -= 2;\n"
+                "    if(argc < 0)\n"
                 "        qu_report_error(ctx, NULL, "
                         "`Option -${char} needs an argument`);\n"
                 "}\n",
@@ -161,7 +192,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
         "    nextarg:\n"
         "       if((*arg)[0] != '-')\n"
         "           break;\n"  // TODO(tailhook) check if supported
-        "       if((*arg)[1] != '-') {  /*  Long arguments */\n"
+        "       if((*arg)[1] == '-') {  /*  Long arguments */\n"
         , NULL);
 
 
@@ -517,8 +548,23 @@ static void qu_print_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
     qu_code_print(ctx,
-        "cli->action = QU_CLI_PRINT_CONFIG;\n",
-        NULL);
+        "cli->action = QU_CLI_PRINT_CONFIG;\n"
+        , NULL);
+    if(action == NULL) {
+        qu_code_print(ctx,
+            "if(!strcmp(${argname}, `current`))\n"
+            "    cli->print_flags = 0;\n"
+            "if(!strcmp(${argname}, `example`))\n"
+            "    cli->print_flags = QU_PRINT_EXAMPLE|QU_PRINT_COMMENTS;\n"
+            "if(!strcmp(${argname}, `details`))\n"
+            "    cli->print_flags = QU_PRINT_COMMENTS;\n"
+            "if(!strcmp(${argname}, `all`))\n"
+            "    cli->print_flags = QU_PRINT_FULL;\n"
+            "if(!strcmp(${argname}, `full`))\n"
+            "    cli->print_flags = QU_PRINT_FULL|QU_PRINT_COMMENTS;\n",
+            "argname", argname,
+            NULL);
+    }
 }
 struct qu_cli_action *qu_define_action(struct qu_option *opt, const char *action)
 {
