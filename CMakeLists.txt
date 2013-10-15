@@ -64,8 +64,9 @@ FIND_FILE(ASTYLE astyle)
 # MACROS FOR TESTS
 
 MACRO(ADD_TOOL_TEST name)
-    ADD_TEST(${name} ${CMAKE_SOURCE_DIR}/test_quire_tool
-        ${CMAKE_SOURCE_DIR}/test/parser/${name}.test)
+    ADD_TEST(NAME ${name}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test/parser
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_quire_tool ${name}.test)
 ENDMACRO(ADD_TOOL_TEST)
 
 MACRO(ADD_GEN_EXECUTABLE name)

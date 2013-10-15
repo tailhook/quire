@@ -17,7 +17,7 @@ with open(filename, 'rb') as f:
 for item in spec:
     if 'command-line' in item:
         status, outp = subprocess.getstatusoutput(
-            './' + item['command-line'] + ' -f ' + filename)
+            os.environ['PWD'] + '/' + item['command-line'] + ' -f ' + filename)
         status = os.WEXITSTATUS(status)
         if 'result' in item:
             if status != item['result']:
