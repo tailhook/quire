@@ -671,7 +671,6 @@ int qu_output_source(struct qu_context *ctx) {
         "        case QU_CLI_PRINT_CONFIG:\n"
         "            if(cli.print_flags & QU_PRINT_EXAMPLE)\n"
         "                break;  /*  Do not parse config  */\n"
-        "            break;\n"
         "        default:\n"
 	    "            ${pref}_parse(ctx, &cli, cfg);\n"
         "            //${pref}_cli_apply(ctx, &cliv);\n"
