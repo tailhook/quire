@@ -67,6 +67,14 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
         if(mem->is_struct) {
+            qu_code_print(ctx,
+                "struct {\n"
+                , NULL);
+            qu_struct_definition(ctx, mem->p.str);
+            qu_code_print(ctx,
+                "} ${name:c};\n",
+                "name", mem->name,
+                NULL);
         } else {
             mem->p.opt->vp->definition(ctx, mem->p.opt, mem->name);
         }
@@ -78,12 +86,17 @@ void qu_struct_default_setter(struct qu_context *ctx,
 {
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
-        const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
-            "prefix", prefix,
-            "memname", mem->name,
-            NULL);
         if(mem->is_struct) {
+            const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}.",
+                "prefix", prefix,
+                "memname", mem->name,
+                NULL);
+            qu_struct_default_setter(ctx, mem->p.str, npref);
         } else {
+            const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
+                "prefix", prefix,
+                "memname", mem->name,
+                NULL);
             mem->p.opt->vp->default_setter(ctx, mem->p.opt, expr);
         }
     }
@@ -107,12 +120,17 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
             "level:d", level,
             "name", mem->name,
             NULL);
-        const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
-            "prefix", prefix,
-            "memname", mem->name,
-            NULL);
         if(mem->is_struct) {
+            const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}.",
+                "prefix", prefix,
+                "memname", mem->name,
+                NULL);
+            qu_struct_parser(ctx, mem->p.str, npref, level+1);
         } else {
+            const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
+                "prefix", prefix,
+                "memname", mem->name,
+                NULL);
             mem->p.opt->vp->parser(ctx, mem->p.opt, expr, nname);
         }
         qu_code_print(ctx,
@@ -169,6 +187,19 @@ static void qu_print_node_emitter(struct qu_context *ctx, qu_ast_node *node) {
     }
 }
 
+int qu_struct_needs_example(struct qu_config_struct *str) {
+    struct qu_struct_member *mem;
+    TAILQ_FOREACH(mem, &str->children, lst) {
+        if(mem->is_struct) {
+            if(qu_struct_needs_example(mem->p.str))
+                return 1;
+        } else if(mem->p.opt->example) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
     const char *prefix)
 {
@@ -178,6 +209,26 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
         if(mem->is_struct) {
+            int hasex = qu_struct_needs_example(mem->p.str);
+            if(!hasex) {
+                qu_code_print(ctx,
+                    "if(!(flags & QU_PRINT_EXAMPLE)) {\n"
+                    , NULL);
+            }
+            qu_code_print(ctx,
+                "qu_emit_scalar(ctx, NULL, NULL, 0, ${name:q}, ${namelen:d});\n"
+                "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n",
+                "name", mem->name,
+                "namelen:d", strlen(mem->name),
+                NULL);
+            const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}.",
+                "prefix", prefix,
+                "memname", mem->name,
+                NULL);
+            qu_struct_printer(ctx, mem->p.str, npref);
+            if(!hasex) {
+                qu_code_print(ctx, "}\n" , NULL);
+            }
         } else {
             const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
                 "prefix", prefix,

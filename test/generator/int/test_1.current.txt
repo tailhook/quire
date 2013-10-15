@@ -5,5 +5,5 @@ val1: 0
 val2: 0
 val3: 7
 nested:
-    val: 0
-    val2: 1234
+  val: 0
+  val2: 1234

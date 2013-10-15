@@ -64,6 +64,9 @@ int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len)
         if(!ctx->line_start) {
             qu_emit_whitespace(ctx, QU_WS_ENDLINE, 1);
         }
+        for(int i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
+            fputc(' ', ctx->stream);
+        }
     } else {
         if(ctx->need_space) {
             fputc(' ', ctx->stream);
@@ -141,6 +144,7 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, in
                 ctx->need_space = 1;
                 ctx->pending_newline = 0;
                 ctx->line_start = 0;
+                ctx->map_start = 0;
             }
             ctx->cur_indent -= 1;
             break;
