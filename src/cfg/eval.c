@@ -363,7 +363,7 @@ void qu_eval_float(qu_config_context *info, const char *value,
 }
 
 void qu_eval_str(qu_config_context *info,
-    const char *data, int interp, const char **result, size_t *rlen)
+    const char *data, int interp, const char **result, int *rlen)
 {
     if(interp && strchr(data, '$')) {
         obstack_blank(&info->parser.pieces, 0);
@@ -447,7 +447,7 @@ void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
         qu_eval_float(ctx, content, 1, result);
 }
 void qu_node_to_str(qu_config_context *ctx, qu_ast_node *node,
-    const char **result, size_t *rlen) {
+    const char **result, int *rlen) {
     const char *content = qu_node_content(node);
     if(content)
         qu_eval_str(ctx, content, 1, result, rlen);

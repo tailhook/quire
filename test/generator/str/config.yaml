@@ -1,0 +1,32 @@
+__meta__:
+  program-name: str
+  default-config: /etc/__quire_test__/int.yaml
+  description: String type test
+
+val: !String
+val2: !String 10
+val3: !String
+  description: Just a string
+  example: hello
+val4: !String
+  default: val4value
+  command-line: --val4
+val5: !String
+  =: val5value
+  example: val5example
+  description: The most comprehensive string value
+
+  command-line:
+    names: [-5, --val5]
+    group: Strings
+    metavar: VAL
+    descr:  Set the fifth value to VAL
+
+nested:
+  val: !String
+    default: nestedval
+    command-line: --nested-val
+    example: No Way
+  val2: !String
+    default: nestedval2
+    description: Nested value 2

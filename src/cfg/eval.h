@@ -10,7 +10,7 @@ void qu_eval_int(struct qu_config_context *ctx,
 void qu_eval_float(struct qu_config_context *ctx,
     const char *value, int interp, double *result);
 void qu_eval_str(struct qu_config_context *ctx,
-    const char *value, int interp, const char **result, size_t *rlen);
+    const char *value, int interp, const char **result, int *rlen);
 
 // PUBLIC API
 // Keep in sync with quire.h
@@ -20,6 +20,6 @@ void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node,
 void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node,
     double *result);
 void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node,
-    const char **result, size_t *rlen);
+    const char **result, int *rlen);
 
 #endif // QUIRE_H_CFG_EVAL

@@ -1,0 +1,13 @@
+# str
+# ===
+#
+# String type test
+#
+
+val: # required
+# Just a string
+val3: hello
+# The most comprehensive string value
+val5: val5example
+nested:
+  val: No Way

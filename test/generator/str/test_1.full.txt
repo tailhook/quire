@@ -1,0 +1,17 @@
+# str
+# ===
+#
+# String type test
+#
+
+val:
+val2: hello world
+# Just a string
+val3:
+val4: val4value
+# The most comprehensive string value
+val5: val5value
+nested:
+  val: nested hello
+  # Nested value 2
+  val2: nestedval2

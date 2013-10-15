@@ -85,12 +85,10 @@ void *qu_config_init(void *cfg, int size);
 void qu_config_free(void *cfg);
 void *qu_config_alloc(void *cfg, int size);
 void qu_config_array_insert(void **head, void **tail,
-							int *list_size,
-						    qu_array_head *member);
+    int *list_size, qu_array_head *member);
 void *qu_config_array_next(void *elem);
 void qu_config_mapping_insert(void **head, void **tail,
-							int *list_size,
-						    qu_mapping_head *member);
+    int *list_size, qu_mapping_head *member);
 void *qu_config_mapping_next(void *elem);
 
 // Methods from cfg/api.c
@@ -107,7 +105,7 @@ void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node,
 void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node,
     double *result);
 void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node,
-    const char **result, size_t *rlen);
+    const char **result, int *rlen);
 
 // Methods from cfg/vars.h
 int qu_set_string(struct qu_config_context *ctx, const char *name, const char *data);

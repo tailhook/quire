@@ -1,0 +1,4 @@
+ADD_GEN_EXECUTABLE(str)
+ADD_GEN_TEST(str)
+ADD_GEN_TEST_CONFIG(str test_1 current)
+ADD_GEN_TEST_CONFIG(str test_1 full)

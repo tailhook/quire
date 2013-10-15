@@ -2,12 +2,14 @@
 #include "../context.h"
 
 #include "int.h"
+#include "str.h"
 
 static struct {
     const char *tag;
     struct qu_option_vptr *vp;
 } qu_types_table[] = {
-    {"!Int", &qu_int_vptr}
+    {"!Int", &qu_int_vptr},
+    {"!String", &qu_str_vptr}
 };
 const int qu_types_num = sizeof(qu_types_table)/sizeof(qu_types_table[0]);
 
@@ -32,7 +34,7 @@ struct qu_option *qu_option_resolve(struct qu_context *ctx,
     self->has_default = 0;
 
     for(i = 0; i < qu_types_num; ++i) {
-        if(strlen(qu_types_table[i].tag) == taglen
+        if((int)strlen(qu_types_table[i].tag) == taglen
            && !strncmp(qu_types_table[i].tag, tag, taglen)) {
             self->vp = qu_types_table[i].vp;
         }

@@ -1,0 +1,3 @@
+val2: "hello world"
+nested:
+  val: nested hello
