@@ -8,6 +8,7 @@
 #include "util/name.h"
 #include "util/print.h"
 #include "context.h"
+#include "struct.h"
 #include "../quire_int.h"
 
 

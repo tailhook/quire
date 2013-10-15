@@ -82,6 +82,7 @@ void qu_template_grow_va(struct qu_context *ctx,
                         } else {
                             qu_code_growstr(cvalue, &ctx->parser.pieces, fmt);
                         }
+                        break;
                     }
                 }
                 va_end (vars);

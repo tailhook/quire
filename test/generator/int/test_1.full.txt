@@ -11,7 +11,8 @@ smallint: 123
 val1: 0
 # An integer controlled from the command line with increments
 val2: 0
-val3: The most comprehensive integer value
+# The most comprehensive integer value
+val3:
 nested:
     val: 0
     # Nested value 2

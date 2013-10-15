@@ -7,6 +7,7 @@ struct qu_context;
 
 struct qu_struct_member {
     const char *name;
+    int is_struct;
     TAILQ_ENTRY(qu_config_ss_list) lst;
     union {
         struct qu_option *opt;

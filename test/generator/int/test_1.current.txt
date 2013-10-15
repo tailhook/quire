@@ -1,1 +1,9 @@
-The test program is doing nothing right now!
+int: 1234
+int10: 10
+smallint: 123
+val1: 0
+val2: 0
+val3:
+nested:
+    val: 0
+    val2: 1234

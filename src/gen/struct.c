@@ -33,6 +33,7 @@ struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
     struct qu_struct_member *mem = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_struct_member));
     mem->name = name;
+    mem->is_struct = 1;
     mem->p.str = self;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
     return self;
@@ -44,6 +45,7 @@ void qu_struct_add_option(struct qu_context *ctx,
     struct qu_struct_member *mem = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_struct_member));
     mem->name = name;
+    mem->is_struct = 0;
     mem->p.opt = option;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
     if(parent->path) {
@@ -83,6 +85,26 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n"
         , NULL);
+    struct qu_struct_member *mem;
+    TAILQ_FOREACH(mem, &str->children, lst) {
+        if(mem->is_struct) {
+        } else {
+            if(mem->p.opt->description) {
+                qu_code_print(ctx,
+                    "qu_emit_comment(ctx, 0, ${descr:q}, ${descrlen:d});\n",
+                    "descr", mem->p.opt->description,
+                    "descrlen:d", mem->p.opt->description,
+                    NULL);
+            }
+            qu_code_print(ctx,
+                "qu_emit_scalar(ctx, NULL, NULL, 0, ${name:q}, ${namelen:d});\n"
+                "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n"
+                "qu_emit_scalar(ctx, NULL, NULL, 0, ``, 0);\n",
+                "name", mem->name,
+                "namelen:d", strlen(mem->name),
+                NULL);
+        }
+    }
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n"
         , NULL);
