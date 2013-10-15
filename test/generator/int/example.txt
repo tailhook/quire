@@ -4,9 +4,8 @@
 # Integer type test
 #
 
-int: # required Int
+int: # required
 # Small integer limited by minimum and maximum value
 smallint: 5
 # The most comprehensive integer value
 val3: 8
-

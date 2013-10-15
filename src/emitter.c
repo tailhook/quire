@@ -58,7 +58,17 @@ static int _space_check(qu_emit_context *ctx) {
     return 0;
 }
 
-int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len) {
+int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len)
+{
+    if(!(flags & QU_COMMENT_SAME_LINE)) {
+        if(!ctx->line_start) {
+            qu_emit_whitespace(ctx, QU_WS_ENDLINE, 1);
+        }
+    } else {
+        if(ctx->need_space) {
+            fputc(' ', ctx->stream);
+        }
+    }
     // TODO(tailhook) implement comment reformatting
     if(len < 0) {
 		fprintf(ctx->stream, "# %s\n", data);
@@ -70,6 +80,9 @@ int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len) 
 			fprintf(ctx->stream, "# %.*s\n", len, data);
 		}
     }
+    ctx->line_start = 1;
+    ctx->need_space = 0;
+    ctx->pending_newline = -1;
     return 0;
 }
 
@@ -197,11 +210,13 @@ int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, in
             return 0;
         }
         // force newline
+        ctx->pending_newline = 0;
+        /*
         fputc('\n', ctx->stream);
         ctx->pending_newline = -1;
         ctx->line_start = 1;
         ctx->need_space = 0;
-
+        */
         ctx->map_start = 0;
         ctx->seq_start = 0;
         return 0;

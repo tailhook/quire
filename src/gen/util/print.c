@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "print.h"
+#include "name.h"
 #include "../context.h"
 
 static void qu_code_growstr(const char *val, struct obstack *buf,
@@ -34,7 +35,9 @@ static void qu_code_growstr(const char *val, struct obstack *buf,
                 }
             }
 			obstack_1grow(buf, '"');
-		}
+		} else if(fmt[1] == 'c') {
+            qu_append_c_name(buf, val);
+        }
 	}
 }
 

@@ -26,10 +26,11 @@
 #define QU_STYLE_LITERAL    4
 #define QU_STYLE_FOLDED     5
 
-#define QU_COMMENT_NORMAL   0
-#define QU_COMMENT_REWRAP   1
-#define QU_COMMENT_INDENT   2
-#define QU_COMMENT_NICE     (-1)
+#define QU_COMMENT_NORMAL    0
+#define QU_COMMENT_REWRAP    1
+#define QU_COMMENT_INDENT    2
+#define QU_COMMENT_SAME_LINE 3
+#define QU_COMMENT_NICE      (-1)
 // End of PUBLIC API
 
 

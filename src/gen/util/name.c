@@ -66,12 +66,11 @@ void qu_append_c_name(struct obstack *ob, const char *name) {
             break;  // can't match keyword twice
         }
     }
-    obstack_1grow(ob, 0);
 }
 
 void qu_print_c_string(FILE *file, const char *str) {
     putc('"', file);
-    for(char *c = str; *c; ++c) {
+    for(const char *c = str; *c; ++c) {
         if(*c < 32) {
             switch(*c) {
             case '\r': fprintf(file, "\\r"); break;

@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "header.h"
+#include "struct.h"
 #include "../yaml/parser.h"
 #include "../yaml/codes.h"
 #include "util/name.h"
@@ -177,9 +178,8 @@ int qu_output_header(qu_context_t *ctx) {
         "struct ${pref}_main {\n"
         "    qu_config_head head;\n"
         , NULL);
-    qu_map_member *item;
-    TAILQ_FOREACH(item, &ctx->parser.document->val.map_index.items, lst) {
-        print_member(ctx, item->value);
+    if(ctx->root) {
+        qu_struct_definition(ctx, ctx->root);
     }
     qu_code_print(ctx,
         "};\n"

@@ -29,6 +29,7 @@ struct qu_option *qu_option_resolve(struct qu_context *ctx,
     self->description = NULL;
     self->typedata = NULL;
     self->example = NULL;
+    self->has_default = 0;
 
     for(i = 0; i < qu_types_num; ++i) {
         if(strlen(qu_types_table[i].tag) == taglen

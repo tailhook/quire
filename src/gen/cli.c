@@ -47,27 +47,42 @@ struct qu_cli_action *qu_check_action(struct qu_option *opt, const char *action)
 static struct qu_option_vptr qu_cli_help_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_help_action,
-    /* cli_parser */ qu_help_parser
+    /* cli_parser */ qu_help_parser,
+    /* parser */ NULL,
+    /* definition */ NULL,
+    /* printer */ NULL
     };
 static struct qu_option_vptr qu_cli_config_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_config_action,
-    /* cli_parser */ qu_config_parser
+    /* cli_parser */ qu_config_parser,
+    /* parser */ NULL,
+    /* definition */ NULL,
+    /* printer */ NULL
     };
 static struct qu_option_vptr qu_cli_define_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_define_action,
     /* cli_parser */ qu_define_parser,
+    /* parser */ NULL,
+    /* definition */ NULL,
+    /* printer */ NULL
     };
 static struct qu_option_vptr qu_cli_check_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_check_action,
     /* cli_parser */ qu_check_parser,
+    /* parser */ NULL,
+    /* definition */ NULL,
+    /* printer */ NULL
     };
 static struct qu_option_vptr qu_cli_print_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_print_action,
     /* cli_parser */ qu_print_parser,
+    /* parser */ NULL,
+    /* definition */ NULL,
+    /* printer */ NULL
     };
 
 void qu_cli_init(struct qu_context *ctx) {
@@ -497,7 +512,6 @@ void qu_cli_parse(struct qu_context *ctx,
     qu_map_member *item;
     TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
         const char *mname = qu_node_content(item->key);
-        int mname_len = strlen(mname);
         if(strncmp(mname, "command-line-", clen+1)) {
             continue;
         }

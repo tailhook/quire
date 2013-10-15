@@ -16,6 +16,8 @@ static void qu_parse_common(struct qu_context *ctx, struct qu_option *opt,
         opt->description = qu_node_content(tmp);
     if((tmp = qu_map_get(node, "example")))
         opt->example = tmp;
+    if((tmp = qu_map_get(node, "default")))
+        opt->has_default = 1;
 }
 
 static void qu_visit_struct_children(struct qu_context *ctx,

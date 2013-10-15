@@ -27,10 +27,11 @@
 #define QU_STYLE_LITERAL    4
 #define QU_STYLE_FOLDED     5
 
-#define QU_COMMENT_NORMAL   0
-#define QU_COMMENT_REWRAP   1
-#define QU_COMMENT_INDENT   2
-#define QU_COMMENT_NICE     (-1)
+#define QU_COMMENT_NORMAL    0
+#define QU_COMMENT_REWRAP    1
+#define QU_COMMENT_INDENT    2
+#define QU_COMMENT_SAME_LINE 3
+#define QU_COMMENT_NICE      (-1)
 
 #define QU_FLAGS_VARS       1
 
@@ -101,11 +102,11 @@ qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
 // Methods from yaml/parser.c
 
 // Methods from eval.c
-void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node,
     long *result);
-void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node,
     double *result);
-void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node, uint64_t flags,
+void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node,
     const char **result, size_t *rlen);
 
 // Methods from cfg/vars.h

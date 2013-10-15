@@ -15,6 +15,12 @@ struct qu_option_vptr {
         const char *action);
     void (*cli_parser)(struct qu_context *ctx,
         struct qu_option *opt, const char *action, const char *paramname);
+    void (*parser)(struct qu_context *ctx,
+        struct qu_option *opt, const char *expression, const char *nodename);
+    void (*definition)(struct qu_context *ctx,
+        struct qu_option *opt, const char *varname);
+    void (*printer)(struct qu_context *ctx,
+        struct qu_option *opt, const char *expression);
 };
 
 struct qu_option {
@@ -22,6 +28,7 @@ struct qu_option {
     const char *description;
     const char *path;
     qu_ast_node *example;
+    int has_default;
     void *typedata;
 };
 
