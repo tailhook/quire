@@ -1,4 +1,0 @@
-SimpleHTTPServer:
-  log-level: 6
-  log-file: "hello"
-  root: "/tmp/web"
