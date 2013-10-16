@@ -1,0 +1,20 @@
+# map
+# ===
+#
+# Mapping type test
+#
+
+arr1:
+  five: 5
+  seven: 7
+# Mapping of int to string
+arr2:
+  1: hello
+  2: world
+arr3:
+  hello:
+    alpha: 3
+    beta: 2
+  world:
+    alpha: 1
+    beta: 5

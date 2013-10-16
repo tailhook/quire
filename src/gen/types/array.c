@@ -11,10 +11,6 @@
 
 static void qu_array_parse(struct qu_context *ctx,
     struct qu_option *opt, qu_ast_node *node);
-static struct qu_cli_action *qu_array_cli_action(struct qu_option *opt,
-    const char *action);
-static void qu_array_cli_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *action, const char *argname);
 static void qu_array_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level);
 static void qu_array_definition(struct qu_context *ctx,
@@ -26,8 +22,8 @@ static void qu_array_default_setter(struct qu_context *ctx,
 
 struct qu_option_vptr qu_array_vptr = {
     /* parse */ qu_array_parse,
-    /* cli_action */ qu_array_cli_action,
-    /* cli_parser */ qu_array_cli_parser,
+    /* cli_action */ NULL,
+    /* cli_parser */ NULL,
     /* parse */ qu_array_parser,
     /* definition */ qu_array_definition,
     /* printer */ qu_array_printer,
@@ -103,36 +99,6 @@ static void qu_array_parse(struct qu_context *ctx,
         NULL);
 
     qu_fwdecl_add(ctx, sname, (qu_fwdecl_printer)qu_array_decl, opt);
-}
-
-
-static struct qu_cli_action *qu_array_cli_action(struct qu_option *opt,
-    const char *action)
-{
-    static struct qu_cli_action set = {1, "Set ${name:q}", "INT"};
-    static struct qu_cli_action incr = {0, "Increment ${name:q}", NULL};
-    static struct qu_cli_action decr = {0, "Decrement ${name:q}", NULL};
-    if(action == NULL)  /*  Bare set  */
-        return &set;
-    if(!strcmp(action, "incr"))
-        return &incr;
-    if(!strcmp(action, "decr"))
-        return &decr;
-    return NULL;
-}
-
-static void qu_array_cli_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *action, const char *argname)
-{
-    if(action == NULL) {  /*  Bare set  */
-        return;
-    }
-    if(!strcmp(action, "incr")) {
-        return;
-    }
-    if(!strcmp(action, "decr")) {
-        return;
-    }
 }
 
 static void qu_array_parser(struct qu_context *ctx,

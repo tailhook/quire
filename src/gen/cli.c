@@ -502,9 +502,10 @@ void qu_cli_parse(struct qu_context *ctx,
 {
     const int clen = strlen("command-line");
     qu_ast_node *clinode = qu_map_get(node, "command-line");
-    struct qu_cli_action *act = opt->vp->cli_action(opt, NULL);
+    struct qu_cli_action *act = NULL;
 
     if(clinode) {
+        act = opt->vp->cli_action(opt, NULL);
         if(!act) {
             LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
                 clinode->start_token,

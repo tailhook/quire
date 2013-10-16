@@ -5,6 +5,7 @@
 #include "int.h"
 #include "str.h"
 #include "array.h"
+#include "map.h"
 
 static struct {
     const char *tag;
@@ -12,7 +13,8 @@ static struct {
 } qu_types_table[] = {
     {"!Int", &qu_int_vptr},
     {"!String", &qu_str_vptr},
-    {"!Array", &qu_array_vptr}
+    {"!Array", &qu_array_vptr},
+    {"!Mapping", &qu_map_vptr}
 };
 const int qu_types_num = sizeof(qu_types_table)/sizeof(qu_types_table[0]);
 

@@ -1,0 +1,29 @@
+__meta__:
+  program-name: map
+  default-config: /etc/__quire_test__/map.yaml
+  description: Mapping type test
+
+arr1: !Mapping
+  key-element: !String
+  value-element: !Int
+  example:
+    one: 1
+    two: 2
+arr2: !Mapping
+  key-element: !Int
+    min: 1
+    max: 10
+  value-element: !String hello
+  description: Mapping of int to string
+arr3: !Mapping
+  key-element: !String
+  value-element:
+    alpha: !Int 1
+    beta: !Int 2
+  example:
+    a:
+      alpha: 1
+      beta: 2
+    b:
+      alpha: 3
+      beta: 4
