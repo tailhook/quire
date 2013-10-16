@@ -1,0 +1,22 @@
+__meta__:
+  program-name: array
+  default-config: /etc/__quire_test__/array.yaml
+  description: Array type test
+
+arr1: !Array
+  element: !String
+  example: [one, two]
+arr2: !Array
+  element: !Int
+    min: 1
+    max: 10
+  description: Array of integers
+arr3: !Array
+  element:
+    alpha: !Int 1
+    beta: !Int 2
+  example:
+  - alpha: 1
+    beta: 2
+  - alpha: 3
+    beta: 4

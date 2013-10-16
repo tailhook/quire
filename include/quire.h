@@ -55,14 +55,6 @@ typedef struct qu_emit_context {
     char data[512];
 } qu_emit_context;
 
-typedef struct qu_array_head {
-	void *_data[2];
-} qu_array_head;
-
-typedef struct qu_mapping_head {
-	void *_data[2];
-} qu_mapping_head;
-
 typedef struct qu_ast_node qu_ast_node;
 typedef struct qu_seq_member qu_seq_member;
 typedef struct qu_map_member qu_map_member;
@@ -84,12 +76,6 @@ void qu_get_tag(qu_ast_node *node, char **data, int *len);
 void *qu_config_init(void *cfg, int size);
 void qu_config_free(void *cfg);
 void *qu_config_alloc(void *cfg, int size);
-void qu_config_array_insert(void **head, void **tail,
-    int *list_size, qu_array_head *member);
-void *qu_config_array_next(void *elem);
-void qu_config_mapping_insert(void **head, void **tail,
-    int *list_size, qu_mapping_head *member);
-void *qu_config_mapping_next(void *elem);
 
 // Methods from cfg/api.c
 struct qu_config_context *qu_config_parser(jmp_buf *jmp);

@@ -109,9 +109,6 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
         "qu_ast_node *node${level:d};\n",
         "level:d", level+1,
         NULL);
-    const char *nname = qu_template_alloc(ctx, "node${level:d}",
-        "level:d", level+1,
-        NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
         qu_code_print(ctx,
@@ -131,13 +128,12 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
                 "prefix", prefix,
                 "memname", mem->name,
                 NULL);
-            mem->p.opt->vp->parser(ctx, mem->p.opt, expr, nname);
+            mem->p.opt->vp->parser(ctx, mem->p.opt, expr, level+1);
         }
         qu_code_print(ctx,
             "}\n",
             NULL);
     }
-    obstack_free(&ctx->parser.pieces, nname);
 }
 
 static void qu_print_node_emitter(struct qu_context *ctx, qu_ast_node *node) {

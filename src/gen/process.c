@@ -5,6 +5,7 @@
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
 #include "types/types.h"
+#include "util/print.h"
 #include "special/special.h"
 #include "struct.h"
 #include "context.h"
@@ -16,11 +17,33 @@ static void qu_parse_common(struct qu_context *ctx, struct qu_option *opt,
         opt->description = qu_node_content(tmp);
     if((tmp = qu_map_get(node, "example")))
         opt->example = tmp;
-    if((tmp = qu_map_get(node, "default")))
-        opt->has_default = 1;
+    opt->has_default = 0;
 }
 
-static void qu_visit_struct_children(struct qu_context *ctx,
+struct qu_option *qu_parse_option(struct qu_context *ctx, qu_ast_node *node,
+    const char *name, struct qu_config_struct *parent)
+{
+    struct qu_option *opt = qu_option_resolve(ctx,
+        (char *)node->tag->data, node->tag->bytelen);
+    if(!opt->vp) {
+        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
+            node->tag ? node->tag : node->start_token,
+            "Unknown object type");
+    }
+    qu_parse_common(ctx, opt, node);
+    if(parent && parent->path) {
+        opt->path = qu_template_alloc(ctx, "${parent}.${name}",
+            "parent", parent->path,
+            "name", name,
+            NULL);
+    } else {
+        opt->path = name;
+    }
+    opt->vp->parse(ctx, opt, node);
+    return opt;
+}
+
+void qu_visit_struct_children(struct qu_context *ctx,
     qu_ast_node *node, struct qu_config_struct *str)
 {
     assert (node->kind == QU_NODE_MAPPING);
@@ -42,16 +65,9 @@ static void qu_visit_struct_children(struct qu_context *ctx,
                     "Untagged straw scalar");
             }
         } else {
-            struct qu_option *opt = qu_option_resolve(ctx,
-                (char *)item->value->tag->data, item->value->tag->bytelen);
-            if(!opt->vp) {
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-                    item->value->start_token,
-                    "Unknown object type");
-            }
+            struct qu_option *opt = qu_parse_option(ctx,
+                item->value, mname, str);
             qu_struct_add_option(ctx, str, mname, opt);
-            qu_parse_common(ctx, opt, item->value);
-            opt->vp->parse(ctx, opt, item->value);
             if(item->value->kind == QU_NODE_MAPPING) {
                 qu_cli_parse(ctx, opt, item->value);
             }

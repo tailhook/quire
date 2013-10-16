@@ -1,0 +1,16 @@
+# array
+# =====
+#
+# Array type test
+#
+
+arr1:
+- one
+- two
+# Array of integers
+arr2: # required
+arr3:
+- alpha: 1
+  beta: 2
+- alpha: 3
+  beta: 4

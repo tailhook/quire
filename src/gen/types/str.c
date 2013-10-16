@@ -14,7 +14,7 @@ static struct qu_cli_action *qu_str_cli_action(struct qu_option *opt,
 static void qu_str_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname);
 static void qu_str_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr, const char *node);
+    struct qu_option *opt, const char *expr, int level);
 static void qu_str_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_str_printer(struct qu_context *ctx,
@@ -45,6 +45,7 @@ static void qu_str_parse(struct qu_context *ctx,
     self->defvalue_set = 0;
     self->defvalue = NULL;
     opt->typedata = self;
+    opt->typname = "str";
 
     if(node->kind == QU_NODE_MAPPING) {
 
@@ -88,12 +89,12 @@ static void qu_str_cli_parser(struct qu_context *ctx,
 }
 
 static void qu_str_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr, const char *node)
+    struct qu_option *opt, const char *expr, int level)
 {
     qu_code_print(ctx,
-        "qu_node_to_str(ctx, ${node}, &${expr}, &${expr}_len);\n",
+        "qu_node_to_str(ctx, node${level:d}, &${expr}, &${expr}_len);\n",
         // TODO(tailhook) check min and max
-        "node", node,
+        "level:d", level,
         "expr", expr,
         NULL);
 

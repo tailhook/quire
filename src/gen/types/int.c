@@ -14,7 +14,7 @@ static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
 static void qu_int_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname);
 static void qu_int_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr, const char *node);
+    struct qu_option *opt, const char *expr, int level);
 static void qu_int_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_int_printer(struct qu_context *ctx,
@@ -50,6 +50,7 @@ static void qu_int_parse(struct qu_context *ctx,
     self->min_set = 0;
     self->max_set = 0;
     opt->typedata = self;
+    opt->typname = "int";
 
     if(node->kind == QU_NODE_MAPPING) {
 
@@ -129,12 +130,12 @@ static void qu_int_cli_parser(struct qu_context *ctx,
 }
 
 static void qu_int_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr, const char *node)
+    struct qu_option *opt, const char *expr, int level)
 {
     qu_code_print(ctx,
-        "qu_node_to_int(ctx, ${node}, &${expr});\n",
+        "qu_node_to_int(ctx, node${level:d}, &${expr});\n",
         // TODO(tailhook) check min and max
-        "node", node,
+        "level:d", level,
         "expr", expr,
         NULL);
 

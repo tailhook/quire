@@ -39,6 +39,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/types/types.c
     src/gen/types/int.c
     src/gen/types/str.c
+    src/gen/types/array.c
     src/gen/cli.c
     src/gen/context.c
     src/gen/struct.c
@@ -139,6 +140,7 @@ INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
 ADD_SUBDIRECTORY(test/generator/meta)
 ADD_SUBDIRECTORY(test/generator/int)
 ADD_SUBDIRECTORY(test/generator/str)
+ADD_SUBDIRECTORY(test/generator/array)
 
 # TESTS FOR QUIRE-TOOL
 

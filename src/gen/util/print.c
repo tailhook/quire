@@ -10,11 +10,11 @@
 static void qu_code_growstr(const char *val, struct obstack *buf,
     const char *fmt)
 {
-	if(fmt == NULL) {
-		obstack_grow(buf, val, strlen(val));
-	} else {
-		if(fmt[1] == 'q') {
-			obstack_1grow(buf, '"');
+    if(fmt == NULL) {
+        obstack_grow(buf, val, strlen(val));
+    } else {
+        if(fmt[1] == 'q') {
+            obstack_1grow(buf, '"');
             for(const char *c = val; *c; ++c) {
                 if(*c < 32) {
                     char tbuf[8];
@@ -34,11 +34,11 @@ static void qu_code_growstr(const char *val, struct obstack *buf,
                     obstack_1grow(buf, *c);
                 }
             }
-			obstack_1grow(buf, '"');
-		} else if(fmt[1] == 'c') {
+            obstack_1grow(buf, '"');
+        } else if(fmt[1] == 'c') {
             qu_append_c_name(buf, val);
         }
-	}
+    }
 }
 
 void qu_template_grow_va(struct qu_context *ctx,
@@ -48,13 +48,13 @@ void qu_template_grow_va(struct qu_context *ctx,
     for(c = template; *c; ++c) {
         if(*c == '`') {
             obstack_1grow(&ctx->parser.pieces, '"');
-		} else if(*c == '$') {
-			assert (*(c+1) == '{');
+        } else if(*c == '$') {
+            assert (*(c+1) == '{');
             const char *varend = strchr(c+1, '}');
             const char *var = c+2;
-			const char *fmt = strchr(c+1, ':');
-			if(fmt && fmt > varend)
-				fmt = NULL;
+            const char *fmt = strchr(c+1, ':');
+            if(fmt && fmt > varend)
+                fmt = NULL;
             int var_len = (fmt ? fmt : varend) - var;
             assert(varend);
             if(var_len == 4 && !strncmp(var, "pref", 4))
@@ -79,7 +79,7 @@ void qu_template_grow_va(struct qu_context *ctx,
                     } else {
                         cvalue = va_arg(vars, const char *);
                     }
-                    if(var_len == (typ ? typ - name : strlen(name)) &&
+                    if(var_len == (typ ? typ - name : (int)strlen(name)) &&
                         !strncmp(var, name, var_len)) {
                         if(typ && typ[1] == 'd') {
                             char buf[12];

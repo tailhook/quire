@@ -1,0 +1,11 @@
+arr1: [hello, world]
+arr2:
+- 1
+- 2
+- 3
+arr3:
+- alpha: 10
+  beta: 20
+- alpha: 111
+- beta: 222
+
