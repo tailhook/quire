@@ -1,0 +1,35 @@
+__meta__:
+  program-name: struct
+  default-config: /etc/__quire_test__/struct.yaml
+  description: Custom struct type test
+
+__types__:
+  str1: !Struct
+    a: !Int 1
+    b: !Int
+      =: 2
+      description: The B
+  str2: !Struct
+    a: !String
+    nested:
+      b: !String "B"
+
+val1: !Type str1
+val2: !Type
+  =: str1
+  default:
+    a: 10
+    b: 20
+val3: !Type
+  type: str2
+  description: The third value
+  default:
+    a: def_a
+    nested:
+      b: def_b
+  example:
+    a: ex_a
+    nested:
+      b: ex_b
+nested:
+  val: !Type str1

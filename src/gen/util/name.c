@@ -61,7 +61,7 @@ void qu_append_c_name(struct obstack *ob, const char *name) {
     }
     int len = (char *)obstack_base(ob) + obstack_object_size(ob) - namestart;
     for(const char **word = reserved_words; *word; ++word) {
-        if(!strncmp(namestart, *word, len)) {
+        if(!strncmp(namestart, *word, len) && len == (int)strlen(*word)) {
             obstack_1grow(ob, '_');
             break;  // can't match keyword twice
         }

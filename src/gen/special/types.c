@@ -39,7 +39,7 @@ struct qu_class *qu_class_new(struct qu_context *ctx, const char *name,
     self->classdata = NULL;
     self->left = NULL;
     self->right = NULL;
-    vp->init(ctx, self);
+    vp->init(ctx, self, definition);
     return self;
 }
 
@@ -52,10 +52,14 @@ void qu_special_types(struct qu_context *ctx, qu_ast_node *typesnode) {
         struct qu_class **cls;
         const char *cname = qu_node_content(item->key);
         cls = qu_class_find(&ctx->class_index, cname);
-        if(!*cls) {
+        if(*cls) {
             LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, item->key->start_token,
                 "Duplicate type");
         }
         *cls = qu_class_new(ctx, cname, item->value);
     }
+}
+
+void qu_classes_init(struct qu_context *ctx) {
+    ctx->class_index.root = NULL;
 }

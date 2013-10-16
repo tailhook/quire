@@ -1,0 +1,12 @@
+# struct
+# ======
+#
+# Custom struct type test
+#
+
+val1: # required
+# The third value
+val3:
+  a: ex_a
+  nested:
+    b: ex_b

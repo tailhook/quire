@@ -9,6 +9,7 @@
 #include "util/print.h"
 #include "context.h"
 #include "struct.h"
+#include "classes/classes.h"
 #include "../quire_int.h"
 
 int qu_output_source(struct qu_context *ctx) {
@@ -26,6 +27,7 @@ int qu_output_source(struct qu_context *ctx) {
         "\n"
         , NULL);
 
+    qu_classes_print_functions(ctx);
     qu_cli_print_parser(ctx);
     qu_cli_print_applier(ctx);
 

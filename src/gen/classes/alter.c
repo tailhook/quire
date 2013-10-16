@@ -7,13 +7,16 @@ struct qu_class_alter {
     LIST_HEAD(qu_config_s_opts, qu_config_struct) options;
 };
 
-static void qu_alter_init(struct qu_context *, struct qu_class *);
+static void qu_alter_init(struct qu_context *, struct qu_class *,
+    qu_ast_node *node);
 
 struct qu_class_vptr qu_class_vptr_alternative = {
     /*  init  */ qu_alter_init
     };
 
-static void qu_alter_init(struct qu_context *ctx, struct qu_class *cls) {
+static void qu_alter_init(struct qu_context *ctx, struct qu_class *cls,
+    qu_ast_node *node)
+{
     struct qu_class_alter *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_class_alter));
     cls->classdata = self;

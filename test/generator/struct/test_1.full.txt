@@ -1,0 +1,24 @@
+# struct
+# ======
+#
+# Custom struct type test
+#
+
+val1:
+  a: 100
+  # The B
+  b: 200
+val2:
+  a: 3
+  # The B
+  b: 2
+# The third value
+val3:
+  a:
+  nested:
+    b: file_b
+nested:
+  val:
+    a: 1
+    # The B
+    b: 77

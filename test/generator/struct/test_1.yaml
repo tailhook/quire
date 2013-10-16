@@ -1,0 +1,11 @@
+val1:
+  a: 100
+  b: 200
+val2:
+  a: 3
+val3:
+  nested:
+    b: file_b
+nested:
+  val:
+    b: 77

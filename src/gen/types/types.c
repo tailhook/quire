@@ -6,6 +6,7 @@
 #include "str.h"
 #include "array.h"
 #include "map.h"
+#include "type.h"
 
 static struct {
     const char *tag;
@@ -14,7 +15,8 @@ static struct {
     {"!Int", &qu_int_vptr},
     {"!String", &qu_str_vptr},
     {"!Array", &qu_array_vptr},
-    {"!Mapping", &qu_map_vptr}
+    {"!Mapping", &qu_map_vptr},
+    {"!Type", &qu_type_vptr}
 };
 const int qu_types_num = sizeof(qu_types_table)/sizeof(qu_types_table[0]);
 
