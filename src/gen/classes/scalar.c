@@ -82,7 +82,7 @@ static void qu_scalar_init(struct qu_context *ctx, struct qu_class *cls,
     TAILQ_FOREACH(mem, &tags->val.map_index.items, lst)
         numtags += 1;
     if(!numtags)
-        LONGJUMP_ERR_NODE(ctx, tags, "At least on tag required");
+        LONGJUMP_ERR_NODE(ctx, tags, "At least one tag required");
     self->tags = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_scalar_tag)*numtags);
     self->tags_len = numtags;

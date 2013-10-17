@@ -1,0 +1,9 @@
+# enum
+# ====
+#
+# Enum type test
+#
+
+# The second value
+val2: three
+val3: # required

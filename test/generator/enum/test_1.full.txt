@@ -1,0 +1,10 @@
+# enum
+# ====
+#
+# Enum type test
+#
+
+val1: two
+# The second value
+val2: three
+val3: monkey

@@ -37,6 +37,7 @@ struct qu_class *qu_class_new(struct qu_context *ctx, const char *name,
     self->classdata = NULL;
     self->left = NULL;
     self->right = NULL;
+    self->has_default = 0;
     vp->init(ctx, self, definition);
     return self;
 }
@@ -61,3 +62,8 @@ void qu_special_types(struct qu_context *ctx, qu_ast_node *typesnode) {
 void qu_classes_init(struct qu_context *ctx) {
     ctx->class_index.root = NULL;
 }
+
+struct qu_class *qu_class_get(struct qu_context *ctx, const char *name) {
+    return *qu_class_find(&ctx->class_index, name);
+}
+

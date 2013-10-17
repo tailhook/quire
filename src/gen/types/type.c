@@ -1,5 +1,9 @@
+#include <assert.h>
+
 #include "type.h"
 #include "types.h"
+#include "../special/types.h"
+#include "../classes/classes.h"
 #include "../process.h"
 #include "../struct.h"
 #include "../cli.h"
@@ -16,7 +20,7 @@ static void qu_type_parser(struct qu_context *ctx,
 static void qu_type_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_type_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr);
+    struct qu_option *opt, const char *expr, const char *tag);
 static void qu_type_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr);
 
@@ -31,6 +35,7 @@ struct qu_option_vptr qu_type_vptr = {
 };
 
 struct qu_type_option {
+    struct qu_class *cls;
     qu_ast_node *defvalue;
 };
 
@@ -40,7 +45,7 @@ static void qu_type_parse(struct qu_context *ctx,
     struct qu_type_option *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_type_option));
     opt->typedata = self;
-    self->defvalue = node;
+    self->defvalue = NULL;
 
     if(node->kind == QU_NODE_MAPPING) {
         qu_ast_node *typnode;
@@ -60,6 +65,14 @@ static void qu_type_parse(struct qu_context *ctx,
     } else {
         LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
             "Type declaraiont must contain either string or mapping");
+    }
+    self->cls = qu_class_get(ctx, opt->typname);
+    if(!self->cls) {
+        LONGJUMP_ERR_NODE(ctx, node,
+            "Type ${typ:q} not found", "typ", opt->typname);
+    }
+    if(!opt->has_default) {
+        opt->has_default = self->cls->has_default;
     }
 }
 
@@ -85,8 +98,9 @@ static void qu_type_definition(struct qu_context *ctx,
 }
 
 static void qu_type_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr)
+    struct qu_option *opt, const char *expr, const char *tag)
 {
+    assert(!strcmp(tag, "NULL"));
     qu_code_print(ctx,
         "${pref}_${typname}_print(ctx, &${expr}, flags);\n"
         , "typname", opt->typname

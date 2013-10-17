@@ -11,6 +11,7 @@ struct qu_class {
     void *classdata;
     struct qu_class *left;
     struct qu_class *right;
+    int has_default;
 };
 
 struct qu_class_vptr {

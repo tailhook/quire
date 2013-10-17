@@ -1,0 +1,23 @@
+__meta__:
+  program-name: enum
+  default-config: /etc/__quire_test__/enum.yaml
+  description: Enum type test
+
+__types__:
+  e1: !Enum
+    options:
+      one: 1
+      two: 2
+      three: 3
+    default: two
+  e2: !Enum
+    options:
+      monkey: 1
+      rabbit: 2
+
+val1: !Type e1
+val2: !Type
+  type: e1
+  example: three
+  description: The second value
+val3: !Type e2

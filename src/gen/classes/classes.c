@@ -14,7 +14,7 @@ static struct {
 } qu_vpointers[] = {
     {"!Struct", &qu_class_vptr_struct},
     // {"!Alternative", &qu_class_vptr_alternative},
-    // {"!Enum", &qu_class_vptr_enum},
+    {"!Enum", &qu_class_vptr_enum},
     {"!TagScalar", &qu_class_vptr_scalar}
 };
 const int qu_vpointers_num = sizeof(qu_vpointers)/sizeof(qu_vpointers[0]);
