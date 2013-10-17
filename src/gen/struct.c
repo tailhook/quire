@@ -143,7 +143,8 @@ static void qu_print_node_emitter(struct qu_context *ctx, qu_ast_node *node) {
     switch(node->kind) {
     case QU_NODE_MAPPING:
         qu_code_print(ctx,
-            "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n"
+            "qu_emit_opcode(ctx, ${tag:q}, NULL, QU_EMIT_MAP_START);\n"
+            , "tag", node->tag
             , NULL);
         TAILQ_FOREACH(mitem, &node->val.map_index.items, lst) {
             qu_print_node_emitter(ctx, mitem->key);
@@ -158,7 +159,8 @@ static void qu_print_node_emitter(struct qu_context *ctx, qu_ast_node *node) {
         break;
     case QU_NODE_SEQUENCE:
         qu_code_print(ctx,
-            "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_START);\n"
+            "qu_emit_opcode(ctx, ${tag:q}, NULL, QU_EMIT_SEQ_START);\n"
+            , "tag", node->tag
             , NULL);
         TAILQ_FOREACH(sitem, &node->val.seq_index.items, lst) {
             qu_code_print(ctx,
@@ -172,11 +174,12 @@ static void qu_print_node_emitter(struct qu_context *ctx, qu_ast_node *node) {
         break;
     case QU_NODE_SCALAR:
         qu_code_print(ctx,
-            "qu_emit_scalar(ctx, NULL, NULL, QU_STYLE_PLAIN, "
-                            "${data:q}, ${dlen:d});\n",
-            "data", qu_node_content(node),
-            "dlen:d", strlen(qu_node_content(node)),
-            NULL);
+            "qu_emit_scalar(ctx, ${tag:q}, NULL, QU_STYLE_PLAIN, "
+                            "${data:q}, ${dlen:d});\n"
+            , "tag", node->tag
+            , "data", qu_node_content(node)
+            , "dlen:d", strlen(qu_node_content(node))
+            , NULL);
         break;
     default:
         assert(0);
@@ -197,10 +200,11 @@ int qu_struct_needs_example(struct qu_config_struct *str) {
 }
 
 void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
-    const char *prefix)
+    const char *prefix, const char *tag)
 {
     qu_code_print(ctx,
-        "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n"
+        "qu_emit_opcode(ctx, ${tag}, NULL, QU_EMIT_MAP_START);\n"
+        , "tag", tag
         , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
@@ -217,11 +221,11 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
                 "name", mem->name,
                 "namelen:d", strlen(mem->name),
                 NULL);
-            const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}.",
-                "prefix", prefix,
-                "memname", mem->name,
-                NULL);
-            qu_struct_printer(ctx, mem->p.str, npref);
+            const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}."
+                , "prefix", prefix
+                , "memname", mem->name
+                , NULL);
+            qu_struct_printer(ctx, mem->p.str, npref, "NULL");
             if(!hasex) {
                 qu_code_print(ctx, "}\n" , NULL);
             }
@@ -276,7 +280,7 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
                 "name", mem->name,
                 "namelen:d", strlen(mem->name),
                 NULL);
-            mem->p.opt->vp->printer(ctx, mem->p.opt, expr);
+            mem->p.opt->vp->printer(ctx, mem->p.opt, expr, "NULL");
             qu_code_print(ctx, "}\n", NULL);
         }
     }

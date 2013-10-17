@@ -18,7 +18,7 @@ static void qu_int_parser(struct qu_context *ctx,
 static void qu_int_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_int_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr);
+    struct qu_option *opt, const char *expr, const char *tag);
 static void qu_int_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr);
 
@@ -151,14 +151,15 @@ static void qu_int_definition(struct qu_context *ctx,
 }
 
 static void qu_int_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr)
+    struct qu_option *opt, const char *expr, const char *tag)
 {
     qu_code_print(ctx,
         "char buf[24];\n"
         "int vlen = sprintf(buf, `%ld`, ${expr});\n"
-        "qu_emit_scalar(ctx, NULL, NULL, 0, buf, vlen);\n",
-        "expr", expr,
-        NULL);
+        "qu_emit_scalar(ctx, ${tag}, NULL, 0, buf, vlen);\n"
+        , "tag", tag
+        , "expr", expr
+        , NULL);
 }
 
 static void qu_int_default_setter(struct qu_context *ctx,

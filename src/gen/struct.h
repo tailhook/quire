@@ -30,7 +30,7 @@ void qu_struct_add_option(struct qu_context *ctx,
 void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
     const char *prefix, int level);
 void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
-    const char *prefix);
+    const char *prefix, const char *tag);
 void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str);
 void qu_struct_default_setter(struct qu_context *ctx,
     struct qu_config_struct *str, const char *prefix);

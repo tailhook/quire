@@ -1,0 +1,4 @@
+val1: !short hello
+val2: !long hello
+val3: !sec 123
+val4: !ms 10

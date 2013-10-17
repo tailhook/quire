@@ -68,6 +68,20 @@ void qu_append_c_name(struct obstack *ob, const char *name) {
     }
 }
 
+void qu_append_c_name_upper(struct obstack *ob, const char *name) {
+    char *namestart = obstack_base(ob) + obstack_object_size(ob);
+    if(isdigit(*name))
+        obstack_1grow(ob, '_');
+    while(*name) {
+        if(isalnum(*name)) {
+            obstack_1grow(ob, toupper(*name));
+        } else {
+            obstack_1grow(ob, '_');
+        }
+        ++name;
+    }
+}
+
 void qu_print_c_string(FILE *file, const char *str) {
     putc('"', file);
     for(const char *c = str; *c; ++c) {

@@ -15,11 +15,10 @@ struct qu_class {
 
 struct qu_class_vptr {
     void (*init)(struct qu_context *, struct qu_class *, qu_ast_node *node);
-    void (*func_declare)(struct qu_context *, struct qu_class *);
     void (*func_body)(struct qu_context *, struct qu_class *);
 };
 
 struct qu_class_vptr *qu_class_get_vptr(const char *name);
 void qu_classes_print_functions(struct qu_context *ctx);
 
-#endif  // QUIRE_H_GEN_CLASSES
+#endif  /* QUIRE_H_GEN_CLASSES */

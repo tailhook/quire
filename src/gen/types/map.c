@@ -16,7 +16,7 @@ static void qu_map_parser(struct qu_context *ctx,
 static void qu_map_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_map_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr);
+    struct qu_option *opt, const char *expr, const char *tag);
 static void qu_map_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr);
 
@@ -158,7 +158,7 @@ static void qu_map_definition(struct qu_context *ctx,
 }
 
 static void qu_map_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr)
+    struct qu_option *opt, const char *expr, const char *tag)
 {
     struct qu_map_option *self = opt->typedata;
     qu_code_print(ctx,
@@ -169,16 +169,16 @@ static void qu_map_printer(struct qu_context *ctx,
         , "expr", expr
         , NULL);
 
-    self->key->vp->printer(ctx, self->key, "el->key");
+    self->key->vp->printer(ctx, self->key, "el->key", "NULL");
 
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n"
         , NULL);
 
     if(self->is_struct) {
-        qu_struct_printer(ctx, self->val.str, "el->");
+        qu_struct_printer(ctx, self->val.str, "el->", "NULL");
     } else {
-        self->val.opt->vp->printer(ctx, self->val.opt, "el->val");
+        self->val.opt->vp->printer(ctx, self->val.opt, "el->val", "NULL");
     }
 
     qu_code_print(ctx,

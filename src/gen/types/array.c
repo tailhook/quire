@@ -16,7 +16,7 @@ static void qu_array_parser(struct qu_context *ctx,
 static void qu_array_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname);
 static void qu_array_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr);
+    struct qu_option *opt, const char *expr, const char *tag);
 static void qu_array_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr);
 
@@ -143,21 +143,22 @@ static void qu_array_definition(struct qu_context *ctx,
 }
 
 static void qu_array_printer(struct qu_context *ctx,
-    struct qu_option *opt, const char *expr)
+    struct qu_option *opt, const char *expr, const char *tag)
 {
     struct qu_array_option *self = opt->typedata;
     qu_code_print(ctx,
-        "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_START);\n"
+        "qu_emit_opcode(ctx, ${tag:q}, NULL, QU_EMIT_SEQ_START);\n"
         "struct ${pref}_${typname} *el;\n"
         "for(el = ${expr}; el; el = el->next) {\n"
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_ITEM);\n"
+        , "tag", tag
         , "typname", opt->typname
         , "expr", expr
         , NULL);
     if(self->is_struct) {
-        qu_struct_printer(ctx, self->el.str, "el->");
+        qu_struct_printer(ctx, self->el.str, "el->", "NULL");
     } else {
-        self->el.opt->vp->printer(ctx, self->el.opt, "el->val");
+        self->el.opt->vp->printer(ctx, self->el.opt, "el->val", "NULL");
     }
     qu_code_print(ctx,
         "}\n"

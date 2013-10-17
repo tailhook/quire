@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "../context.h"
+#include "../util/print.h"
 #include "classes.h"
 #include "struct.h"
 #include "alter.h"
@@ -14,7 +15,7 @@ static struct {
     {"!Struct", &qu_class_vptr_struct},
     // {"!Alternative", &qu_class_vptr_alternative},
     // {"!Enum", &qu_class_vptr_enum},
-    // {"!TagScalar", &qu_class_vptr_scalar}
+    {"!TagScalar", &qu_class_vptr_scalar}
 };
 const int qu_vpointers_num = sizeof(qu_vpointers)/sizeof(qu_vpointers[0]);
 
@@ -33,7 +34,17 @@ static void qu_classes_decl_visit(struct qu_context *ctx, struct qu_class *cls)
     if(!cls)
         return;
     qu_classes_decl_visit(ctx, cls->left);
-    cls->vp->func_declare(ctx, cls);
+    qu_code_print(ctx,
+        "static void ${pref}_${typname}_defaults("
+            "struct ${pref}_${typname} *val);\n"
+        "static void ${pref}_${typname}_parse("
+            "struct qu_config_context *ctx, "
+            "struct ${pref}_${typname} *obj, qu_ast_node *node);\n"
+        "static void ${pref}_${typname}_print("
+            "struct qu_emit_context *ctx, "
+            "struct ${pref}_${typname} *obj, int flags);\n"
+        , "typname", cls->name
+        , NULL);
     qu_classes_decl_visit(ctx, cls->right);
 }
 

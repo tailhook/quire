@@ -14,6 +14,10 @@ static void qu_code_growstr(const char *val, struct obstack *buf,
         obstack_grow(buf, val, strlen(val));
     } else {
         if(fmt[1] == 'q') {
+            if(!val) {
+                obstack_grow(buf, "NULL", 4);
+                return;
+            }
             obstack_1grow(buf, '"');
             for(const char *c = val; *c; ++c) {
                 if(*c < 32) {
@@ -37,6 +41,8 @@ static void qu_code_growstr(const char *val, struct obstack *buf,
             obstack_1grow(buf, '"');
         } else if(fmt[1] == 'c') {
             qu_append_c_name(buf, val);
+        } else if(fmt[1] == 'C') {
+            qu_append_c_name_upper(buf, val);
         }
     }
 }

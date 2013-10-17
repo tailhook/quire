@@ -1,0 +1,31 @@
+__meta__:
+  program-name: tagscalar
+  default-config: /etc/__quire_test__/tagscalar.yaml
+  description: Tagged scalar type test
+
+__types__:
+  str: !TagScalar
+    tags:
+      long: 1
+      short: 0
+    default-tag: short
+    type: !String
+  int: !TagScalar
+    tags:
+      sec: 0
+      ms: 1
+    type: !Int
+      default: !ms 100
+
+val1: !Type str
+val2: !Type
+  =: str
+  default: 5
+  description: The second value
+val3: !Type
+  =: int
+  description: The third value
+  example: !ms 200
+val4: !Type
+  type: int
+  default: !sec 5

@@ -195,6 +195,6 @@ void qu_config_free(qu_config_head *cfg) {
     obstack_free(&cfg->pieces, NULL);
 }
 
-const char *qu_node(qu_ast_node *node) {
+const char *qu_node_tag(qu_ast_node *node) {
     return node->tag;
 }

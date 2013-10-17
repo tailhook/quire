@@ -1,0 +1,12 @@
+# tagscalar
+# =========
+#
+# Tagged scalar type test
+#
+
+val1: !short hello
+# The second value
+val2: !long hello
+# The third value
+val3: !sec 123
+val4: !ms 10

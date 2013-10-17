@@ -154,7 +154,7 @@ int qu_output_source(struct qu_context *ctx) {
         NULL);
 
     if(ctx->root) {
-        qu_struct_printer(ctx, ctx->root, "cfg->");
+        qu_struct_printer(ctx, ctx->root, "cfg->", "NULL");
     }
 
     qu_code_print(ctx,

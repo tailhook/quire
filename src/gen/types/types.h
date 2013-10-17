@@ -20,7 +20,7 @@ struct qu_option_vptr {
     void (*definition)(struct qu_context *ctx,
         struct qu_option *opt, const char *varname);
     void (*printer)(struct qu_context *ctx,
-        struct qu_option *opt, const char *expression);
+        struct qu_option *opt, const char *expression, const char *tag);
     void (*default_setter)(struct qu_context *ctx,
         struct qu_option *opt, const char *expression);
 };
