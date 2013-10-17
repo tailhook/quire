@@ -47,13 +47,15 @@
 #define QU_YAML_ERROR       97156
 
 typedef struct qu_config_head {
-	jmp_buf safejump;
+    jmp_buf safejump;
     char data[512 - sizeof(jmp_buf)];
 } qu_config_head;
 
 typedef struct qu_emit_context {
     char data[512];
 } qu_emit_context;
+
+struct qu_config_context;
 
 typedef struct qu_ast_node qu_ast_node;
 typedef struct qu_seq_member qu_seq_member;
