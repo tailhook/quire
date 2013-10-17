@@ -68,7 +68,7 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
     }}
 
 #define LONGJUMP_ERR_NODE(ctx, node, text, ...) {\
-    const char *errtext = qu_template_alloc(ctx, text, # __VA_ARGS__, NULL); \
+    const char *errtext = qu_template_alloc(ctx, text, ## __VA_ARGS__, NULL); \
     if((ctx)->parser.errjmp) { \
         (ctx)->parser.error_kind = YAML_CONTENT_ERROR; \
         (ctx)->parser.error_text = errtext; \
