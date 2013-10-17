@@ -208,11 +208,13 @@ void qu_cli_print_parser(struct qu_context *ctx) {
         "    char *sarg;\n"
         "    cli->action = QU_CLI_RUN;\n"
         "    cli->print_flags = 0;\n"
+        "    cli->cfg_filename = ${defaultfn:q};\n"
         "    for(arg = argv; argc; ++arg, --argc) {\n"
         "    nextarg:\n"
         "       if((*arg)[0] != '-')\n"
         "           break;\n"  // TODO(tailhook) check if supported
         "       if((*arg)[1] == '-') {  /*  Long arguments */\n"
+        , "defaultfn", ctx->meta.default_config
         , NULL);
 
 
