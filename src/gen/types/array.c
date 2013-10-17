@@ -76,9 +76,7 @@ static void qu_array_parse(struct qu_context *ctx,
                 self->el.str = qu_struct_new_root(ctx);
                 qu_visit_struct_children(ctx, element, self->el.str);
             } else {
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-                    element ? element->tag : element->start_token,
-                    "Untagged straw scalar");
+                LONGJUMP_ERR_NODE(ctx, element, "Untagged straw scalar");
             }
             opt->typname = qu_template_alloc(ctx, "a_${optpath:c}",
                 "optpath", opt->path,
@@ -170,7 +168,6 @@ static void qu_array_printer(struct qu_context *ctx,
 static void qu_array_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr)
 {
-    struct qu_array_option *self = opt->typedata;
     qu_code_print(ctx,
         "${expr} = NULL;\n"
         "${expr}_tail = &${expr};\n"

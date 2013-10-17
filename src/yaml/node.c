@@ -16,9 +16,14 @@ static qu_ast_node *qu_new_node(qu_parse_context *ctx) {
         qu_insert_anchor(ctx, node);
         ctx->cur_anchor = NULL;
     }
-    node->tag = ctx->cur_tag;
-    if(ctx->cur_tag)
+    node->tag_token = ctx->cur_tag;
+    if(ctx->cur_tag) {
         ctx->cur_tag = NULL;
+        char *tag = obstack_alloc(&ctx->pieces, node->tag_token->bytelen+1);
+        memcpy(tag, node->tag_token->data, node->tag_token->bytelen);
+        tag[node->tag_token->bytelen] = 0;
+        node->tag = tag;
+    }
     return node;
 }
 

@@ -1,6 +1,7 @@
 #ifndef QUIRE_H_YAML_NODE
 #define QUIRE_H_YAML_NODE
 
+#include "codes.h"
 #include "map.h"
 #include "seq.h"
 
@@ -23,14 +24,15 @@ typedef struct qu_token_s {
 } qu_token;
 
 typedef struct qu_node_s {
-    int kind;
+    enum qu_node_kind_enum kind;
     struct qu_parse_context_s *ctx;
     qu_token *anchor;
-    qu_token *tag;
+    qu_token *tag_token;
     qu_token *start_token;
     qu_token *end_token;
 
-    const char *content;  // for scalar nodes or aliases or mappings with "="
+    const char *tag;  /* nul-terminated tag name */
+    const char *content;  /* scalar nodes or aliases or mappings with "=" */
     int content_len;
 
     union {

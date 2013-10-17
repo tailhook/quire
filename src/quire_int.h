@@ -6,10 +6,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "yaml/codes.h"
+#include "gen/util/print.h"
 
 typedef struct __attribute__((__aligned__(512))) qu_config_head {
     jmp_buf *errjmp;
-	jmp_buf errjmp_buf;
+    jmp_buf errjmp_buf;
     struct obstack pieces;
 } qu_config_head;
 
@@ -71,7 +72,8 @@ _Static_assert(sizeof(struct qu_config_head) == 512,
     if((ctx)->parser.errjmp) { \
         (ctx)->parser.error_kind = YAML_CONTENT_ERROR; \
         (ctx)->parser.error_text = errtext; \
-        (ctx)->parser.error_token = (node)->tag ? (node)->tag : (node)->start_token; \
+        (ctx)->parser.error_token = (node)->tag_token ? \
+            (node)->tag_token : (node)->start_token; \
         longjmp(*(ctx)->parser.errjmp, QU_YAML_ERROR); \
     } else { \
         fprintf(stderr, "Parser error: %s\n", errtext); \

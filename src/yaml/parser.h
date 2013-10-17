@@ -43,7 +43,7 @@ typedef struct qu_parse_context_s {
     qu_token *cur_tag;
 
     int error_kind;
-    char *error_text;
+    const char *error_text;
     qu_token *error_token;
 
 } qu_parse_context;

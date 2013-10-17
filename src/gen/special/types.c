@@ -25,16 +25,14 @@ struct qu_class *qu_class_new(struct qu_context *ctx, const char *name,
         LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, definition->start_token,
             "Custom type must be tagged");
     }
-    struct qu_class_vptr *vp = qu_class_get_vptr(
-        (char *)definition->tag->data, definition->tag->bytelen);
-    if(!vp) {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, definition->tag,
-            "Unsupported custom type kind");
-    }
+    struct qu_class_vptr *vp = qu_class_get_vptr(definition->tag);
+    if(!vp)
+        LONGJUMP_ERR_NODE(ctx, definition,
+            "Unsupported custom type kind ${tag:q}", "tag", definition->tag);
     struct qu_class *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_class));
     self->name = name;
-    self->start_token = definition->tag;
+    self->start_token = definition->tag_token;
     self->vp = vp;
     self->classdata = NULL;
     self->left = NULL;

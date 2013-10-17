@@ -195,12 +195,6 @@ void qu_config_free(qu_config_head *cfg) {
     obstack_free(&cfg->pieces, NULL);
 }
 
-void qu_get_tag(qu_ast_node *node, char **data, int *len) {
-    if(node->tag) {
-        *data = (char *)node->tag->data;
-        *len = node->tag->bytelen;
-    } else {
-        *data = NULL;
-        *len = 0;
-    }
+const char *qu_node(qu_ast_node *node) {
+    return node->tag;
 }

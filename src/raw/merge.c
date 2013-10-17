@@ -91,9 +91,7 @@ void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
             if(item->value->kind == QU_NODE_ALIAS) {
                 item->value = item->value->val.alias_target;
             }
-            if(item->value->tag
-                && item->value->tag->bytelen == 7
-                && !memcmp(item->value->tag->data, "!Unpack", 7)) {
+            if(item->value->tag && !strcmp(item->value->tag, "!Unpack")) {
                 if(item->value->kind == QU_NODE_SEQUENCE) {
                     qu_seq_member *anchor = item;
                     qu_seq_member *next = TAILQ_NEXT(item, lst);
@@ -123,6 +121,8 @@ void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
             }
         }
         } break;
+    default:
+        break;
     }
 }
 

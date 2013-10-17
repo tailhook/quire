@@ -19,7 +19,7 @@ struct qu_class_vptr {
     void (*func_body)(struct qu_context *, struct qu_class *);
 };
 
-struct qu_class_vptr *qu_class_get_vptr(const char *name, int namelen);
+struct qu_class_vptr *qu_class_get_vptr(const char *name);
 void qu_classes_print_functions(struct qu_context *ctx);
 
 #endif  // QUIRE_H_GEN_CLASSES

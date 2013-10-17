@@ -1,4 +1,7 @@
+#include <string.h>
+
 #include "special.h"
+#include "../classes/classes.h"
 
 void qu_special_parse(struct qu_context *ctx,
     const char *name, qu_ast_node *node)

@@ -29,8 +29,7 @@ struct qu_option *qu_option_new(struct qu_context *ctx,
     return self;
 }
 
-struct qu_option *qu_option_resolve(struct qu_context *ctx,
-    const char *tag, int taglen)
+struct qu_option *qu_option_resolve(struct qu_context *ctx, const char *tag)
 {
     int i;
     struct qu_option *self = obstack_alloc(&ctx->parser.pieces,
@@ -42,8 +41,7 @@ struct qu_option *qu_option_resolve(struct qu_context *ctx,
     self->vp = NULL;
 
     for(i = 0; i < qu_types_num; ++i) {
-        if((int)strlen(qu_types_table[i].tag) == taglen
-           && !strncmp(qu_types_table[i].tag, tag, taglen)) {
+        if(!strcmp(qu_types_table[i].tag, tag)) {
             self->vp = qu_types_table[i].vp;
             break;
         }

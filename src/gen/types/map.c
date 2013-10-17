@@ -83,9 +83,7 @@ static void qu_map_parse(struct qu_context *ctx,
             self->val.str = qu_struct_new_root(ctx);
             qu_visit_struct_children(ctx, val, self->val.str);
         } else {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-                val ? val->tag : val->start_token,
-                "Untagged straw scalar");
+            LONGJUMP_ERR_NODE(ctx, val, "Untagged straw scalar");
         }
         opt->typname = qu_template_alloc(ctx, "m_${key}_${optpath:c}"
             , "key", self->key->typname
@@ -192,7 +190,6 @@ static void qu_map_printer(struct qu_context *ctx,
 static void qu_map_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr)
 {
-    struct qu_map_option *self = opt->typedata;
     qu_code_print(ctx,
         "${expr} = NULL;\n"
         "${expr}_tail = &${expr};\n"

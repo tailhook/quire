@@ -11,7 +11,8 @@
 
 qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
     const char *pat = qu_node_content(src);
-    const char *pattern = qu_join_filenames(ctx, src->tag->filename, pat);
+    const char *pattern = qu_join_filenames(ctx,
+        src->tag_token->filename, pat);
 
     const char *star = strchr(pattern, '*');
 

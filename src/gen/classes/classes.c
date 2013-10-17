@@ -18,12 +18,11 @@ static struct {
 };
 const int qu_vpointers_num = sizeof(qu_vpointers)/sizeof(qu_vpointers[0]);
 
-struct qu_class_vptr *qu_class_get_vptr(const char *name, int namelen)
+struct qu_class_vptr *qu_class_get_vptr(const char *name)
 {
     int i;
     for(i = 0; i < qu_vpointers_num; ++i) {
-        if((int)strlen(qu_vpointers[i].name) == namelen &&
-           !strncmp(qu_vpointers[i].name, name, namelen))
+        if(!strcmp(qu_vpointers[i].name, name))
             return qu_vpointers[i].ptr;
     }
     return NULL;

@@ -50,7 +50,8 @@ static struct qu_option_vptr qu_cli_help_vptr = {
     /* cli_parser */ qu_help_parser,
     /* parser */ NULL,
     /* definition */ NULL,
-    /* printer */ NULL
+    /* printer */ NULL,
+    /* default_setter */ NULL
     };
 static struct qu_option_vptr qu_cli_config_vptr = {
     /* parse */ NULL,

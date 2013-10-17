@@ -90,9 +90,10 @@ static struct unit_s {
     };
 
 static token_t _next_tok(const char **data, const char *end) {
+    int i;
     const char *cur = *data;
     while(isspace(*cur)) ++cur;
-    for(int i = 0; i < sizeof(char_token)/sizeof(char_token[0]); ++i) {
+    for(i = 0; i < (int)(sizeof(char_token)/sizeof(char_token[0])); ++i) {
         if(char_token[i].chvalue == *cur) {
             ++cur;
             *data = cur;
@@ -320,7 +321,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
 {
     if(interp && strchr(value, '$')) {
         const char *data;
-        size_t dlen;
+        int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         const char *end = qu_parse_int(data, result);
         obstack_free(&info->parser.pieces, data);
@@ -344,14 +345,14 @@ void qu_eval_float(qu_config_context *info, const char *value,
 {
     if(interp && strchr(value, '$')) {
         const char *data;
-        size_t dlen;
+        int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         const char *end = parse_double(data, result);
         obstack_free(&info->parser.pieces, data);
         if(end != data + dlen) {
-			LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-				"Floating point value required");
-		}
+            LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
+                "Floating point value required");
+        }
         return;
     }
     const char *end = parse_double(value, result);

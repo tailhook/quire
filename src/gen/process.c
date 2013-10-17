@@ -23,13 +23,10 @@ static void qu_parse_common(struct qu_context *ctx, struct qu_option *opt,
 struct qu_option *qu_parse_option(struct qu_context *ctx, qu_ast_node *node,
     const char *name, struct qu_config_struct *parent)
 {
-    struct qu_option *opt = qu_option_resolve(ctx,
-        (char *)node->tag->data, node->tag->bytelen);
-    if(!opt->vp) {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-            node->tag ? node->tag : node->start_token,
-            "Unknown object type");
-    }
+    struct qu_option *opt = qu_option_resolve(ctx, node->tag);
+    if(!opt->vp)
+        LONGJUMP_ERR_NODE(ctx, node,
+            "Unknown object type ${tag}", "tag", node->tag);
     qu_parse_common(ctx, opt, node);
     if(parent && parent->path) {
         opt->path = qu_template_alloc(ctx, "${parent}.${name}",

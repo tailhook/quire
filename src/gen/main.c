@@ -9,6 +9,7 @@
 #include "metadata.h"
 #include "header.h"
 #include "source.h"
+#include "process.h"
 #include "../error.h"
 #include "../yaml/codes.h"
 #include "../raw/common.h"
