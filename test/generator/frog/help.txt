@@ -1,0 +1,20 @@
+Usage:
+    frog [-c CONFIG_PATH] [options]
+
+The test program that is called frog just because it rhymes with prog (i.e.
+abbreviated "program")
+
+Configuration Options:
+  -h,--help         Print this help
+  -c,--config PATH  Configuration file name [default: /etc/frog.yaml]
+  -D,--config-var NAME=VALUE
+                    Set value of configuration variable NAME to VALUE
+  -C,--config-check
+                    Check configuration and exit
+  -P                Print configuration after reading, then exit. The
+                    configuration printed by this option includes values
+                    overriden from command-line. Double flag `-PP` prints
+                    comments.
+  --config-print TYPE
+                    Print configuration file after reading. TYPE maybe
+                    "current", "details", "example", "all", "full"

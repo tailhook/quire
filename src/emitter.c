@@ -5,6 +5,7 @@
 #include <ctype.h>
 
 #include "emitter.h"
+#include "util/wrap.h"
 
 
 int qu_emit_init(qu_emit_context *ctx, FILE *stream) {
@@ -72,16 +73,19 @@ int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len)
             fputc(' ', ctx->stream);
         }
     }
-    // TODO(tailhook) implement comment reformatting
     if(len < 0) {
-		fprintf(ctx->stream, "# %s\n", data);
+        len = strlen(data);
+    }
+    if(len == 0) {
+        fprintf(ctx->stream, "#\n");
     } else {
-		if(len == 0) {
-			/*  Empty line for beauty  */
-			fprintf(ctx->stream, "#\n");
-		} else {
-			fprintf(ctx->stream, "# %.*s\n", len, data);
-		}
+        const char *ptr = data;
+        const char *end = ptr + len;
+        while(ptr < end) {
+            fprintf(ctx->stream, "# ");
+            ptr = qu_line_print(ctx->stream, ptr, end, 80);
+            fprintf(ctx->stream, "\n");
+        }
     }
     ctx->line_start = 1;
     ctx->need_space = 0;

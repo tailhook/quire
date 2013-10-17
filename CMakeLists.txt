@@ -7,6 +7,7 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu99")
 
 ADD_LIBRARY(quire
     src/util/parse.c
+    src/util/wrap.c
     src/yaml/parser.c
     src/yaml/access.c
     src/yaml/anchors.c
@@ -146,6 +147,7 @@ ADD_SUBDIRECTORY(test/generator/map)
 ADD_SUBDIRECTORY(test/generator/struct)
 ADD_SUBDIRECTORY(test/generator/tagscalar)
 ADD_SUBDIRECTORY(test/generator/enum)
+ADD_SUBDIRECTORY(test/generator/frog)
 
 # TESTS FOR QUIRE-TOOL
 

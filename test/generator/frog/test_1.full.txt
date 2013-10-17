@@ -1,0 +1,8 @@
+# frog
+# ====
+#
+# The test program that is called frog just because it rhymes with prog (i.e.
+# abbreviated "program")
+#
+
+{}
