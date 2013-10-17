@@ -1,0 +1,6 @@
+string: hello
+  world
+...
+---
+- command-line: quire-tool -E /string
+  output: "hello\n  world"

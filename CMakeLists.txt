@@ -164,4 +164,5 @@ ADD_TOOL_TEST(mergeseq)
 ADD_TOOL_TEST(incl)
 ADD_TOOL_TEST(incmap)
 ADD_TOOL_TEST(incseq)
+ADD_TOOL_TEST(longstr)
 

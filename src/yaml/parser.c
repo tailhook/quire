@@ -117,7 +117,7 @@ void qu_parser_init(qu_parse_context *ctx) {
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
     ctx->anchor_index.node = NULL;
-	_qu_context_reinit(ctx);
+    _qu_context_reinit(ctx);
 }
 
 void _qu_load_file(qu_parse_context *ctx, const char *filename) {
@@ -431,8 +431,35 @@ void _qu_tokenize(qu_parse_context *ctx) {
                     if(CHAR == ':' && NEXT_KLASS == CHAR_WHITESPACE) break;
                     if(KLASS == CHAR_WHITESPACE && NEXT_CHAR == '#') break;
                 }
+                if(!ctx->flow_num && CHAR == '\n') {
+                    /* scalar may continue next line */
+                    do {
+                        int indent = ctx->indent+1;
+                        ctx->curline += 1;
+                        ctx->curpos = 0;
+                        if(!NEXT) break;
+                        for(;;) {
+                            unsigned char *linestart = ctx->ptr;
+                            CONSUME_WHILE(CHAR == ' ');
+                            if(ctx->curpos-1 < indent && CHAR != '\n') {
+                                ctx->ptr = linestart;
+                                ctx->curpos = 1;
+                                ctx->linestart = 1;
+                                ctx->indent = 0;
+                                break;
+                            } else {
+                            }
+                            CONSUME_WHILE(CHAR != '\n');
+                            ctx->curline += 1;
+                            ctx->curpos = 0;
+                            if(!NEXT) break;
+                        }
+                    } while(0);
+                }
                 // Let's strip trailing whitespace
-                while(PREV_CHAR == ' ' || PREV_CHAR == '\t') {
+                while(PREV_CHAR == ' ' || PREV_CHAR == '\t' || PREV_CHAR == '\n') {
+                    if(PREV_CHAR == '\n')
+                        ctx->curline -= 1;
                     --ctx->curpos;
                     --ctx->ptr;
                 }
@@ -685,7 +712,7 @@ qu_ast_node *_qu_parse(qu_parse_context *ctx) {
     if(CTOK->kind != QU_TOK_DOC_END) {
         LONGJUMP_WITH_PARSER_ERROR(ctx, CTOK, "Unexpected token");
     }
-	return node;
+    return node;
 }
 
 
