@@ -90,8 +90,7 @@ configuration into ``/etc`` yet. Let's see what we can do::
     Usage:
         frog [-c CONFIG_PATH] [options]
 
-    The test program that is called frog just because it
-     rhymes with prog (i.e.
+    The test program that is called frog just because it rhymes with prog (i.e.
     abbreviated "program")
 
     Configuration Options:
@@ -109,5 +108,8 @@ configuration into ``/etc`` yet. Let's see what we can do::
                         Print configuration file after reading. TYPE maybe
                         "current", "details", "example", "all", "full"
 
+You can change path to configuration file, you can play with configuration
+checking and printing, you can put some variables into configuration (more
+below). And you get all of this for free.
 
 .. _YAML: http://yaml.org
