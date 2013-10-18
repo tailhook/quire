@@ -27,7 +27,9 @@ to build the files)::
 
     quire-tool --source config.yaml --c-header config.h --c-header config.c
 
-Let's take a look at what we have in ``config.h``::
+Let's take a look at what we have in ``config.h``:
+
+.. code-block:: c
 
     /*  Main configuration structure  */
     struct cfg_main {
@@ -45,7 +47,9 @@ Let's take a look at what we have in ``config.h``::
 
 
 We don't see anything useful here yet. But let's make it work anyway. We need
-a ``main.c``::
+a ``main.c``:
+
+.. code-block:: c
 
     #include "config.h"
 
@@ -76,15 +80,19 @@ a ``main.c``::
 As you can see there is a tiny bit of boilerplate with handling error codes
 and freeing memory. Let's build it::
 
-    gcc main.c config.c -o frog -lquire
+    gcc main.c config.c -o frog -lquire -g
 
-Let's see what batteries we have out of the box::
+Let's see what batteries we have out of the box:
+
+.. code-block:: console
 
     $ ./prog
     Error parsing file /etc/frog.yaml: No such file or directory
 
 Hm, we don't have a configuration file, yet. And we don't want to put
-configuration into ``/etc`` yet. Let's see what we can do::
+configuration into ``/etc`` yet. Let's see what we can do:
+
+.. code-block:: console
 
     $ ./prog --help
     Usage:
@@ -111,5 +119,62 @@ configuration into ``/etc`` yet. Let's see what we can do::
 You can change path to configuration file, you can play with configuration
 checking and printing, you can put some variables into configuration (more
 below). And you get all of this for free.
+
+So to run the command now, execute:
+
+.. code-block:: console
+
+   $ touch frog.yaml
+   $ ./frog -c frog.yaml
+   The test program is doing nothing right now!
+
+
+Adding Useful Stuff
+===================
+
+Let's add some integer knob to our config:
+
+.. code-block:: yaml
+
+   jumps: !Int 3
+
+After building we have the following header:
+
+.. code-block:: c
+
+   struct cfg_main {
+       qu_config_head head;
+       long jumps;
+   };
+
+And we can now make advantage of this variable:
+
+.. code-block:: c
+
+    void run_program(struct cfg_main *cfg) {
+        int i;
+        for(i = 0; i < cfg->jumps; ++i) {
+            printf("jump\n");
+        }
+    }
+
+Let's run and play with it a little bit:
+
+.. code-block:: console
+
+   $ ./frog -c frog.yaml
+   jump
+   jump
+   jump
+   $ echo "jumps: 4" > frog.yaml
+   $ ./frog -c frog.yaml
+   jump
+   jump
+   jump
+   jump
+
+Note: I'm editing the file by shell command. It's probably too freaky way to
+do that. You can just edit the file, and see how changes are reflected.
+
 
 .. _YAML: http://yaml.org
