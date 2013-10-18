@@ -4,6 +4,7 @@
 #include "cli.h"
 #include "context.h"
 #include "util/print.h"
+#include "../util/wrap.h"
 #include "types/types.h"
 #include "../yaml/access.h"
 
@@ -209,8 +210,9 @@ void qu_cli_print_parser(struct qu_context *ctx) {
         "    cli->action = QU_CLI_RUN;\n"
         "    cli->print_flags = 0;\n"
         "    cli->cfg_filename = ${defaultfn:q};\n"
-        "    for(arg = argv; argc; ++arg, --argc) {\n"
+        "    for(arg = argv; ; ++arg, --argc) {\n"
         "    nextarg:\n"
+        "       if(!argc) break;\n"
         "       if((*arg)[0] != '-')\n"
         "           break;\n"  // TODO(tailhook) check if supported
         "       if((*arg)[1] == '-') {  /*  Long arguments */\n"
