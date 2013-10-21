@@ -1,0 +1,28 @@
+__meta__:
+  program-name: choice
+  default-config: /etc/__quire_test__/choice.yaml
+  description: Choice type test
+
+__types__:
+
+  s1: !Struct
+    a: !Int 1
+    b: !Int 2
+
+  a1: !Choice
+    choices:
+      int: !Int 10
+      str: !Type s1
+      string: !String
+      array: !Array
+        element: !String
+
+val1: !Type a1
+val2: !Type
+  type: a1
+  example:
+    a: 10
+    b: 20
+  description: The second value
+val3: !Type a1
+val4: !Type a1

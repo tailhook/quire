@@ -24,10 +24,15 @@ struct qu_class_scalar {
 
 static void qu_scalar_init(struct qu_context *, struct qu_class *,
     qu_ast_node *node);
+static void qu_scalar_var_decl(struct qu_context *, struct qu_class *,
+    struct qu_option *opt, const char *varname);
+static void qu_scalar_func_decl(struct qu_context *, struct qu_class *);
 static void qu_scalar_func_body(struct qu_context *, struct qu_class *);
 
 struct qu_class_vptr qu_class_vptr_scalar = {
     /* init */ qu_scalar_init,
+    /* var_decl */ qu_scalar_var_decl,
+    /* func_decl */ qu_scalar_func_decl,
     /* func_body */ qu_scalar_func_body
     };
 
@@ -114,10 +119,25 @@ static void qu_scalar_init(struct qu_context *ctx, struct qu_class *cls,
 
     self->opt = qu_parse_option(ctx, qu_map_get(node, "type"), "", NULL);
 
-    const char *typename = qu_template_alloc(ctx, "${pref}_${name}",
+    const char *typename = qu_template_alloc(ctx, "struct ${pref}_${name}",
         "name", cls->name,
         NULL);
     qu_fwdecl_add(ctx, typename, (qu_fwdecl_printer)qu_scalar_print, cls);
+}
+
+static void qu_scalar_func_decl(struct qu_context *ctx, struct qu_class *cls)
+{
+    qu_code_print(ctx,
+        "static void ${pref}_${typname}_defaults("
+            "struct ${pref}_${typname} *val);\n"
+        "static void ${pref}_${typname}_parse("
+            "struct qu_config_context *ctx, "
+            "struct ${pref}_${typname} *obj, qu_ast_node *node);\n"
+        "static void ${pref}_${typname}_print("
+            "struct qu_emit_context *ctx, "
+            "struct ${pref}_${typname} *obj, int flags, const char *tag);\n"
+        , "typname", cls->name
+        , NULL);
 }
 
 static void qu_scalar_func_body(struct qu_context *ctx, struct qu_class *cls)
@@ -167,8 +187,7 @@ static void qu_scalar_func_body(struct qu_context *ctx, struct qu_class *cls)
     qu_code_print(ctx,
         "static void ${pref}_${typname}_print("
             "struct qu_emit_context *ctx, "
-            "struct ${pref}_${typname} *obj, int flags) {\n"
-        "    const char *tag = NULL;\n"
+            "struct ${pref}_${typname} *obj, int flags, const char *tag) {\n"
         "    switch(obj->tag) {\n"
         , "typname", cls->name
         , NULL);
@@ -187,4 +206,14 @@ static void qu_scalar_func_body(struct qu_context *ctx, struct qu_class *cls)
     self->opt->vp->printer(ctx, self->opt, "obj->val", "tag");
     qu_code_print(ctx, "}\n\n", NULL);
 
+}
+
+static void qu_scalar_var_decl(struct qu_context *ctx, struct qu_class *cls,
+    struct qu_option *opt, const char *varname)
+{
+    qu_code_print(ctx,
+        "struct ${pref}_${typname} ${varname:c};\n"
+        , "typname", opt->typname
+        , "varname", varname
+        , NULL);
 }

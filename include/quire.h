@@ -47,8 +47,7 @@
 #define QU_YAML_ERROR       97156
 
 typedef struct qu_config_head {
-    jmp_buf safejump;
-    char data[512 - sizeof(jmp_buf)];
+    char data[512];
 } qu_config_head;
 
 typedef struct qu_emit_context {
@@ -77,10 +76,11 @@ qu_ast_node *qu_map_value(qu_map_member *iter);
 
 void *qu_config_init(void *cfg, int size);
 void qu_config_free(void *cfg);
-void *qu_config_alloc(void *cfg, int size);
+void *qu_config_alloc(struct qu_config_context *cfg, int size);
 
 // Methods from cfg/api.c
-struct qu_config_context *qu_config_parser(jmp_buf *jmp);
+struct qu_config_context *qu_config_parser(struct qu_config_head *head,
+    jmp_buf *jmp);
 void qu_config_parser_free(struct qu_config_context *ctx);
 qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
                                   const char *filename);

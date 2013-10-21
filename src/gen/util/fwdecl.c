@@ -3,6 +3,7 @@
 #include "../context.h"
 
 struct qu_fwdecl_node {
+    TAILQ_ENTRY(qu_fwdecl_lst) lst;
     struct qu_fwdecl_node *left;
     struct qu_fwdecl_node *right;
     qu_fwdecl_printer printer;
@@ -29,6 +30,7 @@ static struct qu_fwdecl_node **qu_fwdecl_find(struct qu_fwdecl_index *idx,
 
 void qu_fwdecl_init(struct qu_context *ctx) {
     ctx->fwdecl_index.root = NULL;
+    TAILQ_INIT(&ctx->fwdecl_index.list);
 }
 
 static void qu_fwdecl_node_init(struct qu_fwdecl_node *node, const char *name,
@@ -51,33 +53,19 @@ int qu_fwdecl_add(struct qu_context *ctx, const char *name,
     *node = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_fwdecl_node) + nlen+1);
     qu_fwdecl_node_init(*node, name, printer, data);
+    TAILQ_INSERT_TAIL(&ctx->fwdecl_index.list, *node, lst);
     return 1;
 }
 
-static void qu_fwdecl_printfw_visit(struct qu_context *ctx,
-    struct qu_fwdecl_node *node)
-{
-    if(!node)
-        return;
-    qu_fwdecl_printfw_visit(ctx, node->left);
-    qu_code_print(ctx,
-        "struct ${sname};\n",
-        "sname", node->name,
-        NULL);
-    qu_fwdecl_printfw_visit(ctx, node->right);
-}
-
-static void qu_fwdecl_print_visit(struct qu_context *ctx,
-    struct qu_fwdecl_node *node)
-{
-    if(!node)
-        return;
-    qu_fwdecl_print_visit(ctx, node->left);
-    node->printer(ctx, node->printer_data);
-    qu_fwdecl_print_visit(ctx, node->right);
-}
-
 void qu_fwdecl_print_all(struct qu_context *ctx) {
-    qu_fwdecl_printfw_visit(ctx, ctx->fwdecl_index.root);
-    qu_fwdecl_print_visit(ctx, ctx->fwdecl_index.root);
+    struct qu_fwdecl_node *node;
+    TAILQ_FOREACH(node, &ctx->fwdecl_index.list, lst) {
+        qu_code_print(ctx,
+            "${sname};\n",
+            "sname", node->name,
+            NULL);
+    }
+    TAILQ_FOREACH(node, &ctx->fwdecl_index.list, lst) {
+        node->printer(ctx, node->printer_data);
+    }
 }

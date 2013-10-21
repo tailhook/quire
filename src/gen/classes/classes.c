@@ -4,7 +4,7 @@
 #include "../util/print.h"
 #include "classes.h"
 #include "struct.h"
-#include "alter.h"
+#include "choice.h"
 #include "enum.h"
 #include "scalar.h"
 
@@ -13,7 +13,7 @@ static struct {
     struct qu_class_vptr *ptr;
 } qu_vpointers[] = {
     {"!Struct", &qu_class_vptr_struct},
-    // {"!Alternative", &qu_class_vptr_alternative},
+    {"!Choice", &qu_class_vptr_choice},
     {"!Enum", &qu_class_vptr_enum},
     {"!TagScalar", &qu_class_vptr_scalar}
 };
@@ -34,17 +34,7 @@ static void qu_classes_decl_visit(struct qu_context *ctx, struct qu_class *cls)
     if(!cls)
         return;
     qu_classes_decl_visit(ctx, cls->left);
-    qu_code_print(ctx,
-        "static void ${pref}_${typname}_defaults("
-            "struct ${pref}_${typname} *val);\n"
-        "static void ${pref}_${typname}_parse("
-            "struct qu_config_context *ctx, "
-            "struct ${pref}_${typname} *obj, qu_ast_node *node);\n"
-        "static void ${pref}_${typname}_print("
-            "struct qu_emit_context *ctx, "
-            "struct ${pref}_${typname} *obj, int flags);\n"
-        , "typname", cls->name
-        , NULL);
+    cls->vp->func_decl(ctx, cls);
     qu_classes_decl_visit(ctx, cls->right);
 }
 

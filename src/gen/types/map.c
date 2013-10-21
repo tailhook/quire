@@ -97,7 +97,7 @@ static void qu_map_parse(struct qu_context *ctx,
             , NULL);
     }
 
-    const char *sname = qu_template_alloc(ctx, "${pref}_${typname}",
+    const char *sname = qu_template_alloc(ctx, "struct ${pref}_${typname}",
         "typname", opt->typname,
         NULL);
 
@@ -114,7 +114,7 @@ static void qu_map_parser(struct qu_context *ctx,
         "   qu_ast_node *node${nlevel:d};\n"
         "   node${nlevel:d}= qu_map_key(mem);\n"
         "   struct ${pref}_${typname} *el = "
-            "qu_config_alloc(cfg, sizeof(struct ${pref}_${typname}));\n"
+            "qu_config_alloc(ctx, sizeof(struct ${pref}_${typname}));\n"
         , "level:d", level
         , "nlevel:d", level+1
         , "typname", opt->typname

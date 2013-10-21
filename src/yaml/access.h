@@ -6,10 +6,10 @@
 #include "../quire_int.h"
 
 typedef struct qu_array_head {
-	struct qu_array_head *next;
+    struct qu_array_head *next;
 } qu_array_head __attribute__((aligned(sizeof(void*)*2)));
 typedef struct qu_mapping_head {
-	struct qu_mapping_head *next;
+    struct qu_mapping_head *next;
 } qu_mapping_head __attribute__((aligned(sizeof(void*)*2)));
 
 
@@ -31,6 +31,5 @@ qu_ast_node *qu_map_value(qu_map_member *iter);
 const char *qu_node_tag(qu_ast_node *node);
 int qu_get_boolean(qu_ast_node *node, int *value);
 const char *qu_node_content(qu_ast_node *node);
-void *qu_config_alloc(qu_config_head *cfg, int size);
 
 #endif // _H_ACCESS

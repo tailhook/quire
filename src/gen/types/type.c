@@ -90,21 +90,18 @@ static void qu_type_parser(struct qu_context *ctx,
 static void qu_type_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname)
 {
-    qu_code_print(ctx,
-        "struct ${pref}_${typname} ${varname:c};\n"
-        , "typname", opt->typname
-        , "varname", varname
-        , NULL);
+    struct qu_type_option *self = opt->typedata;
+    self->cls->vp->var_decl(ctx, self->cls, opt, varname);
 }
 
 static void qu_type_printer(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, const char *tag)
 {
-    assert(!strcmp(tag, "NULL"));
     qu_code_print(ctx,
-        "${pref}_${typname}_print(ctx, &${expr}, flags);\n"
+        "${pref}_${typname}_print(ctx, &${expr}, flags, ${tag});\n"
         , "typname", opt->typname
         , "expr", expr
+        , "tag", tag
         , NULL);
 }
 

@@ -1,0 +1,13 @@
+# choice
+# ======
+#
+# Choice type test
+#
+
+val1: # required
+# The second value
+val2:
+  a: 10
+  b: 20
+val3: # required
+val4: # required

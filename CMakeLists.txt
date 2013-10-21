@@ -36,6 +36,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/classes/struct.c
     src/gen/classes/scalar.c
     src/gen/classes/enum.c
+    src/gen/classes/choice.c
     src/gen/types/types.c
     src/gen/types/int.c
     src/gen/types/str.c
@@ -148,6 +149,7 @@ ADD_SUBDIRECTORY(test/generator/struct)
 ADD_SUBDIRECTORY(test/generator/tagscalar)
 ADD_SUBDIRECTORY(test/generator/enum)
 ADD_SUBDIRECTORY(test/generator/frog)
+ADD_SUBDIRECTORY(test/generator/choice)
 
 # TESTS FOR QUIRE-TOOL
 

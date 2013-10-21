@@ -120,6 +120,14 @@ int qu_emit_whitespace(qu_emit_context *ctx, int kind, int count) {
 int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, int code) {
     switch(code) {
         case QU_EMIT_MAP_START:
+            if(tag) {
+                if(ctx->need_space) {
+                    fputc(' ', ctx->stream);
+                }
+                fprintf(ctx->stream, "%s", tag);
+                ctx->need_space = 1;
+                ctx->pending_newline = 0;
+            }
             if(!ctx->doc_start) {
                 int oi = ctx->indent_levels[ctx->cur_indent];
                 ctx->cur_indent += 1;
@@ -131,12 +139,6 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, in
                         ctx->pending_newline = 0;
                     }
                 }
-            }
-            if(tag) {
-                _space_check(ctx);
-                fprintf(ctx->stream, "%s", tag);
-                ctx->need_space = 1;
-                ctx->pending_newline = 0;
             }
             ctx->map_start = 1;
             break;

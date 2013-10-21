@@ -3,7 +3,10 @@
 
 #include "../yaml/node.h"
 
-struct qu_config_context *qu_config_parser();
+struct qu_config_head;
+
+struct qu_config_context *qu_config_parser(
+    struct qu_config_head *target, jmp_buf *jmp);
 void qu_config_parser_free(struct qu_config_context *ctx);
 qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
     const char *filename);

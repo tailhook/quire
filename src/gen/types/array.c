@@ -92,7 +92,7 @@ static void qu_array_parse(struct qu_context *ctx,
             "Array type definition must contain element definition");
     }
 
-    const char *sname = qu_template_alloc(ctx, "${pref}_${typname}",
+    const char *sname = qu_template_alloc(ctx, "struct ${pref}_${typname}",
         "typname", opt->typname,
         NULL);
 
@@ -108,7 +108,7 @@ static void qu_array_parser(struct qu_context *ctx,
         "for(mem = qu_seq_iter(node${level:d}); mem; mem = qu_seq_next(mem)) {\n"
         "   qu_ast_node *node${nlevel:d} = qu_seq_node(mem);\n"
         "   struct ${pref}_${typname} *el = "
-            "qu_config_alloc(cfg, sizeof(struct ${pref}_${typname}));\n"
+            "qu_config_alloc(ctx, sizeof(struct ${pref}_${typname}));\n"
         , "level:d", level
         , "nlevel:d", level+1
         , "typname", opt->typname

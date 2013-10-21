@@ -1,0 +1,13 @@
+# choice
+# ======
+#
+# Choice type test
+#
+
+val1: !int 1
+# The second value
+val2:
+val3: !string hello
+val4: !str
+  a: 7
+  b: 2

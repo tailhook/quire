@@ -9,8 +9,6 @@
 #include "gen/util/print.h"
 
 typedef struct __attribute__((__aligned__(512))) qu_config_head {
-    jmp_buf *errjmp;
-    jmp_buf errjmp_buf;
     struct obstack pieces;
 } qu_config_head;
 
