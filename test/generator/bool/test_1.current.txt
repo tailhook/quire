@@ -1,0 +1,6 @@
+val1: true
+val2: true
+val3: false
+val4: true
+nested:
+  val: false

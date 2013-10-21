@@ -340,6 +340,28 @@ void qu_eval_int(qu_config_context *info, const char *value,
     }
 }
 
+void qu_eval_bool(qu_config_context *info, const char *value,
+    int interp, int *result)
+{
+    if(interp && strchr(value, '$')) {
+        const char *data;
+        int dlen;
+        qu_eval_str(info, value, interp, &data, &dlen);
+        int ok = qu_parse_bool(data, result);
+        obstack_free(&info->parser.pieces, data);
+        if(!ok) {
+            LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
+                "Integer value required");
+        }
+
+        return;
+    }
+    if(!qu_parse_bool(value, result)) {
+        LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
+            "Integer value required");
+    }
+}
+
 void qu_eval_float(qu_config_context *info, const char *value,
     int interp, double *result)
 {
@@ -440,6 +462,13 @@ void qu_node_to_int(qu_config_context *ctx, qu_ast_node *node, long *result) {
     if(content)
         qu_eval_int(ctx, content, 1, result);
 }
+
+void qu_node_to_bool(qu_config_context *ctx, qu_ast_node *node, int *result) {
+    const char *content = qu_node_content(node);
+    if(content)
+        qu_eval_bool(ctx, content, 1, result);
+}
+
 void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
     double *result)
 {
@@ -447,6 +476,7 @@ void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
     if(content)
         qu_eval_float(ctx, content, 1, result);
 }
+
 void qu_node_to_str(qu_config_context *ctx, qu_ast_node *node,
     const char **result, int *rlen) {
     const char *content = qu_node_content(node);

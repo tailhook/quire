@@ -1,0 +1,23 @@
+__meta__:
+  program-name: bool
+  default-config: /etc/__quire_test__/bool.yaml
+  description: Boolean type test
+
+val1: !Bool
+val2: !Bool yes
+val3: !Bool
+  description: Some boolean value
+  example: yes
+val4: !Bool
+  default: no
+  description: A boolean controlled from the command line
+  command-line:
+    =: --val4
+    group: Booleans
+  command-line-enable: -e
+  command-line-disable: -d
+
+nested:
+  val: !Bool
+    default: no
+    command-line-enable: --nested-val-enable

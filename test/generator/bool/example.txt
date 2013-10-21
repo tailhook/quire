@@ -1,0 +1,9 @@
+# bool
+# ====
+#
+# Boolean type test
+#
+
+val1: # required
+# Some boolean value
+val3: yes

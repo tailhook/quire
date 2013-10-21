@@ -453,7 +453,7 @@ static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
     qu_ast_node *name = NULL;
     qu_ast_node *names = NULL;
 
-    if((tmp = qu_map_get(defnode, "group")))
+    if(defnode && (tmp = qu_map_get(defnode, "group")))
         group = qu_node_content(tmp);
 
     struct qu_cli_optref *ref = obstack_alloc(&ctx->parser.pieces,
@@ -503,7 +503,7 @@ static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
 }
 
 void qu_cli_parse(struct qu_context *ctx,
-	struct qu_option *opt, qu_ast_node *node)
+    struct qu_option *opt, qu_ast_node *node)
 {
     const int clen = strlen("command-line");
     qu_ast_node *clinode = qu_map_get(node, "command-line");

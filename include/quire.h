@@ -63,7 +63,6 @@ typedef struct qu_map_member qu_map_member;
 // Methods from access.c
 qu_ast_node *qu_config_root(struct qu_config_context *ctx);
 qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
-int qu_get_boolean(qu_ast_node *node, int *value);
 char *qu_node_content(qu_ast_node *node);
 const char *qu_node_tag(qu_ast_node *node);
 qu_seq_member *qu_seq_iter(qu_ast_node *node);
@@ -88,6 +87,8 @@ qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
 // Methods from yaml/parser.c
 
 // Methods from eval.c
+void qu_node_to_bool(struct qu_config_context *ctx, qu_ast_node *node,
+    int *result);
 void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node,
     long *result);
 void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node,

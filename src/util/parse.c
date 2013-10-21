@@ -21,6 +21,20 @@ static struct unit_s {
     {NULL, 0},
     };
 
+const char *bool_true[] = {
+    "yes",
+    "true",
+    "y",
+    NULL};
+
+const char *bool_false[] = {
+    "no",
+    "false",
+    "n",
+    "~",
+    "",
+    NULL};
+
 
 const char *qu_parse_int(const char *value, long *result) {
     const char *end;
@@ -36,4 +50,21 @@ const char *qu_parse_int(const char *value, long *result) {
     }
     *result = val;
     return end;
+}
+
+int qu_parse_bool(const char *value, int *result) {
+    const char **iter;
+    for(iter = bool_true; *iter; ++iter) {
+        if(!strcasecmp(value, *iter)) {
+            *result = 1;
+            return 1;
+        }
+    }
+    for(iter = bool_false; *iter; ++iter) {
+        if(!strcasecmp(value, *iter)) {
+            *result = 0;
+            return 1;
+        }
+    }
+    return 0;
 }

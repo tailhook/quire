@@ -1,0 +1,14 @@
+# bool
+# ====
+#
+# Boolean type test
+#
+
+val1: true
+val2: true
+# Some boolean value
+val3: false
+# A boolean controlled from the command line
+val4: true
+nested:
+  val: false
