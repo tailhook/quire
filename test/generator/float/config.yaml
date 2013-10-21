@@ -1,0 +1,14 @@
+__meta__:
+  program-name: float
+  default-config: /etc/__quire_test__/float.yaml
+  description: Floating type test
+
+val1: !Float
+val2: !Float 1.5
+val3: !Float
+  description: Some floating point value
+  example: 33.25
+val4: !Float
+  default: 12.75
+  description: A floating point controlled from command-line
+  command-line: --val4

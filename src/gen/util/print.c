@@ -76,10 +76,13 @@ void qu_template_grow_va(struct qu_context *ctx,
                         break;
                     int ivalue;
                     long lvalue;
+                    double dvalue;
                     const char *cvalue;
                     const char *typ = strchr(name, ':');
                     if(typ && typ[1] == 'l') {
                         lvalue = va_arg(vars, long);
+                    } else if(typ && typ[1] == 'g') {
+                        dvalue = va_arg(vars, double);
                     } else if(typ && typ[1] == 'd') {
                         ivalue = va_arg(vars, int);
                     } else {
@@ -94,6 +97,10 @@ void qu_template_grow_va(struct qu_context *ctx,
                         } else if(typ && typ[1] == 'l') {
                             char buf[24];
                             int blen = sprintf(buf, "%ld", lvalue);
+                            obstack_grow(&ctx->parser.pieces, buf, blen);
+                        } else if(typ && typ[1] == 'g') {
+                            char buf[64];
+                            int blen = sprintf(buf, "%g", dvalue);
                             obstack_grow(&ctx->parser.pieces, buf, blen);
                         } else {
                             qu_code_growstr(cvalue, &ctx->parser.pieces, fmt);

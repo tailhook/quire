@@ -1,0 +1,9 @@
+# float
+# =====
+#
+# Floating type test
+#
+
+val1: # required
+# Some floating point value
+val3: 33.25

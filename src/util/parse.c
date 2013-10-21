@@ -68,3 +68,19 @@ int qu_parse_bool(const char *value, int *result) {
     }
     return 0;
 }
+
+const char *qu_parse_float(const char *value, double *result) {
+    const char *end;
+    double val = strtod(value, (char **)&end);
+    if(*end) {
+        for(struct unit_s *unit = units; unit->unit; ++unit) {
+            if(!strcmp(end, unit->unit)) {
+                val *= unit->value;
+                end += strlen(unit->unit);
+                break;
+            }
+        }
+    }
+    *result = val;
+    return end;
+}

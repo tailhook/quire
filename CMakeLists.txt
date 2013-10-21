@@ -41,6 +41,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/types/int.c
     src/gen/types/str.c
     src/gen/types/bool.c
+    src/gen/types/float.c
     src/gen/types/array.c
     src/gen/types/map.c
     src/gen/types/type.c
@@ -152,6 +153,7 @@ ADD_SUBDIRECTORY(test/generator/enum)
 ADD_SUBDIRECTORY(test/generator/frog)
 ADD_SUBDIRECTORY(test/generator/choice)
 ADD_SUBDIRECTORY(test/generator/bool)
+ADD_SUBDIRECTORY(test/generator/float)
 
 # TESTS FOR QUIRE-TOOL
 

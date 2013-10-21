@@ -1,0 +1,12 @@
+# float
+# =====
+#
+# Floating type test
+#
+
+val1: 13.125
+val2: 1.5
+# Some floating point value
+val3: 15.25
+# A floating point controlled from command-line
+val4: 1e+15

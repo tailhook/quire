@@ -5,6 +5,7 @@
 #include "int.h"
 #include "str.h"
 #include "bool.h"
+#include "float.h"
 #include "array.h"
 #include "map.h"
 #include "type.h"
@@ -16,6 +17,7 @@ static struct {
     {"!Int", &qu_int_vptr},
     {"!String", &qu_str_vptr},
     {"!Bool", &qu_bool_vptr},
+    {"!Float", &qu_float_vptr},
     {"!Array", &qu_array_vptr},
     {"!Mapping", &qu_map_vptr},
     {"!Type", &qu_type_vptr}
