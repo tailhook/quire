@@ -11,7 +11,6 @@
 struct qu_config_context *qu_config_parser(
     struct qu_config_head *target, jmp_buf *jmp)
 {
-    fprintf(stderr, "INIT_PARSER %x\n", target);
     struct qu_config_context *ctx = malloc(sizeof(struct qu_config_context));
     if(!ctx) {
         longjmp(*jmp, -errno);
@@ -48,7 +47,6 @@ static void config_chunk_free(qu_config_head *cfg, void *ptr) {
 
 
 void qu_config_init(qu_config_head *cfg, int size) {
-    fprintf(stderr, "INIT %x\n", cfg);
     memset(cfg, 0, size);
     obstack_specify_allocation_with_arg(&cfg->pieces, 4096, 0,
         config_chunk_alloc, config_chunk_free, cfg);
@@ -60,6 +58,5 @@ void qu_config_free(qu_config_head *cfg) {
 
 
 void *qu_config_alloc(struct qu_config_context *ctx, int size) {
-    fprintf(stderr, "ALLOC %x\n", ctx->alloc);
     return obstack_alloc(ctx->alloc, size);
 }
