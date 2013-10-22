@@ -120,41 +120,26 @@ void qu_parser_init(qu_parse_context *ctx) {
     _qu_context_reinit(ctx);
 }
 
-void _qu_load_file(qu_parse_context *ctx, const char *filename) {
-    ctx->filename = obstack_copy0(&ctx->pieces,
-        filename, strlen(filename));
+static void qu_load_stream(qu_parse_context *ctx, FILE *stream) {
     int rc, eno;
-    unsigned char *data = NULL;
-    int fd = open(filename, O_RDONLY);
-    if(fd < 0)
-        LONGJUMP_WITH_ERRNO(ctx);
-    struct stat stinfo;
-    rc = fstat(fd, &stinfo);
-    if(rc < 0) {
-        eno = errno;
-        close(fd);
-        LONGJUMP_WITH_ERRCODE(ctx, eno);
-    }
-    data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
-    int so_far = 0;
-    while(so_far < stinfo.st_size) {
-        rc = read(fd, data + so_far, stinfo.st_size - so_far);
+    char chunk[4096];
+    obstack_blank(&ctx->pieces, 0);
+    while(1) {
+        rc = fread(chunk, 1, sizeof(chunk), stream);
         if(rc == -1) {
             eno = errno;
             if(eno == EINTR) continue;
-            close(fd);
+            fclose(stream);
             LONGJUMP_WITH_ERRCODE(ctx, eno);
         }
         if(!rc) {
-            // WARNING: file truncated
             break;
         }
-        so_far += rc;
+        obstack_grow(&ctx->pieces, chunk, rc);
     }
-    close(fd);
-    ctx->buf = data;
-    ctx->buf[so_far] = 0;
-    ctx->buflen = so_far;
+    ctx->buflen = obstack_object_size(&ctx->pieces);
+    obstack_1grow(&ctx->pieces, 0);
+    ctx->buf = obstack_finish(&ctx->pieces);
 }
 
 void qu_parser_free(qu_parse_context *ctx) {
@@ -725,7 +710,27 @@ void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
 
 void qu_file_parse(qu_parse_context *ctx, const char *filename) {
     assert(ctx->errjmp);
-    _qu_load_file(ctx, filename);
+    ctx->filename = obstack_copy0(&ctx->pieces,
+        filename, strlen(filename));
+    FILE *file = fopen(filename, "rb");
+    if(!file)
+        LONGJUMP_WITH_ERRNO(ctx);
+    qu_load_stream(ctx, file);
+    fclose(file);
+    _qu_tokenize(ctx);
+    ctx->document = _qu_parse(ctx);
+    assert (ctx->cur_anchor == NULL);
+    assert (ctx->cur_tag == NULL);
+    assert (ctx->document != NULL);
+}
+
+void qu_stream_parse(qu_parse_context *ctx, const char *filename, FILE *stream)
+{
+    assert(ctx->errjmp);
+    ctx->filename = obstack_copy0(&ctx->pieces,
+        filename, strlen(filename));
+    qu_load_stream(ctx, stream);
+    fclose(stream);
     _qu_tokenize(ctx);
     ctx->document = _qu_parse(ctx);
     assert (ctx->cur_anchor == NULL);
@@ -736,7 +741,13 @@ void qu_file_parse(qu_parse_context *ctx, const char *filename) {
 qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename) {
     assert(ctx->errjmp);
     _qu_context_reinit(ctx);
-    _qu_load_file(ctx, filename);
+    ctx->filename = obstack_copy0(&ctx->pieces,
+        filename, strlen(filename));
+    FILE *file = fopen(filename, "rb");
+    if(!file)
+        LONGJUMP_WITH_ERRNO(ctx);
+    qu_load_stream(ctx, file);
+    fclose(file);
     _qu_tokenize(ctx);
     return _qu_parse(ctx);
 }

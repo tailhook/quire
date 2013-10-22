@@ -266,7 +266,11 @@ int main(int argc, char **argv) {
     if(!(rc = setjmp(jmp))) {
 		ctx.errjmp = &jmp;
         qu_parser_init(&ctx);
-        qu_file_parse(&ctx, options.filename);
+        if(!options.filename || !strcmp(options.filename, "-")) {
+            qu_stream_parse(&ctx, "<stdin>", stdin);
+        } else {
+            qu_file_parse(&ctx, options.filename);
+        }
         if(options.plain) {
             qu_raw_process(&ctx);
         }
