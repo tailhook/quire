@@ -4,6 +4,7 @@ import sys
 import subprocess
 import os
 import difflib
+import shlex
 
 yaml.add_constructor('!Include', yaml.Loader.construct_scalar)
 yaml.add_constructor('!GlobMap', yaml.Loader.construct_scalar)
@@ -16,9 +17,13 @@ with open(filename, 'rb') as f:
     data, spec = yaml.load_all(f)
 for item in spec:
     if 'command-line' in item:
-        status, outp = subprocess.getstatusoutput(
-            os.environ['PWD'] + '/' + item['command-line'] + ' -f ' + filename)
-        status = os.WEXITSTATUS(status)
+        proc = subprocess.Popen(
+            shlex.split(os.environ['PWD']+'/'+item['command-line']
+            + ' -f ' + filename),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        outp = (stdout + stderr).decode('ascii')
+        status = proc.returncode
         if 'result' in item:
             if status != item['result']:
                 print(filename, 'FAILED:', item['command-line'],
