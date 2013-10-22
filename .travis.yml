@@ -1,7 +1,8 @@
 language: c
 install:
 - git submodule update --init
-- pip install PyYAML --use-mirrors
+- pip install PyYAML --target pyyaml --use-mirrors
+env: PYTHONPATH=$TRAVIS_BUILD_DIR/pyyaml
 compiler:
 - gcc
 - clang
