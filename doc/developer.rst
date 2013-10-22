@@ -104,7 +104,44 @@ if they have C files generated. You also need to add instructions to run
 Variable Types
 ==============
 
+String Type
+-----------
 
+Integer Type
+------------
+
+Boolean Type
+------------
+
+Floating Point Type
+-------------------
+
+Array Type
+----------
+
+Mapping Type
+------------
+
+Custom Type
+-----------
+
+.. _custom-types:
+
+Custom Types
+============
+
+
+Structure Type
+--------------
+
+Choice Type
+-----------
+
+Enumeration Type
+----------------
+
+Tagged Scalar Type
+------------------
 
 .. _YAML: http://yaml.org
 .. _cmake: http://cmake.org
