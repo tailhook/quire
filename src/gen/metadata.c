@@ -9,9 +9,9 @@ void qu_parse_metadata(struct qu_context *bigctx) {
     qu_parse_context *ctx = &bigctx->parser;
     qu_ast_node *root = ctx->document;
     qu_metadata_t *meta = &bigctx->meta;
-    meta->program_name = NULL;
-    meta->default_config = NULL;
-    meta->description = NULL;
+    meta->program_name = "unknown_program";
+    meta->default_config = "/etc/unknown_program.yaml";
+    meta->description = "";
     qu_ast_node *mnode = qu_map_get(root, "__meta__");
     if(!mnode)
         return;
