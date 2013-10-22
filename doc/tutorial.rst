@@ -9,6 +9,8 @@ It is also assumed that you are familiar with YAML_. There is quick
 :ref:`cheat sheet <cheat-sheet>` in user guide.
 
 
+.. _minimal-config:
+
 Minimal Config
 ==============
 
