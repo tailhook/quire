@@ -128,6 +128,21 @@ So to run the command now, execute:
    $ ./frog -c frog.yaml
    The test program is doing nothing right now!
 
+Let's make it easier to test by picking up configuration file from current
+directory:
+
+.. code-block:: yaml
+
+    __meta__:
+      ...
+      default-config: frog.yaml
+      ...
+
+.. code-block:: console
+
+   $ ./frog
+   The test program is doing nothing right now!
+
 
 Adding Useful Stuff
 ===================
@@ -162,12 +177,12 @@ Let's run and play with it a little bit:
 
 .. code-block:: console
 
-   $ ./frog -c frog.yaml
+   $ ./frog
    jump
    jump
    jump
    $ echo "jumps: 4" > frog.yaml
-   $ ./frog -c frog.yaml
+   $ ./frog
    jump
    jump
    jump
@@ -176,5 +191,134 @@ Let's run and play with it a little bit:
 Note: I'm editing the file by shell command. It's probably too freaky way to
 do that. You can just edit the file, and see how changes are reflected.
 
+The tutorial gives you an overview of what quire is able to parse and generate,
+for full list of types supported see :ref:`Developer Guide <variable-types>`.
+
+
+Nested Structures
+=================
+
+Now the interesting begins. You can make hierarchical config, configuration
+sections of arbitrary depth:
+
+.. code-block:: yaml
+
+   jumping:
+     number: !Int 3
+     distance: !Float 1
+
+Yields:
+
+.. code-block:: c
+
+   struct cfg_main {
+       qu_config_head head;
+       struct {
+           long number;
+           double distance;
+       } jumping;
+   };
+
+In config it looks like:
+
+.. code-block:: yaml
+
+   jumping:
+     number: 5
+     distance: 2
+
+
+Command-line Arguments
+======================
+
+Many values can be controlled from the command-line. Let's return to the
+simpler example:
+
+.. code-block:: yaml
+
+   jumps: !Int 3
+
+Command-line is enabled easily. First we should reformat our declaration, to
+equivalent one with mapping syntax:
+
+.. code-block:: yaml
+
+   jumps: !Int
+     default: 3
+
+Now we can add a command-line option:
+
+.. code-block:: yaml
+
+   jumps: !Int
+     default: 3
+     command-line: [-j, --jumps]
+
+Let's see:
+
+.. code-block:: console
+
+   $ ./frog --help
+   Usage:
+       frog [-c CONFIG_PATH] [options]
+
+   The test program that is called frog just because it rhymes with prog (i.e.
+   abbreviated "program")
+
+   Configuration Options:
+     -h,--help         Print this help
+     -c,--config PATH  Configuration file name [default: /etc/frog.yaml]
+     -D,--config-var NAME=VALUE
+                       Set value of configuration variable NAME to VALUE
+     -C,--config-check
+                       Check configuration and exit
+     -P                Print configuration after reading, then exit. The
+                       configuration printed by this option includes values
+                       overriden from command-line. Double flag `-PP` prints
+                       comments.
+     --config-print TYPE
+                       Print configuration file after reading. TYPE maybe
+                       "current", "details", "example", "all", "full"
+
+   Options:
+     -j,--jumps INT    Set "jumps"
+   $ ./frog
+   jump
+   jump
+   jump
+   $ ./frog -j 1
+   jump
+   $ ./frog --jumps=2
+   jump
+   jump
+   $ ./frog --ju 1
+   jump
+
+For integer types there are increment and decrement arguments:
+
+.. code-block:: yaml
+
+   jumps: !Int
+     default: 3
+     command-line: [-j, --jumps]
+     command-line-incr: --jump-incr
+     command-line-decr: [-J,--jump-decr]
+
+This works as following:
+
+.. code-block:: console
+
+   $ ./frog
+   jump
+   jump
+   jump
+   $ ./frog --jump-decr
+   jump
+   jump
+   $ ./frog -JJ
+   jump
+   $ ./frog -JJJ
+   $ ./frog --jump
+   Option error "--jump": Ambiguous option abbreviation
 
 .. _YAML: http://yaml.org
