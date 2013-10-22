@@ -1,3 +1,6 @@
 language: c
 install: git submodule update --init
-script: cmake && make && ctest -V
+compiler:
+- gcc
+- clang
+script: cmake . && make && ctest -V
