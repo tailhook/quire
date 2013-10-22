@@ -23,7 +23,8 @@ struct qu_cli_optref {
     struct qu_option *opt;
 
     /*  List by group in definition order  */
-    TAILQ_ENTRY(qu_cli_optref) lst;
+    TAILQ_ENTRY(qu_cli_optref) glst;
+    TAILQ_ENTRY(qu_cli_optref) plst;
     /*  Tree by option name  */
     struct qu_cli_optref *left;
     struct qu_cli_optref *right;
@@ -91,9 +92,14 @@ static struct qu_option_vptr qu_cli_print_vptr = {
     /* default_setter */ NULL
     };
 
+static int qu_cmp(const char *a, const char *b) {
+    return (a == b || (a && b && !strcmp(a, b)));
+}
+
 void qu_cli_init(struct qu_context *ctx) {
     ctx->cli_options.option_index = NULL;
     TAILQ_INIT(&ctx->cli_options.groups);
+    TAILQ_INIT(&ctx->cli_options.all);
 }
 
 void qu_cli_print_struct(struct qu_context *ctx) {
@@ -110,132 +116,148 @@ void qu_cli_print_struct(struct qu_context *ctx) {
 }
 
 void qu_cli_parser_visit_long(struct qu_context *ctx,
-                              struct qu_cli_optref *opt)
+                              struct qu_cli_optref *ref)
 {
-    if(!opt)
+    struct qu_cli_action *act;
+
+    if(!ref)
         return;
-    qu_cli_parser_visit_long(ctx, opt->left);
+    qu_cli_parser_visit_long(ctx, ref->left);
 
-    if(opt->name[1] == '-') {
-        qu_code_print(ctx,
-            "if(!strncmp(*arg, ${optname:q}, ${optlen:d}) && "
-            "((*arg)[${optlen:d}] == 0 || (*arg)[${optlen:d}] == '=')) {\n",
-            "optname", opt->name,
-            "optlen:d", strlen(opt->name),
-            NULL);
-        struct qu_cli_action *act;
-        act = opt->opt->vp->cli_action(opt->opt, opt->action);
-        if(act->has_arg) {
+    if(ref->name[1] == '-') {
+        if(ref->action) {
+            act = ref->opt->vp->cli_action(ref->opt, NULL);
             qu_code_print(ctx,
-                "const char  *value;\n"
-                "if((*arg)[${optlen:d}] == '=') {\n"
-                "   value = *arg + ${optlen:d} + 1;\n"
-                "} else {\n"
-                "    value = *(++arg);\n"
-                "    argc -= 1;\n"
-                "    if(!argc)\n"
-                "        qu_report_error(ctx, NULL, "
-                        "`Option ${optname} needs an argument`);\n"
-                "}\n",
-                "optname", opt->name,
-                "optlen:d", strlen(opt->name),
-                NULL);
-            opt->opt->vp->cli_parser(ctx, opt->opt, opt->action, "value");
-        } else {
-            qu_code_print(ctx,
-                "if((*arg)[${optlen:d}] == '=')\n"
-                "    qu_report_error(ctx, NULL, "
-                        "`Option ${optname} doesn't accept an argument`);\n",
-                "optname", opt->name,
-                "optlen:d", strlen(opt->name),
-                NULL);
-            opt->opt->vp->cli_parser(ctx, opt->opt, opt->action, NULL);
-        }
-        qu_code_print(ctx,
-            "    continue;\n"
-            "}\n"
-            , NULL);
-    }
-
-    qu_cli_parser_visit_long(ctx, opt->right);
-}
-
-void qu_cli_parser_visit_short(struct qu_context *ctx,
-                               struct qu_cli_optref *opt)
-{
-    if(!opt)
-        return;
-    qu_cli_parser_visit_short(ctx, opt->left);
-
-    if(opt->name[1] != '-') {
-        qu_code_print(ctx,
-            "case '${char}':\n",
-            "char", opt->name+1,
-            NULL);
-        struct qu_cli_action *act;
-        act = opt->opt->vp->cli_action(opt->opt, opt->action);
-        if(act->has_arg) {
-            qu_code_print(ctx,
-                "if(!*sarg) {\n"
-                "    sarg = *(++arg);\n"
-                "    arg += 1;\n"
-                "    argc -= 2;\n"
-                "    if(argc < 0)\n"
-                "        qu_report_error(ctx, NULL, "
-                        "`Option -${char} needs an argument`);\n"
-                "}\n",
-                "char", opt->name+1,
-                NULL);
-            opt->opt->vp->cli_parser(ctx, opt->opt, opt->action, "sarg");
-            qu_code_print(ctx,
-                "goto nextarg;\n"
+                "{${opt:q}, ${hasarg}, ${mpref}_OPT_${opath:C}_${action:C}},\n"
+                , "opt", ref->name
+                , "hasarg", act->has_arg ? "1" : "0"
+                , "opath", ref->opt->path
+                , "action", ref->action
                 , NULL);
         } else {
-            opt->opt->vp->cli_parser(ctx, opt->opt, opt->action, NULL);
+            act = ref->opt->vp->cli_action(ref->opt, NULL);
             qu_code_print(ctx,
-                "break;\n"
+                "{${opt:q}, ${hasarg}, ${mpref}_OPT_${opath:C}},\n"
+                , "opt", ref->name
+                , "hasarg", act->has_arg ? "1" : "0"
+                , "opath", ref->opt->path
                 , NULL);
         }
     }
 
-    qu_cli_parser_visit_short(ctx, opt->right);
+    qu_cli_parser_visit_long(ctx, ref->right);
 }
 
 void qu_cli_print_parser(struct qu_context *ctx) {
+    struct qu_cli_action *act;
+    struct qu_cli_optref *ref, *nxt;
+
+    qu_code_print(ctx,
+        "enum ${pref}_cli_opt {\n"
+        "    ${mpref}_OPT__NONE,\n"
+        , NULL);
+    for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
+        if(ref->action) {
+            qu_code_print(ctx,
+                "    ${mpref}_OPT_${opath:C}_${action:C},\n"
+                , "opath", ref->opt->path
+                , "action", ref->action
+                , NULL);
+        } else {
+            qu_code_print(ctx,
+                "    ${mpref}_OPT_${opath:C},\n"
+                , "opath", ref->opt->path
+                , NULL);
+        }
+        nxt = TAILQ_NEXT(ref, plst);
+        while(nxt && nxt->opt == ref->opt
+           && qu_cmp(nxt->action, ref->action)) {
+            nxt = TAILQ_NEXT(nxt, plst);
+        }
+
+    }
+    qu_code_print(ctx,
+        "};\n"
+        , NULL);
     qu_code_print(ctx,
         "void ${pref}_cli_parse(struct qu_config_context *ctx, "
             "struct ${pref}_cli *cli, int argc, char **argv) {\n"
-        "    char **arg;\n"
-        "    char *sarg;\n"
-        "    cli->action = QU_CLI_RUN;\n"
-        "    cli->print_flags = 0;\n"
-        "    cli->cfg_filename = ${defaultfn:q};\n"
-        "    for(arg = argv; ; ++arg, --argc) {\n"
-        "    nextarg:\n"
-        "       if(!argc) break;\n"
-        "       if((*arg)[0] != '-')\n"
-        "           break;\n"  // TODO(tailhook) check if supported
-        "       if((*arg)[1] == '-') {  /*  Long arguments */\n"
-        , "defaultfn", ctx->meta.default_config
         , NULL);
 
+    /* Short options list */
+    qu_code_print(ctx,
+        "static const struct qu_short_option shopt[] = {\n"
+        , NULL);
+    TAILQ_FOREACH(ref, &ctx->cli_options.all, plst) {
+        if(ref->name[1] == '-')
+            continue; /* only short options here */
+        if(ref->action) {
+            act = ref->opt->vp->cli_action(ref->opt, NULL);
+            qu_code_print(ctx,
+                "{'${opt}', ${hasarg}, ${mpref}_OPT_${opath:C}_${action:C}},\n"
+                , "opt", ref->name+1
+                , "hasarg", act->has_arg ? "1" : "0"
+                , "opath", ref->opt->path
+                , "action", ref->action
+                , NULL);
+        } else {
+            act = ref->opt->vp->cli_action(ref->opt, NULL);
+            qu_code_print(ctx,
+                "{'${opt}', ${hasarg}, ${mpref}_OPT_${opath:C}},\n"
+                , "opt", ref->name+1
+                , "hasarg", act->has_arg ? "1" : "0"
+                , "opath", ref->opt->path
+                , NULL);
+        }
+    }
+    qu_code_print(ctx,
+        "{0, 0, ${mpref}_OPT__NONE}};\n"
+        , NULL);
 
+    /* Long options list, must be in sorted order */
+    qu_code_print(ctx,
+        "static const struct qu_long_option lopt[] = {\n"
+        , NULL);
     qu_cli_parser_visit_long(ctx, ctx->cli_options.option_index);
-
     qu_code_print(ctx,
-        "       } else {  /*  Short arguments */\n"
-        "           for(sarg = *arg+1; *sarg;) {\n"
-        "               switch(*sarg++) {\n"
+        "{NULL, 0, ${mpref}_OPT__NONE}};\n"
         , NULL);
 
-    qu_cli_parser_visit_short(ctx, ctx->cli_options.option_index);
+    qu_code_print(ctx,
+        "    qu_optparser_init(ctx, argc, argv, shopt, lopt);\n"
+        "    enum ${pref}_cli_opt optid;\n"
+        "    const char *arg;\n"
+        "    while(qu_optparser_next(ctx, (int *)&optid, &arg)) {\n"
+        "        switch(optid) {\n"
+        , NULL);
 
+    for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
+        if(ref->action) {
+            qu_code_print(ctx,
+                "case ${mpref}_OPT_${opath:C}_${action:C}: do {\n"
+                , "opath", ref->opt->path
+                , "action", ref->action
+                , NULL);
+        } else {
+            qu_code_print(ctx,
+                "case ${mpref}_OPT_${opath:C}: do {\n"
+                , "opath", ref->opt->path
+                , NULL);
+        }
+        nxt = TAILQ_NEXT(ref, plst);
+        while(nxt && nxt->opt == ref->opt
+           && qu_cmp(nxt->action, ref->action)) {
+            nxt = TAILQ_NEXT(nxt, plst);
+        }
+        ref->opt->vp->cli_parser(ctx, ref->opt, ref->action, "arg");
+        qu_code_print(ctx,
+            "} while(0);\n"
+            "break;\n"
+            , NULL);
+    }
 
     qu_code_print(ctx,
-        "                default:\n"
-        "                    qu_report_error(ctx, NULL, `Unknown option`);\n"
-        "                }\n"
-        "            }\n"
+        "        case ${mpref}_OPT__NONE: abort();\n"
         "        }\n"
         "    }\n"
         "}\n"
@@ -273,9 +295,9 @@ static struct qu_cli_optref **qu_cli_find(struct qu_context *ctx,
         int rc = strcmp((*node)->name, name);
         if(rc == 0)
             return node;
-        if(rc < 0)
-            node = &(*node)->left;
         if(rc > 0)
+            node = &(*node)->left;
+        if(rc < 0)
             node = &(*node)->right;
     }
     return node;
@@ -318,7 +340,8 @@ int qu_cli_add(struct qu_context *ctx, const char *opt, const char *action,
         grp = qu_cli_new_group(ctx, group);
         TAILQ_INSERT_TAIL(&ctx->cli_options.groups, grp, lst);
     }
-    TAILQ_INSERT_TAIL(&grp->children, self, lst);
+    TAILQ_INSERT_TAIL(&grp->children, self, glst);
+    TAILQ_INSERT_TAIL(&ctx->cli_options.all, self, plst);
 
     self->left = NULL;
     self->right = NULL;
@@ -329,6 +352,7 @@ int qu_cli_add(struct qu_context *ctx, const char *opt, const char *action,
 
 void qu_cli_add_quire(struct qu_context *ctx) {
     struct qu_option *help = qu_option_new(ctx, &qu_cli_help_vptr);
+    help->path = "_help";
     const char *group = "Configuration Options";
     qu_cli_add(ctx, "-h", NULL, NULL, help,
         group, "Print this help");
@@ -340,24 +364,28 @@ void qu_cli_add_quire(struct qu_context *ctx) {
         "filename", ctx->meta.default_config,
         NULL);
     struct qu_option *config = qu_option_new(ctx, &qu_cli_config_vptr);
+    config->path = "_config";
     qu_cli_add(ctx, "-c", NULL, "PATH", config,
         group, config_descr);
     qu_cli_add(ctx, "--config", NULL, "PATH", config,
         group, config_descr);
 
     struct qu_option *define = qu_option_new(ctx, &qu_cli_define_vptr);
+    define->path = "_define";
     qu_cli_add(ctx, "-D", "update", "NAME=VALUE", define,
         group, "Set value of configuration variable NAME to VALUE");
     qu_cli_add(ctx, "--config-var", "update", "NAME=VALUE", define,
         group, "Set value of configuration variable NAME to VALUE");
 
     struct qu_option *check = qu_option_new(ctx, &qu_cli_check_vptr);
+    check->path = "_check";
     qu_cli_add(ctx, "-C", NULL, NULL, check,
         group, "Check configuration and exit");
     qu_cli_add(ctx, "--config-check", NULL, NULL, check,
         group, "Check configuration and exit");
 
     struct qu_option *print = qu_option_new(ctx, &qu_cli_print_vptr);
+    print->path = "_print";
     qu_cli_add(ctx, "-P", "incr", NULL, print,
         group, "Print configuration after reading, then exit. "
                "The configuration printed by this option includes values "
@@ -368,9 +396,6 @@ void qu_cli_add_quire(struct qu_context *ctx) {
                "\"current\", \"details\", \"example\", \"all\", \"full\"");
 }
 
-static int qu_cmp(const char *a, const char *b) {
-    return (a == b || (a && b && !strcmp(a, b)));
-}
 
 const char *qu_cli_format_usage(struct qu_context *ctx) {
     const char *ptr, *end;
@@ -403,7 +428,7 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
                 "  ${opt}",
                 "opt", opt->name,
                 NULL);
-            nxt = TAILQ_NEXT(opt, lst);
+            nxt = TAILQ_NEXT(opt, glst);
             while(nxt && nxt->opt == opt->opt
                && qu_cmp(nxt->action, opt->action)
                && qu_cmp(nxt->metavar, opt->metavar)
@@ -413,7 +438,7 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
                     ",${opt}",
                     "opt", nxt->name,
                     NULL);
-                nxt = TAILQ_NEXT(nxt, lst);
+                nxt = TAILQ_NEXT(nxt, glst);
             }
             if(opt->metavar)
                 qu_template_grow(ctx,

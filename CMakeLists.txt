@@ -22,6 +22,7 @@ ADD_LIBRARY(quire
     src/cfg/eval.c
     src/cfg/context.c
     src/cfg/api.c
+    src/cfg/optparser.c
     src/error.c
     src/emitter.c
     )

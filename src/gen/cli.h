@@ -8,15 +8,16 @@ struct qu_context;
 struct qu_option;
 
 struct qu_cli_options {
-    TAILQ_HEAD(qu_cli_grp_lst, lst) groups;
+    TAILQ_HEAD(qu_cli_grp_lst, qu_cli_group) groups;
+    TAILQ_HEAD(qu_cli_plain_lst, qu_cli_optref) all;
 
     struct qu_cli_optref *option_index;
 };
 
 struct qu_cli_action {
-	int has_arg;
-	const char *descr;
-	const char *metavar;
+    int has_arg;
+    const char *descr;
+    const char *metavar;
 };
 
 void qu_cli_init(struct qu_context *ctx);

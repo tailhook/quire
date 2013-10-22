@@ -54,6 +54,18 @@ typedef struct qu_emit_context {
     char data[512];
 } qu_emit_context;
 
+struct qu_short_option {
+    char opt;
+    int has_arg;
+    int name;
+};
+
+struct qu_long_option {
+    const char *opt;
+    int has_arg;
+    int name;
+};
+
 struct qu_config_context;
 
 typedef struct qu_ast_node qu_ast_node;
@@ -84,7 +96,15 @@ void qu_config_parser_free(struct qu_config_context *ctx);
 qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
                                   const char *filename);
 
-// Methods from yaml/parser.c
+// Methods from cfg/optparser.c
+void qu_optparser_init(struct qu_config_context *ctx,
+    int argc, char **argv,
+    const struct qu_short_option *shopt,
+    const struct qu_long_option *lopt);
+int qu_optparser_next(struct qu_config_context *ctx,
+    int *opt, const char **arg);
+void qu_optparser_error(struct qu_config_context *ctx,
+    const char *error);
 
 // Methods from eval.c
 void qu_node_to_bool(struct qu_config_context *ctx, qu_ast_node *node,

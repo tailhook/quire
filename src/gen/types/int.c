@@ -119,6 +119,15 @@ static void qu_int_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
     if(action == NULL) {  /*  Bare set  */
+        qu_code_print(ctx,
+            "char *end;\n"
+            "long val = strtol(${argname}, &end, 0);\n"
+            "if(end != ${argname} + strlen(${argname})) {\n"
+            "    qu_optparser_error(ctx, `Integer expected`);\n"
+            "}\n"
+            "\n"
+            , "argname", argname
+            , NULL);
         return;
     }
     if(!strcmp(action, "incr")) {

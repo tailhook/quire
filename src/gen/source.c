@@ -73,7 +73,7 @@ int qu_output_source(struct qu_context *ctx) {
         "${pref}_set_defaults(cfg);\n"
         "if(!(rc = setjmp(jmp))) {\n"
         "    ctx = qu_config_parser(&cfg->head, &jmp);\n"
-        "    ${pref}_cli_parse(ctx, &cli, argc-1, argv+1);\n"
+        "    ${pref}_cli_parse(ctx, &cli, argc, argv);\n"
         "    switch(cli.action) {\n"
         "        case QU_CLI_PRINT_HELP:\n"
         "            break;  /*  Do not parse config  */\n"
