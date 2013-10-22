@@ -394,7 +394,7 @@ void _qu_tokenize(qu_parse_context *ctx) {
                 break;
             // end of indicators
             }
-            if(KLASS != CHAR_WHITESPACE) {
+            if(KLASS != CHAR_WHITESPACE && CHAR != '-') {
                 ctx->linestart = 0;
             }
             break;

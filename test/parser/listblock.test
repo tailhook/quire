@@ -1,0 +1,11 @@
+- a: |
+   abc
+- d
+...
+---
+- command-line: quire-tool -E :0
+  output: |
+    a: |
+       abc
+- command-line: quire-tool -E :1
+  output: "d"
