@@ -1,5 +1,7 @@
 language: c
-install: git submodule update --init
+install:
+- git submodule update --init
+- pip install PyYAML --use-mirrors
 compiler:
 - gcc
 - clang
