@@ -82,7 +82,7 @@ int qu_output_source(struct qu_context *ctx) {
         "                break;  /*  Do not parse config  */\n"
         "        default:\n"
         "            ${pref}_parse(ctx, &cli, cfg);\n"
-        "            //${pref}_cli_apply(ctx, &cliv);\n"
+        "            ${pref}_cli_apply(cfg, &cli);\n"
         "    }\n"
         "    switch(cli.action) {\n"
         "        case QU_CLI_RUN:\n"

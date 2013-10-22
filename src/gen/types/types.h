@@ -14,7 +14,10 @@ struct qu_option_vptr {
     struct qu_cli_action *(*cli_action)(struct qu_option *opt,
         const char *action);
     void (*cli_parser)(struct qu_context *ctx,
-        struct qu_option *opt, const char *action, const char *paramname);
+        struct qu_option *opt, const char *action, const char *argname);
+    void (*cli_definition)(struct qu_context *ctx, struct qu_option *opt);
+    void (*cli_apply)(struct qu_context *ctx,
+        struct qu_option *opt, const char *expr);
     void (*parser)(struct qu_context *ctx,
         struct qu_option *opt, const char *expression, int level);
     void (*definition)(struct qu_context *ctx,

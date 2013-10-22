@@ -103,12 +103,26 @@ void qu_cli_init(struct qu_context *ctx) {
 }
 
 void qu_cli_print_struct(struct qu_context *ctx) {
+    struct qu_cli_optref *ref, *nxt;
+
     qu_code_print(ctx,
         "struct ${pref}_cli {\n"
         "    const char *cfg_filename;\n"
         "    int action;\n"
         "    uint32_t print_flags;\n"
         , NULL);
+
+    for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
+        if(ref->opt->vp->cli_definition) {
+            ref->opt->vp->cli_definition(ctx, ref->opt);
+        }
+        nxt = TAILQ_NEXT(ref, plst);
+        while(nxt && nxt->opt == ref->opt) {
+            nxt = TAILQ_NEXT(nxt, plst);
+        }
+
+    }
+
     qu_code_print(ctx,
         "};\n"
         "\n",
@@ -182,6 +196,9 @@ void qu_cli_print_parser(struct qu_context *ctx) {
     qu_code_print(ctx,
         "void ${pref}_cli_parse(struct qu_config_context *ctx, "
             "struct ${pref}_cli *cli, int argc, char **argv) {\n"
+        "memset(cli, 0, sizeof(struct ${pref}_cli));\n"
+        "cli->cfg_filename = ${default:q};\n"
+        , "default", ctx->meta.default_config
         , NULL);
 
     /* Short options list */
@@ -266,11 +283,27 @@ void qu_cli_print_parser(struct qu_context *ctx) {
 }
 
 void qu_cli_print_applier(struct qu_context *ctx) {
+    struct qu_cli_optref *ref, *nxt;
+
     qu_code_print(ctx,
         "void ${pref}_cli_apply(struct ${pref}_main *cfg, "
                              "struct ${pref}_cli *cli) {\n"
         , NULL);
 
+    for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
+        if(ref->opt->vp->cli_apply) {
+            const char *expr = qu_template_alloc(ctx,
+                "cfg->${path}"
+                , "path", ref->opt->path
+                , NULL);
+            ref->opt->vp->cli_apply(ctx, ref->opt, expr);
+        }
+        nxt = TAILQ_NEXT(ref, plst);
+        while(nxt && nxt->opt == ref->opt) {
+            nxt = TAILQ_NEXT(nxt, plst);
+        }
+
+    }
 
     qu_code_print(ctx,
         "}\n"
@@ -406,7 +439,6 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
         "    ${prog} [-c CONFIG_PATH] [options]\n"
         "\n",
         "prog", ctx->meta.program_name,
-        "fn", ctx->meta.default_config,
         NULL);
     ptr = ctx->meta.description;
     end = ptr + strlen(ptr);

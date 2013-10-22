@@ -12,7 +12,12 @@ static void qu_str_parse(struct qu_context *ctx,
 static struct qu_cli_action *qu_str_cli_action(struct qu_option *opt,
     const char *action);
 static void qu_str_cli_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *action, const char *argname);
+    struct qu_option *opt, const char *action,
+    const char *argname);
+static void qu_str_cli_definition(struct qu_context *ctx,
+    struct qu_option *opt);
+static void qu_str_cli_apply(struct qu_context *ctx,
+    struct qu_option *opt, const char *name);
 static void qu_str_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level);
 static void qu_str_definition(struct qu_context *ctx,
@@ -26,6 +31,8 @@ struct qu_option_vptr qu_str_vptr = {
     /* parse */ qu_str_parse,
     /* cli_action */ qu_str_cli_action,
     /* cli_parser */ qu_str_cli_parser,
+    /* cli_definition */ qu_str_cli_definition,
+    /* cli_apply */ qu_str_cli_apply,
     /* parse */ qu_str_parser,
     /* definition */ qu_str_definition,
     /* printer */ qu_str_printer,
@@ -81,11 +88,35 @@ static struct qu_cli_action *qu_str_cli_action(struct qu_option *opt,
 }
 
 static void qu_str_cli_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *action, const char *argname)
+    struct qu_option *opt, const char *action,
+    const char *argname)
 {
     if(action == NULL) {  /*  Bare set  */
         return;
     }
+}
+
+static void qu_str_cli_definition(struct qu_context *ctx,
+    struct qu_option *opt)
+{
+    qu_code_print(ctx,
+        "int ${name:c}_set:1;\n"
+        "const char *${name:c};\n"
+        , "name", opt->path
+        , NULL);
+}
+
+static void qu_str_cli_apply(struct qu_context *ctx,
+    struct qu_option *opt, const char *expr)
+{
+    qu_code_print(ctx,
+        "if(cli->${name:c}_set) {\n"
+        "   ${expr} = cli->${name:c};\n"
+        "   ${expr}_len = strlen(cli->${name:c});\n"
+        "}\n"
+        , "name", opt->path
+        , "expr", expr
+        , NULL);
 }
 
 static void qu_str_parser(struct qu_context *ctx,

@@ -13,6 +13,10 @@ static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
     const char *action);
 static void qu_int_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname);
+static void qu_int_cli_definition(struct qu_context *ctx,
+    struct qu_option *opt);
+static void qu_int_cli_apply(struct qu_context *ctx,
+    struct qu_option *opt, const char *expr);
 static void qu_int_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level);
 static void qu_int_definition(struct qu_context *ctx,
@@ -26,6 +30,8 @@ struct qu_option_vptr qu_int_vptr = {
     /* parse */ qu_int_parse,
     /* cli_action */ qu_int_cli_action,
     /* cli_parser */ qu_int_cli_parser,
+    /* cli_definition */ qu_int_cli_definition,
+    /* cli_apply */ qu_int_cli_apply,
     /* parse */ qu_int_parser,
     /* definition */ qu_int_definition,
     /* printer */ qu_int_printer,
@@ -125,8 +131,10 @@ static void qu_int_cli_parser(struct qu_context *ctx,
             "if(end != ${argname} + strlen(${argname})) {\n"
             "    qu_optparser_error(ctx, `Integer expected`);\n"
             "}\n"
-            "\n"
+            "cli->${optname:c}_set = 1;\n"
+            "cli->${optname:c} = val;\n"
             , "argname", argname
+            , "optname", opt->path
             , NULL);
         return;
     }
@@ -136,6 +144,33 @@ static void qu_int_cli_parser(struct qu_context *ctx,
     if(!strcmp(action, "decr")) {
         return;
     }
+}
+
+static void qu_int_cli_definition(struct qu_context *ctx,
+    struct qu_option *opt)
+{
+    qu_code_print(ctx,
+        "int ${name:c}_set:1;\n"
+        "int ${name:c}_delta_set:1;\n"
+        "long ${name:c};\n"
+        "long ${name:c}_delta;\n"
+        , "name", opt->path
+        , NULL);
+}
+
+static void qu_int_cli_apply(struct qu_context *ctx,
+    struct qu_option *opt, const char *expr)
+{
+    qu_code_print(ctx,
+        "if(cli->${name:c}_set) {\n"
+        "   ${expr} = cli->${name:c};\n"
+        "}\n"
+        "if(cli->${name:c}_delta_set) {\n"
+        "   ${expr} += cli->${name:c}_delta;\n"
+        "}\n"
+        , "name", opt->path
+        , "expr", expr
+        , NULL);
 }
 
 static void qu_int_parser(struct qu_context *ctx,

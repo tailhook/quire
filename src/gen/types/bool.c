@@ -12,7 +12,12 @@ static void qu_bool_parse(struct qu_context *ctx,
 static struct qu_cli_action *qu_bool_cli_action(struct qu_option *opt,
     const char *action);
 static void qu_bool_cli_parser(struct qu_context *ctx,
-    struct qu_option *opt, const char *action, const char *argname);
+    struct qu_option *opt, const char *action,
+    const char *argname);
+static void qu_bool_cli_definition(struct qu_context *ctx,
+    struct qu_option *opt);
+static void qu_bool_cli_apply(struct qu_context *ctx,
+    struct qu_option *opt, const char *argname);
 static void qu_bool_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level);
 static void qu_bool_definition(struct qu_context *ctx,
@@ -26,6 +31,8 @@ struct qu_option_vptr qu_bool_vptr = {
     /* parse */ qu_bool_parse,
     /* cli_action */ qu_bool_cli_action,
     /* cli_parser */ qu_bool_cli_parser,
+    /* cli_definition */ qu_bool_cli_definition,
+    /* cli_apply */ qu_bool_cli_apply,
     /* parse */ qu_bool_parser,
     /* definition */ qu_bool_definition,
     /* printer */ qu_bool_printer,
@@ -102,6 +109,27 @@ static void qu_bool_cli_parser(struct qu_context *ctx,
     if(!strcmp(action, "disable")) {
         return;
     }
+}
+
+static void qu_bool_cli_definition(struct qu_context *ctx,
+    struct qu_option *opt)
+{
+    qu_code_print(ctx,
+        "int ${name:c}_set:1;\n"
+        "int ${name:c};\n"
+        , "name", opt->path
+        , NULL);
+}
+static void qu_bool_cli_apply(struct qu_context *ctx,
+    struct qu_option *opt, const char *expr)
+{
+    qu_code_print(ctx,
+        "if(cli->${name:c}_set) {\n"
+        "   ${expr} = cli->${name:c};\n"
+        "}\n"
+        , "name", opt->path
+        , "expr", expr
+        , NULL);
 }
 
 static void qu_bool_parser(struct qu_context *ctx,

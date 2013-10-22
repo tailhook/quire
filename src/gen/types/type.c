@@ -28,6 +28,8 @@ struct qu_option_vptr qu_type_vptr = {
     /* parse */ qu_type_parse,
     /* cli_action */ NULL,
     /* cli_parser */ NULL,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parse */ qu_type_parser,
     /* definition */ qu_type_definition,
     /* printer */ qu_type_printer,

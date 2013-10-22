@@ -24,6 +24,8 @@ struct qu_option_vptr qu_array_vptr = {
     /* parse */ qu_array_parse,
     /* cli_action */ NULL,
     /* cli_parser */ NULL,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parse */ qu_array_parser,
     /* definition */ qu_array_definition,
     /* printer */ qu_array_printer,

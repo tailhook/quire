@@ -24,6 +24,8 @@ struct qu_option_vptr qu_map_vptr = {
     /* parse */ qu_map_parse,
     /* cli_action */ NULL,
     /* cli_parser */ NULL,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parse */ qu_map_parser,
     /* definition */ qu_map_definition,
     /* printer */ qu_map_printer,
