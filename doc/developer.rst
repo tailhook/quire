@@ -61,6 +61,12 @@ Now we should add the following to the ``CMakeLists.txt``:
 
 .. code-block:: cmake
 
+    # Assuming you have "exe_name" executable
+    # Add "config.c" that's will be generated to list of sources
+    ADD_EXECUTABLE(exe_name
+        main.c
+        other.c
+        config.c)
     # Builds quire itself
     ADD_SUBDIRECTORY(quire)
     # Get's the full path of quire-gen executable just built
@@ -84,13 +90,10 @@ Now we should add the following to the ``CMakeLists.txt``:
     SET_SOURCE_FILES_PROPERTIES(
         main.c other.c  # These files need to be adjusted
         COMPILE_FLAGS "-I${CMAKE_CURRENT_BINARY_DIR}")
+    # Add include search path for quire.h (overriding system one if exists)
+    INCLUDE_DIRECTORIES(BEFORE SYSTEM quire/include)
     # Add linkage, adjust "exe_name" to name of your executable
     TARGET_LINK_LIBRARIES(exe_name quire)
-    # Add "config.c" that's just generated to list of sources for your executable
-    ADD_EXECUTABLE(exe_name
-        main.c
-        other.c
-        config.c)
 
 Now just run ``cmake && make`` like you always do with cmake.
 
