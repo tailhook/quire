@@ -3,6 +3,9 @@ quire
 
 quire is a parser generator for configuration files.
 
+:State: Alpha (it's ok to use in production as long as your config doesn't come from untrusted party)
+:Documentation: http://quire.readthedocs.org/
+
 Parsing configuration files is uneasy work. There are a lot of configuration
 file parsers, but syntax of most of them is ugly. Also all parsers I have seen
 before, require you fetch every option from configuration library and copy it to
@@ -25,9 +28,9 @@ file (they have only scalar variables usually). So...
 
 All this to meet the following goals:
 
- * Embed configuration in your own application with ease
- * Add each option only in one place
- * Document it just as easy as adding
+* Embed configuration in your own application with ease
+* Add each option only in one place
+* Document it just as easy as adding
 
 The quire library is successor to old coyaml_ library of the same author
 
