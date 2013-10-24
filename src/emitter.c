@@ -117,7 +117,10 @@ int qu_emit_whitespace(qu_emit_context *ctx, int kind, int count) {
     return 0;
 }
 
-int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, int code) {
+int qu_emit_opcode(qu_emit_context *ctx, const char *tag,
+                   const char *anchor, int code)
+{
+    int oi;
     switch(code) {
         case QU_EMIT_MAP_START:
             if(tag) {
@@ -129,9 +132,13 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, in
                 ctx->pending_newline = 0;
             }
             if(!ctx->doc_start) {
-                int oi = ctx->indent_levels[ctx->cur_indent];
+                oi = ctx->indent_levels[ctx->cur_indent];
                 ctx->cur_indent += 1;
-                ctx->indent_levels[ctx->cur_indent] = oi + ctx->min_indent;
+                if(ctx->seq_item) {
+                    ctx->indent_levels[ctx->cur_indent] = oi;
+                } else {
+                    ctx->indent_levels[ctx->cur_indent] = oi + ctx->min_indent;
+                }
                 if(!ctx->line_start) {
                     if(ctx->seq_item) {
                         ctx->pending_newline += 1;
@@ -173,20 +180,40 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag, const char *anchor, in
         case QU_EMIT_SEQ_ITEM:
             ctx->map_start = 0;
             ctx->seq_start = 0;
-            ctx->seq_item = 1;
-            _space_check(ctx);
+            if(!ctx->seq_item && !ctx->pending_newline) {
+                fputc('\n', ctx->stream);
+            }
+            /*  Need to indent up to current indent without
+                "- " prefix that is assumed to be a part of the indentation  */
+            oi = ctx->indent_levels[ctx->cur_indent] - 2;
+            if(ctx->seq_item && ctx->cur_indent > 1) {
+                /*  Assuming we're already indented to previous seq indent
+                    but have left the space " " at the end as need_space  */
+                oi -= ctx->indent_levels[ctx->cur_indent-1] - 1;
+            }
+            for(int i = oi; i > 0; --i) {
+                fputc(' ', ctx->stream);
+            }
             fprintf(ctx->stream, "-");
+            ctx->doc_start = 0;
+            ctx->seq_item = 1;
             ctx->need_space = 1;
             ctx->pending_newline = 1;
             ctx->line_start = 0;
             break;
         case QU_EMIT_SEQ_START:
+            oi = ctx->indent_levels[ctx->cur_indent];
+            ctx->cur_indent += 1;
+            ctx->indent_levels[ctx->cur_indent] = oi + ctx->min_indent;
             ctx->seq_start = 1;
-            if(!ctx->line_start) {
-                ctx->pending_newline = 0;
+            if(!ctx->seq_item) {
+                if(!ctx->line_start) {
+                    ctx->pending_newline = 0;
+                }
             }
             break;
         case QU_EMIT_SEQ_END:
+            ctx->cur_indent -= 1;
             if(ctx->seq_start) {
                 if(ctx->need_space)
                     fputc(' ', ctx->stream);

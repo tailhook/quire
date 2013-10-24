@@ -1,0 +1,11 @@
+__meta__:
+  program-name: arar
+  default-config: /etc/__quire_test__/arar.yaml
+  description: Nested array test
+
+arr: !Array
+  element: !Array
+    element: !String
+  example:
+  - [a, b]
+  - [c]

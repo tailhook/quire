@@ -1,0 +1,9 @@
+# arar
+# ====
+#
+# Nested array test
+#
+
+arr:
+- - a
+  - b

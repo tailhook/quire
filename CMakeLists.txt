@@ -155,6 +155,7 @@ ADD_SUBDIRECTORY(test/generator/frog)
 ADD_SUBDIRECTORY(test/generator/choice)
 ADD_SUBDIRECTORY(test/generator/bool)
 ADD_SUBDIRECTORY(test/generator/float)
+ADD_SUBDIRECTORY(test/generator/arar)
 
 # TESTS FOR QUIRE-TOOL
 
