@@ -1,0 +1,12 @@
+# mapmap
+# ======
+#
+# Nested mapping test
+#
+
+map:
+  z:
+    x: y
+  w:
+    v: u
+    t: r

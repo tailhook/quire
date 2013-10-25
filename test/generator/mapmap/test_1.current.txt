@@ -1,0 +1,6 @@
+map:
+  z:
+    x: y
+  w:
+    v: u
+    t: r

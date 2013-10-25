@@ -1,0 +1,16 @@
+__meta__:
+  program-name: mapmap
+  default-config: /etc/__quire_test__/mapmap.yaml
+  description: Nested mapping test
+
+map: !Mapping
+  key-element: !String
+  value-element: !Mapping
+    key-element: !String
+    value-element: !String
+  example:
+    a:
+      b: c
+      d: e
+    f:
+      g: 1

@@ -32,10 +32,13 @@ struct qu_option_vptr qu_map_vptr = {
     /* default_setter */ qu_map_default_setter
 };
 
+static int mapping_index = 0;
+
 struct qu_map_option {
     char *typename;
     struct qu_option *key;
     int is_struct;
+    int idx;
     union {
         struct qu_config_struct *str;
         struct qu_option *opt;
@@ -64,6 +67,7 @@ static void qu_map_parse(struct qu_context *ctx,
     struct qu_map_option *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_map_option));
     opt->typedata = self;
+    self->idx = mapping_index++;
 
     if(node->kind != QU_NODE_MAPPING) {
         LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
@@ -115,15 +119,17 @@ static void qu_map_parser(struct qu_context *ctx,
         "for(mem = qu_map_iter(node${level:d}); mem; mem = qu_map_next(mem)) {\n"
         "   qu_ast_node *node${nlevel:d};\n"
         "   node${nlevel:d}= qu_map_key(mem);\n"
-        "   struct ${pref}_${typname} *el = "
+        "   struct ${pref}_${typname} *el${level:d} = "
             "qu_config_alloc(ctx, sizeof(struct ${pref}_${typname}));\n"
         , "level:d", level
         , "nlevel:d", level+1
         , "typname", opt->typname
         , NULL);
 
-    self->key->vp->default_setter(ctx, self->key, "el->key");
-    self->key->vp->parser(ctx, self->key, "el->key", level+1);
+    const char *elkey = qu_template_alloc(ctx,
+        "el${level:d}->key", "level:d", level, NULL);
+    self->key->vp->default_setter(ctx, self->key, elkey);
+    self->key->vp->parser(ctx, self->key, elkey, level+1);
 
     qu_code_print(ctx,
         "   node${nlevel:d}= qu_map_value(mem);\n"
@@ -131,19 +137,24 @@ static void qu_map_parser(struct qu_context *ctx,
         , NULL);
 
     if(self->is_struct) {
-        qu_struct_default_setter(ctx, self->val.str, "el->");
-        qu_struct_parser(ctx, self->val.str, "el->", level+1);
+        const char *elpref = qu_template_alloc(ctx,
+            "el${level:d}->", "level:d", level, NULL);
+        qu_struct_default_setter(ctx, self->val.str, elpref);
+        qu_struct_parser(ctx, self->val.str, elpref, level+1);
     } else {
-        self->val.opt->vp->default_setter(ctx, self->val.opt, "el->val");
-        self->val.opt->vp->parser(ctx, self->val.opt, "el->val", level+1);
+        const char *elname = qu_template_alloc(ctx,
+            "el${level:d}->val", "level:d", level, NULL);
+        self->val.opt->vp->default_setter(ctx, self->val.opt, elname);
+        self->val.opt->vp->parser(ctx, self->val.opt, elname, level+1);
     }
 
     qu_code_print(ctx,
-        "*${expr}_tail = el;\n"
-        "${expr}_tail = &el->next;\n"
+        "*${expr}_tail = el${level:d};\n"
+        "${expr}_tail = &el${level:d}->next;\n"
         "${expr}_len += 1;\n"
         "}\n"
         , "expr", expr
+        , "level:d", level
         , NULL);
 }
 
@@ -165,22 +176,29 @@ static void qu_map_printer(struct qu_context *ctx,
     struct qu_map_option *self = opt->typedata;
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n"
-        "struct ${pref}_${typname} *el;\n"
-        "for(el = ${expr}; el; el = el->next) {\n"
+        "struct ${pref}_${typname} *el${idx:d};\n"
+        "for(el${idx:d} = ${expr}; el${idx:d}; el${idx:d} = el${idx:d}->next) {\n"
         , "typname", opt->typname
+        , "idx:d", self->idx
         , "expr", expr
         , NULL);
 
-    self->key->vp->printer(ctx, self->key, "el->key", "NULL");
+    const char *elkey = qu_template_alloc(ctx,
+        "el${idx:d}->key", "idx:d", self->idx, NULL);
+    self->key->vp->printer(ctx, self->key, elkey, "NULL");
 
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n"
         , NULL);
 
     if(self->is_struct) {
-        qu_struct_printer(ctx, self->val.str, "el->", "NULL");
+        const char *elpref = qu_template_alloc(ctx,
+            "el${idx:d}->", "idx:d", self->idx, NULL);
+        qu_struct_printer(ctx, self->val.str, elpref, "NULL");
     } else {
-        self->val.opt->vp->printer(ctx, self->val.opt, "el->val", "NULL");
+        const char *elname = qu_template_alloc(ctx,
+            "el${idx:d}->val", "idx:d", self->idx, NULL);
+        self->val.opt->vp->printer(ctx, self->val.opt, elname, "NULL");
     }
 
     qu_code_print(ctx,
