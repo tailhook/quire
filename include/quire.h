@@ -44,7 +44,15 @@
 #define QU_PRINT_COMMENTS 2
 #define QU_PRINT_FULL     4
 
+/*  A value random enough to not to conflict with any errno value  */
 #define QU_YAML_ERROR       97156
+
+#define QU_ERR_UNKNOWN 0
+#define QU_ERR_SYNTAX  1
+#define QU_ERR_SYSTEM  2
+#define QU_ERR_ERRNO   3
+#define QU_ERR_VALUE   4
+#define QU_ERR_CMDLINE 5
 
 typedef struct qu_config_head {
     char data[512];
@@ -121,9 +129,10 @@ int qu_set_string(struct qu_config_context *ctx, const char *name, const char *d
 int qu_set_integer(struct qu_config_context *ctx, const char *name, long value);
 
 // Methods from error.c
-int qu_has_error(struct qu_config_context *);
-int qu_print_error(struct qu_config_context *, FILE *err);
+void qu_print_error(struct qu_config_context *, FILE *err);
 void qu_report_error(struct qu_config_context *, qu_ast_node *node,
+    const char *text);
+void qu_cli_error(struct qu_config_context *, const char *opt,
     const char *text);
 
 // Methods from emitter.c

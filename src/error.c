@@ -4,35 +4,63 @@
 #include "error.h"
 #include "quire_int.h"
 
-int qu_print_error(qu_parse_context *ctx, FILE *stream) {
-    int rc;
-    int keep_errno = errno;
-    if(ctx->error_token) {
-        rc = fprintf(stream, "Error parsing file %s:%d: %s\n",
-            ctx->filename, ctx->error_token->start_line,
+void qu_print_error(qu_parse_context *ctx, FILE *stream) {
+    switch(ctx->error_kind) {
+    case QU_ERR_VALUE:
+        fprintf(stream, "Value error at \"%s\":%d: %s\n",
+            ctx->err_ptr.token->filename, ctx->err_ptr.token->start_line,
             ctx->error_text);
-        if(rc)
-            return -errno;
-    } else if(ctx->error_text) {
-        rc = fprintf(stream, "Error parsing file %s: %s\n",
-            ctx->filename, ctx->error_text);
-        if(rc)
-            return -errno;
-    } else {
-        rc = fprintf(stream, "Error parsing file %s: %s\n",
-            ctx->filename, strerror(keep_errno));
-        if(rc)
-            return -errno;
+        break;
+    case QU_ERR_SYNTAX:
+        fprintf(stream, "Syntax error at \"%s\":%d: %s\n",
+            ctx->err_ptr.token->filename, ctx->err_ptr.token->start_line,
+            ctx->error_text);
+        break;
+    case QU_ERR_ERRNO:
+        fprintf(stream, "System error, file \"%s\": %s\n",
+            ctx->filename, strerror(ctx->err_ptr.errnum));
+        break;
+    case QU_ERR_SYSTEM:
+        fprintf(stream, "System error at \"%s\":%d: %s\n",
+            ctx->err_ptr.token->filename, ctx->err_ptr.token->start_line,
+            ctx->error_text);
+        break;
+    case QU_ERR_CMDLINE:
+        if(ctx->err_ptr.cli_option[0] == '-') {  /*  Long option  */
+            fprintf(stream, "Option \"%s\": %s\n",
+                ctx->err_ptr.cli_option, ctx->error_text);
+        } else {
+            fprintf(stream, "Option \"-%c\": %s\n",
+                ctx->err_ptr.cli_option[0], ctx->error_text);
+        }
+        break;
     }
-    return 0;
 }
 
 void qu_report_error(qu_parse_context *ctx, qu_ast_node *node,
     const char *text)
 {
-    if(node) {
-        LONGJUMP_WITH_CONTENT_ERROR(ctx, node->start_token, text);
+    ctx->error_kind = QU_ERR_VALUE;
+    ctx->error_text = text;
+    ctx->err_ptr.token = (node)->tag_token ? \
+        (node)->tag_token : (node)->start_token;
+    if(ctx->errjmp) {
+        longjmp(*(ctx)->errjmp, QU_YAML_ERROR);
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(ctx, NULL, text);
+        qu_print_error(ctx, stderr);
+        abort();
+    }
+}
+
+void qu_cmdline_error(qu_parse_context *ctx, const char *opt, const char *text)
+{
+    ctx->error_kind = QU_ERR_CMDLINE;
+    ctx->error_text = text;
+    ctx->err_ptr.cli_option = opt;
+    if(ctx->errjmp) {
+        longjmp(*(ctx)->errjmp, QU_YAML_ERROR);
+    } else {
+        qu_print_error(ctx, stderr);
+        abort();
     }
 }

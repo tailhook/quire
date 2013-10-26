@@ -134,7 +134,7 @@ void qu_optparser_error(struct qu_config_context *ctx,
     const char *error)
 {
     struct qu_optparser_struct *self = &ctx->optparser;
-    fprintf(stderr, "Error option ``%s''\n",
-        self->curshort ? self->curshort : self->cur);
-    LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, NULL, error);
+    qu_cmdline_error(&ctx->parser,
+		self->curshort ? self->curshort : self->cur,
+		error);
 }

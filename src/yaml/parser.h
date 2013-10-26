@@ -45,7 +45,11 @@ typedef struct qu_parse_context_s {
 
     int error_kind;
     const char *error_text;
-    qu_token *error_token;
+    union {
+        qu_token *token;
+        const char *cli_option;
+        int errnum;
+    } err_ptr;
 
 } qu_parse_context;
 

@@ -1,5 +1,5 @@
-#ifndef _H_ERROR
-#define _H_ERROR
+#ifndef QUIRE_H_ERROR
+#define QUIRE_H_ERROR
 
 #include <stdio.h>
 
@@ -8,8 +8,8 @@
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-int qu_has_error(qu_parse_context *);
-int qu_print_error(qu_parse_context *, FILE *err);
+void qu_print_error(qu_parse_context *, FILE *err);
 void qu_report_error(qu_parse_context *, qu_ast_node *, const char *text);
+void qu_cli_error(qu_parse_context *, const char *opt, const char *text);
 
-#endif //_H_ERROR
+#endif  /* QUIRE_H_ERROR */

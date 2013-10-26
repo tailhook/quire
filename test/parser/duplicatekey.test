@@ -8,4 +8,4 @@ berry: cherry
 ...
 ---
 - command-line: quire-tool -E /fruits/apple --error-basename
-  output: 'Error parsing file duplicatekey.test:5: Duplicate key in mapping'
+  output: 'Value error at "duplicatekey.test":5: Duplicate key in mapping'

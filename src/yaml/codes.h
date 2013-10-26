@@ -23,7 +23,15 @@
 #define QU_IFLAG_GLOBSEQ  3
 #define QU_IFLAG_GLOBMAP  4
 
+/*  A value random enough to not to conflict with any errno value  */
 #define QU_YAML_ERROR       97156
+
+#define QU_ERR_UNKNOWN 0
+#define QU_ERR_SYNTAX  1
+#define QU_ERR_SYSTEM  2
+#define QU_ERR_ERRNO   3
+#define QU_ERR_VALUE   4
+#define QU_ERR_CMDLINE 5
 
 typedef enum qu_token_kind_enum {
     // Keep in sync with strings in yparser.c
