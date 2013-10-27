@@ -107,8 +107,208 @@ if they have C files generated. You also need to add instructions to run
 Variable Types
 ==============
 
+All variable declarations start with yaml tag (an string starting with
+exclamation mark). Almost any type can be declared in it's short form, as a
+(tagged) scalar:
+
+.. code-block:: yaml
+
+   val1: !Int 0
+   val2: !String hello
+   val3: !Bool yes
+   val4: !Float 1.5
+   val5: !Type some_type
+
+And any type can be written in equivalent long form as a mapping:
+
+.. code-block:: yaml
+
+   val1: !Int
+     default: 0
+   val2: !String
+     default: hello
+   val3: !Bool
+     default: yes
+   val4: !Float
+     default: 1.5
+   val5: !Type
+     type: some_type
+
+Using the latter form adds more features to the type definition. Next section
+describes properties that can be used in any type, and following sections
+describe each type in detail.
+
+
+Common Properties
+-----------------
+
+The following properties can be used for any type, given the it's written in
+it's long form (in form of mapping). Here is a list (string is for the sake of
+example, any type could be used):
+
+.. code-block:: yaml
+
+   val: !String
+     description: This value is something that is set in config
+     default: nothing-relevant
+     example: something-cool
+     command-line:
+       names: [-v, --val-set]
+       group: Options
+       metavar: STR
+       descr: This option sets val
+
+Let's take a closer look.
+
+.. code-block:: yaml
+
+   val: !String
+     description: This value is something that is set in config
+
+The description is displayed in the output of ``--config-print`` and ``-PP``
+command-line options. It's reformatted to the 80 characters in width, on
+output. If set it's also used in command-line option description (``--help``)
+if not overriden in ``command-line`` section.
+
+.. code-block:: yaml
+
+   val: !String
+     default: nothing-relevant
+
+Set's default value for the property. It should be the same type as the target
+value.
+
+.. code-block:: yaml
+
+   val: !String
+     example: something-cool
+
+Set's the example value for the configuration variable. It's only output in
+``--config-print=example`` and may be any piece of yaml. However it's
+recommended to obey same structure as a target value, as it may be enforced in
+the future. See description of ``--config-print`` for more information.
+
+The command-line may be specified in several ways. The simplest is:
+
+.. code-block:: yaml
+
+   val: !String
+     command-line: -v
+
+This adds single command-line option. Several options can be used too, mostly
+useful for having short and long options, but may be used for aliases too:
+
+.. code-block:: yaml
+
+   val: !String
+     command-line: [-v, --val]
+
+And full command-line specification is a mapping. Each property in a mapping
+is described in detail below.
+
+.. code-block:: yaml
+
+   val1: !String
+     command-line:
+       name: -v
+       names: [-v, --val]
+
+Either ``name`` or ``names`` may be specified, for the single option and
+multiple options respectively.
+
+.. code-block:: yaml
+
+   val1: !String
+     command-line:
+       group: Options
+
+The group of the options in the ``--help``. Doesn't have any semantic meaning
+just keeps list of options nice. By default all options are listed under group
+``Options``.
+
+.. code-block:: yaml
+
+   val1: !String
+     command-line:
+       metavar: STR
+
+The metavar that's used in command-line description, e.g. ``--val STR``. By
+default reasonably good type-specific name is used.
+
+.. code-block:: yaml
+
+   val1: !String
+     command-line:
+       descr: This option sets val
+
+The description used in ``--help``. If not set, the ``description`` in the
+option definition is used, if the latter is absent, some text similar to
+``Set "val"`` is used instead.
+
+There are also type-specific command-line actions:
+
+.. code-block:: yaml
+
+   intval: !Int
+     command-line-incr: --incr
+     command-line-decr: --decr
+   boolval: !Bool
+     command-line-enable: --enable
+     command-line-disable: --disable
+
+They all obey pattern ``command-line-ACTION``. Every such option may be
+specified by any ways that ``command-line`` can. However, they have the
+following difference:
+
+* they inherit ``group`` from the ``command-line`` if specified
+* they often have ``metavar`` useless
+* they don't inherit ``description`` as it's usually misleading
+
+
 String Type
 -----------
+
+String is most primitive data type. It accepts any YAML scalar and stores it's
+value as "const char *" along with it's length.
+
+The simplest config::
+
+    val: !String
+
+If you supply scalar, is stands for the default value::
+
+    val: !String default_value
+
+Maximum specification for string is something like the following:
+
+.. code-block:: yaml
+
+   val: !String
+     description: This value is something that is set in config
+     default: default_value
+     example: some example
+     command-line:
+       names: [-v, --val-set]
+       group: Options
+       metavar: STR
+       descr: This option sets val
+
+The fields in C structure look like the following:
+
+.. code-block:: c
+
+   const char *val;
+   int val_len;
+
+Note that the string is both nul-terminated and has length in the structure.
+
+.. warning::
+
+   Technically it's possible that the string contain embedded nulls. In most
+   cases this fact may be ignored. But do not rely on ``val_len`` be the length
+   of the string after ``strdup`` or similar operation.
+
+
 
 Integer Type
 ------------

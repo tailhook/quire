@@ -323,4 +323,17 @@ This works as following:
    $ ./frog --jump
    Option error "--jump": Ambiguous option abbreviation
 
+
+Arrays
+======
+
+
+Mappings
+========
+
+
+Custom Types
+============
+
+
 .. _YAML: http://yaml.org
