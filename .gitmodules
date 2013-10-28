@@ -1,3 +1,3 @@
 [submodule "objpath"]
 	path = objpath
-	url = git@github.com:tailhook/objpath
+	url = git://github.com/tailhook/objpath
