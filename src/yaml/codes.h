@@ -70,15 +70,6 @@ typedef enum qu_node_kind_enum {
     QU_NODE_MAPPING,
 } qu_node_kind_t;
 
-typedef enum qu_error_enum {
-    YAML_NO_ERROR,
-    YAML_SCANNER_ERROR,
-    YAML_PARSER_ERROR,
-    YAML_CONTENT_ERROR,
-    YAML_SYSTEM_ERROR,
-    YAML_UNSUPPORTED_ERROR
-} qu_error_t;
-
 typedef enum qu_member_enum {
     QU_MEMBER_NONE,
     QU_MEMBER_STRUCT,

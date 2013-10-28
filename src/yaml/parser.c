@@ -126,14 +126,14 @@ static void qu_load_stream(qu_parse_context *ctx, FILE *stream) {
     obstack_blank(&ctx->pieces, 0);
     while(1) {
         rc = fread(chunk, 1, sizeof(chunk), stream);
-        if(rc == -1) {
-            eno = errno;
-            if(eno == EINTR) continue;
-            fclose(stream);
-            LONGJUMP_WITH_ERRCODE(ctx, eno);
-        }
-        if(!rc) {
-            break;
+        if(rc <= 0) {
+            if(feof(stream))
+                break;
+            if(ferror(stream)) {
+                eno = errno;
+                fclose(stream);
+                LONGJUMP_WITH_ERRCODE(ctx, eno);
+            }
         }
         obstack_grow(&ctx->pieces, chunk, rc);
     }
