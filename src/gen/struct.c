@@ -9,6 +9,7 @@
 
 static void qu_struct_init(struct qu_config_struct *self) {
     self->parent = NULL;
+    self->path = NULL;
     TAILQ_INIT(&self->children);
 }
 
