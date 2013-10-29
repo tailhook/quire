@@ -1,0 +1,4 @@
+ADD_GEN_EXECUTABLE(rec)
+ADD_GEN_TEST(rec)
+ADD_GEN_TEST_CONFIG(rec test_1 current)
+ADD_GEN_TEST_CONFIG(rec test_1 full)

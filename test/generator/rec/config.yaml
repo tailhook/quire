@@ -1,0 +1,15 @@
+__meta__:
+  program-name: rec
+  default-config: /etc/__quire_test__/rec.yaml
+  description: Recursive type test
+
+__types__:
+  rec: !Choice
+    choices:
+      end: !String
+      edges: !Mapping
+        key-element: !String
+        value-element: !Type rec
+
+
+val: !Type rec

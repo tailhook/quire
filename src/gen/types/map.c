@@ -175,9 +175,10 @@ static void qu_map_printer(struct qu_context *ctx,
 {
     struct qu_map_option *self = opt->typedata;
     qu_code_print(ctx,
-        "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);\n"
+        "qu_emit_opcode(ctx, ${tag}, NULL, QU_EMIT_MAP_START);\n"
         "struct ${pref}_${typname} *el${idx:d};\n"
         "for(el${idx:d} = ${expr}; el${idx:d}; el${idx:d} = el${idx:d}->next) {\n"
+        , "tag", tag
         , "typname", opt->typname
         , "idx:d", self->idx
         , "expr", expr

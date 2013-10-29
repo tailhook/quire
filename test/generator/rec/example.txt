@@ -1,0 +1,7 @@
+# rec
+# ===
+#
+# Recursive type test
+#
+
+val: # required

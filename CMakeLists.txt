@@ -157,6 +157,7 @@ ADD_SUBDIRECTORY(test/generator/bool)
 ADD_SUBDIRECTORY(test/generator/float)
 ADD_SUBDIRECTORY(test/generator/arar)
 ADD_SUBDIRECTORY(test/generator/mapmap)
+ADD_SUBDIRECTORY(test/generator/rec)
 
 # TESTS FOR QUIRE-TOOL
 

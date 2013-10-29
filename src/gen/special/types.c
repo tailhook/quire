@@ -38,7 +38,6 @@ struct qu_class *qu_class_new(struct qu_context *ctx, const char *name,
     self->left = NULL;
     self->right = NULL;
     self->has_default = 0;
-    vp->init(ctx, self, definition);
     return self;
 }
 
@@ -56,6 +55,7 @@ void qu_special_types(struct qu_context *ctx, qu_ast_node *typesnode) {
                 "Duplicate type");
         }
         *cls = qu_class_new(ctx, cname, item->value);
+        (*cls)->vp->init(ctx, (*cls), item->value);
     }
 }
 

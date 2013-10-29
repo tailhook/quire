@@ -158,7 +158,7 @@ static void qu_array_printer(struct qu_context *ctx,
 {
     struct qu_array_option *self = opt->typedata;
     qu_code_print(ctx,
-        "qu_emit_opcode(ctx, ${tag:q}, NULL, QU_EMIT_SEQ_START);\n"
+        "qu_emit_opcode(ctx, ${tag}, NULL, QU_EMIT_SEQ_START);\n"
         "struct ${pref}_${typname} *el${idx:d};\n"
         "for(el${idx:d} = ${expr}; el${idx:d}; el${idx:d} = el${idx:d}->next) {\n"
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_ITEM);\n"

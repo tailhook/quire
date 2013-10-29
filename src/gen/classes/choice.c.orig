@@ -165,14 +165,16 @@ static void qu_choice_func_body(struct qu_context *ctx, struct qu_class *cls)
         self->choices[i].opt->vp->parser(ctx,
             self->choices[i].opt, self->choices[i].prefix, 0);
         qu_code_print(ctx,
-            "return;\n"
             "}\n"
             , NULL);
     }
     qu_code_print(ctx,
+<<<<<<< Updated upstream
             /*  Allow empty (null) value  */
-            "qu_report_error(ctx, node0, `Wrong tag`);\n"
             "} else if(strcmp(qu_node_content(node0), ``)) {\n"
+=======
+            "} else {\n"
+>>>>>>> Stashed changes
             "   qu_report_error(ctx, node0, `Tag is expected`);\n"
             "}\n"
             , NULL);

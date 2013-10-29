@@ -1,0 +1,5 @@
+val: !edges
+  one: !edges
+    twenty-one: !end ok
+    fourty-one: !end ok
+  two: !end ok
