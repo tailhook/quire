@@ -70,7 +70,7 @@ static void qu_choice_print(struct qu_context *ctx, struct qu_class *cls) {
             , NULL);
     }
     qu_code_print(ctx,
-        "} val;\n"
+        "};\n"
         "\n"
         , NULL);
 }
