@@ -192,13 +192,15 @@ static void qu_choice_func_body(struct qu_context *ctx, struct qu_class *cls)
     for(i = 0; i < self->choices_len; ++i) {
         qu_code_print(ctx,
             "case ${mpref}_${typename:C}_${tagname:C}:\n"
-            "    tag = `!` ${tagname:q};\n"
+            "    do {\n"
+            "        tag = `!` ${tagname:q};\n"
             , "typename", cls->name
             , "tagname", self->choices[i].name
             , NULL);
         self->choices[i].opt->vp->printer(ctx,
             self->choices[i].opt, self->choices[i].prefix, "tag");
         qu_code_print(ctx,
+            "    } while(0);\n"
             "    break;\n"
             , NULL);
     }
