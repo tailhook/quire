@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)  # feel free to try lower
-ENABLE_TESTING()
 PROJECT(quire)
+ENABLE_TESTING()
 
 ADD_LIBRARY(quire
     src/util/parse.c
@@ -138,6 +138,8 @@ ENDMACRO(ADD_GEN_TEST_CONFIG)
 
 INCLUDE_DIRECTORIES(BEFORE SYSTEM include)  # needed for test binaries
 
+IF(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+
 # TESTS FOR QUIRE-GEN
 
 ADD_SUBDIRECTORY(test/generator/meta)
@@ -175,4 +177,6 @@ ADD_TOOL_TEST(incmap)
 ADD_TOOL_TEST(incseq)
 ADD_TOOL_TEST(longstr)
 ADD_TOOL_TEST(listblock)
+
+ENDIF()
 
