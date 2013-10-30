@@ -172,7 +172,8 @@ static void qu_choice_func_body(struct qu_context *ctx, struct qu_class *cls)
     qu_code_print(ctx,
             /*  Allow empty (null) value  */
             "qu_report_error(ctx, node0, `Wrong tag`);\n"
-            "} else if(strcmp(qu_node_content(node0), ``)) {\n"
+            "} else if(!qu_node_content(node0) || "
+                "strcmp(qu_node_content(node0), ``)) {\n"
             "   qu_report_error(ctx, node0, `Tag is expected`);\n"
             "}\n"
             , NULL);
