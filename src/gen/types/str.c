@@ -81,6 +81,7 @@ static void qu_str_parse(struct qu_context *ctx,
 static struct qu_cli_action *qu_str_cli_action(struct qu_option *opt,
     const char *action)
 {
+    (void) opt;
     static struct qu_cli_action set = {1, "Set ${name:q}", "STR"};
     if(action == NULL)  /*  Bare set  */
         return &set;
@@ -91,6 +92,9 @@ static void qu_str_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action,
     const char *argname)
 {
+    (void) opt;
+    (void) ctx;
+    (void) argname;
     if(action == NULL) {  /*  Bare set  */
         return;
     }
@@ -99,6 +103,7 @@ static void qu_str_cli_parser(struct qu_context *ctx,
 static void qu_str_cli_definition(struct qu_context *ctx,
     struct qu_option *opt)
 {
+    (void) opt;
     qu_code_print(ctx,
         "int ${name:c}_set:1;\n"
         "const char *${name:c};\n"
@@ -122,6 +127,7 @@ static void qu_str_cli_apply(struct qu_context *ctx,
 static void qu_str_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level)
 {
+    (void) opt;
     qu_code_print(ctx,
         "qu_node_to_str(ctx, node${level:d}, &${expr}, &${expr}_len);\n",
         // TODO(tailhook) check min and max
@@ -134,6 +140,7 @@ static void qu_str_parser(struct qu_context *ctx,
 static void qu_str_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname)
 {
+    (void) opt;
     qu_code_print(ctx,
         "const char *${varname:c};\n"
         "int ${varname:c}_len;\n",
@@ -144,6 +151,7 @@ static void qu_str_definition(struct qu_context *ctx,
 static void qu_str_printer(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, const char *tag)
 {
+    (void) opt;
     qu_code_print(ctx,
         "qu_emit_scalar(ctx, ${tag}, NULL, 0, ${expr}, ${expr}_len);\n"
         , "expr", expr

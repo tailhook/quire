@@ -211,6 +211,7 @@ static void qu_map_printer(struct qu_context *ctx,
 static void qu_map_default_setter(struct qu_context *ctx,
     struct qu_option *opt, const char *expr)
 {
+    (void) opt;
     qu_code_print(ctx,
         "${expr} = NULL;\n"
         "${expr}_tail = &${expr};\n"

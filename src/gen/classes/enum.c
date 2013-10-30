@@ -167,6 +167,7 @@ static void qu_enum_func_body(struct qu_context *ctx, struct qu_class *cls)
         "static void ${pref}_${typname}_print("
             "struct qu_emit_context *ctx, "
             "enum ${pref}_${typname} *obj, int flags, const char *tag) {\n"
+        "    (void) flags;\n"
         "    const char *val = NULL;\n"
         "    switch(*obj) {\n"
         , "typname", cls->name
@@ -193,6 +194,7 @@ static void qu_enum_func_body(struct qu_context *ctx, struct qu_class *cls)
 static void qu_enum_var_decl(struct qu_context *ctx, struct qu_class *cls,
     struct qu_option *opt, const char *varname)
 {
+    (void) cls;
     qu_code_print(ctx,
         "enum ${pref}_${typname} ${varname:c};\n"
         , "typname", opt->typname

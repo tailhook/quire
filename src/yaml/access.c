@@ -8,6 +8,7 @@
 
 
 const char *qu_node_content(qu_ast_node *node) {
+    char *c, *end;
     if(node->kind == QU_NODE_ALIAS)
         return qu_node_content(node->val.alias_target);
     if(node->kind != QU_NODE_SCALAR) {
@@ -31,8 +32,8 @@ const char *qu_node_content(qu_ast_node *node) {
     }
     // TODO(tailhook) better parse text
     obstack_blank(&node->ctx->pieces, 0);
-    for(char *c = (char *)node->start_token->data,
-             *end = c+node->start_token->bytelen;
+    for(c = (char *)node->start_token->data,
+             end = c+node->start_token->bytelen;
         c < end; ++c) {
         if(*c == '"')
             continue;

@@ -10,7 +10,7 @@
 
 struct qu_cli_group {
     const char *name;
-    TAILQ_ENTRY(qu_cli_grp_lst) lst;
+    TAILQ_ENTRY(qu_cli_group) lst;
     TAILQ_HEAD(qu_cli_options_lst, qu_cli_optref) children;
 };
 
@@ -50,6 +50,8 @@ static struct qu_option_vptr qu_cli_help_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_help_action,
     /* cli_parser */ qu_help_parser,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parser */ NULL,
     /* definition */ NULL,
     /* printer */ NULL,
@@ -59,6 +61,8 @@ static struct qu_option_vptr qu_cli_config_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_config_action,
     /* cli_parser */ qu_config_parser,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parser */ NULL,
     /* definition */ NULL,
     /* printer */ NULL,
@@ -68,6 +72,8 @@ static struct qu_option_vptr qu_cli_define_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_define_action,
     /* cli_parser */ qu_define_parser,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parser */ NULL,
     /* definition */ NULL,
     /* printer */ NULL,
@@ -77,6 +83,8 @@ static struct qu_option_vptr qu_cli_check_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_check_action,
     /* cli_parser */ qu_check_parser,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parser */ NULL,
     /* definition */ NULL,
     /* printer */ NULL,
@@ -86,6 +94,8 @@ static struct qu_option_vptr qu_cli_print_vptr = {
     /* parse */ NULL,
     /* cli_action */ qu_print_action,
     /* cli_parser */ qu_print_parser,
+    /* cli_definition */ NULL,
+    /* cli_apply */ NULL,
     /* parser */ NULL,
     /* definition */ NULL,
     /* printer */ NULL,
@@ -288,6 +298,7 @@ void qu_cli_print_applier(struct qu_context *ctx) {
     qu_code_print(ctx,
         "void ${pref}_cli_apply(struct ${pref}_main *cfg, "
                              "struct ${pref}_cli *cli) {\n"
+        "(void) cfg; (void) cli;  /* In case they are unused */\n"
         , NULL);
 
     for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
@@ -592,26 +603,39 @@ void qu_cli_parse(struct qu_context *ctx,
         qu_cli_parse_ref(ctx, opt, action, act, item->value, clinode);
     }
 }
+
 struct qu_cli_action *qu_help_action(struct qu_option *opt, const char *action)
 {
+    (void) opt;
+    (void) action;
     static struct qu_cli_action set = {0, "Print this help", NULL};
     return &set;
 }
+
 static void qu_help_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) action;
+    (void) argname;
     qu_code_print(ctx,
         "cli->action = QU_CLI_PRINT_HELP;\n"
         , NULL);
 }
+
 struct qu_cli_action *qu_config_action(struct qu_option *opt, const char *action)
 {
+    (void) opt;
+    (void) action;
     static struct qu_cli_action set = {1, "Parse file PATH", "PATH"};
     return &set;
 }
 static void qu_config_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) action;
+    (void) argname;
     qu_code_print(ctx,
         "cli->cfg_filename = ${argname};\n",
         "argname", argname,
@@ -619,6 +643,8 @@ static void qu_config_parser(struct qu_context *ctx,
 }
 struct qu_cli_action *qu_print_action(struct qu_option *opt, const char *action)
 {
+    (void) opt;
+    (void) action;
     static struct qu_cli_action set = {1, "Print config CONFIG", "CONFIG"};
     static struct qu_cli_action incr = {0, "Print config", NULL};
     if(action == NULL)
@@ -628,6 +654,9 @@ struct qu_cli_action *qu_print_action(struct qu_option *opt, const char *action)
 static void qu_print_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) action;
+    (void) argname;
     qu_code_print(ctx,
         "cli->action = QU_CLI_PRINT_CONFIG;\n"
         , NULL);
@@ -649,24 +678,34 @@ static void qu_print_parser(struct qu_context *ctx,
 }
 struct qu_cli_action *qu_define_action(struct qu_option *opt, const char *action)
 {
+    (void) opt;
+    (void) action;
     static struct qu_cli_action set = {1, "Define NAME=VALUE", "NAME=VALUE"};
     return &set;
 }
 static void qu_define_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) action;
+    (void) argname;
     qu_code_print(ctx,
         "// TODO: define\n",
         NULL);
 }
 struct qu_cli_action *qu_check_action(struct qu_option *opt, const char *action)
 {
+    (void) opt;
+    (void) action;
     static struct qu_cli_action set = {0, "Check config and exit", NULL};
     return &set;
 }
 static void qu_check_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) action;
+    (void) argname;
     qu_code_print(ctx,
         "cli->action = QU_CLI_CHECK_CONFIG;\n",
         NULL);

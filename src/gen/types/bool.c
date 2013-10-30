@@ -85,6 +85,7 @@ static void qu_bool_parse(struct qu_context *ctx,
 static struct qu_cli_action *qu_bool_cli_action(struct qu_option *opt,
     const char *action)
 {
+    (void) opt;
     static struct qu_cli_action set = {1, "Set ${name:q} (yes/no)", "BOOL"};
     static struct qu_cli_action incr = {0, "Enable ${name:q}", NULL};
     static struct qu_cli_action decr = {0, "Disable ${name:q}", NULL};
@@ -100,6 +101,9 @@ static struct qu_cli_action *qu_bool_cli_action(struct qu_option *opt,
 static void qu_bool_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) ctx;
+    (void) argname;
     if(action == NULL) {  /*  Bare set  */
         return;
     }
@@ -135,6 +139,7 @@ static void qu_bool_cli_apply(struct qu_context *ctx,
 static void qu_bool_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level)
 {
+    (void) opt;
     qu_code_print(ctx,
         "qu_node_to_bool(ctx, node${level:d}, &${expr});\n",
         "level:d", level,
@@ -146,6 +151,7 @@ static void qu_bool_parser(struct qu_context *ctx,
 static void qu_bool_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname)
 {
+    (void) opt;
     qu_code_print(ctx,
         "int ${varname:c};\n",
         "varname", varname,
@@ -155,6 +161,7 @@ static void qu_bool_definition(struct qu_context *ctx,
 static void qu_bool_printer(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, const char *tag)
 {
+    (void) opt;
     qu_code_print(ctx,
         "qu_emit_scalar(ctx, ${tag}, NULL, 0, "
                         "(${expr})? `true` : `false`, -1);\n"

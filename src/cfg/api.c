@@ -32,6 +32,7 @@ qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
 }
 
 static void *config_chunk_alloc(qu_config_head *cfg, int size) {
+    (void) cfg;
     void *res = malloc(size);
     if(!res) {
         // TODO(tailhook) do a long jump
@@ -42,6 +43,7 @@ static void *config_chunk_alloc(qu_config_head *cfg, int size) {
 }
 
 static void config_chunk_free(qu_config_head *cfg, void *ptr) {
+    (void) cfg;
     free(ptr);
 }
 

@@ -211,7 +211,9 @@ static void qu_choice_func_body(struct qu_context *ctx, struct qu_class *cls)
 }
 
 static void qu_choice_var_decl(struct qu_context *ctx, struct qu_class *cls,
-    struct qu_option *opt, const char *varname) {
+    struct qu_option *opt, const char *varname)
+{
+    (void) cls;
     qu_code_print(ctx,
         "union ${pref}_${typname} *${varname:c};\n"
         , "typname", opt->typname

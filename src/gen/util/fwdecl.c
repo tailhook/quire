@@ -3,7 +3,7 @@
 #include "../context.h"
 
 struct qu_fwdecl_node {
-    TAILQ_ENTRY(qu_fwdecl_lst) lst;
+    TAILQ_ENTRY(qu_fwdecl_node) lst;
     struct qu_fwdecl_node *left;
     struct qu_fwdecl_node *right;
     qu_fwdecl_printer printer;

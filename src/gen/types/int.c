@@ -109,6 +109,7 @@ static void qu_int_parse(struct qu_context *ctx,
 static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
     const char *action)
 {
+    (void) opt;
     static struct qu_cli_action set = {1, "Set ${name:q}", "INT"};
     static struct qu_cli_action incr = {0, "Increment ${name:q}", NULL};
     static struct qu_cli_action decr = {0, "Decrement ${name:q}", NULL};
@@ -124,7 +125,7 @@ static struct qu_cli_action *qu_int_cli_action(struct qu_option *opt,
 static void qu_int_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
-	struct qu_int_option *self = opt->typedata;
+    struct qu_int_option *self = opt->typedata;
     if(action == NULL) {  /*  Bare set  */
         qu_code_print(ctx,
             "char *end;\n"
@@ -198,6 +199,7 @@ static void qu_int_cli_apply(struct qu_context *ctx,
 static void qu_int_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level)
 {
+    (void) opt;
     qu_code_print(ctx,
         "qu_node_to_int(ctx, node${level:d}, &${expr});\n",
         // TODO(tailhook) check min and max
@@ -210,6 +212,7 @@ static void qu_int_parser(struct qu_context *ctx,
 static void qu_int_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname)
 {
+    (void) opt;
     qu_code_print(ctx,
         "long ${varname:c};\n",
         "varname", varname,
@@ -219,6 +222,7 @@ static void qu_int_definition(struct qu_context *ctx,
 static void qu_int_printer(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, const char *tag)
 {
+    (void) opt;
     qu_code_print(ctx,
         "char buf[24];\n"
         "int vlen = sprintf(buf, `%ld`, ${expr});\n"

@@ -12,6 +12,7 @@
 
 static void qu_parse_common(struct qu_context *ctx, struct qu_option *opt,
     qu_ast_node *node) {
+    (void) ctx;
     qu_ast_node *tmp;
     if((tmp = qu_map_get(node, "description")))
         opt->description = qu_node_content(tmp);
@@ -73,11 +74,12 @@ void qu_visit_struct_children(struct qu_context *ctx,
 }
 
 static void qu_config_set_prefix(struct qu_context *ctx) {
+    int i;
     ctx->prefix = ctx->options.prefix;
     int len = strlen(ctx->prefix);
     char * macroprefix = obstack_copy0(&ctx->parser.pieces,
         ctx->prefix, len);
-    for(int i = 0; i < len; ++i)
+    for(i = 0; i < len; ++i)
         macroprefix[i] = toupper(macroprefix[i]);
     ctx->macroprefix = macroprefix;
 }

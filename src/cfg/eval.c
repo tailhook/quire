@@ -131,9 +131,10 @@ static void next_tok(eval_context_t *ctx) {
 
 static const char *parse_double(const char *value, double *result) {
     const char *end;
+    struct unit_s *unit;
     double val = strtod(value, (char **)&end);
     if(*end) {
-        for(struct unit_s *unit = units; unit->unit; ++unit) {
+        for(unit = units; unit->unit; ++unit) {
             if(!strcmp(end, unit->unit)) {
                 val *= unit->value;
                 end += strlen(unit->unit);
@@ -299,12 +300,12 @@ static variable_t *evaluate(qu_config_context *info,
     const char *data, int dlen)
 {
     eval_context_t eval = {
-        info: info,
-        data: data,
-        end: data+dlen,
-        token: data,
-        next:data,
-        curtok: TOK_NONE
+        .info = info,
+        .data = data,
+        .end = data+dlen,
+        .token = data,
+        .next = data,
+        .curtok = TOK_NONE
         };
     variable_t *res = eval_sum(&eval);
     if(eval.token != eval.end || eval.curtok != TOK_END) {
@@ -324,7 +325,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
         int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         const char *end = qu_parse_int(data, result);
-        obstack_free(&info->parser.pieces, data);
+        obstack_free(&info->parser.pieces, (void *)data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Integer value required");
@@ -348,7 +349,7 @@ void qu_eval_bool(qu_config_context *info, const char *value,
         int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         int ok = qu_parse_bool(data, result);
-        obstack_free(&info->parser.pieces, data);
+        obstack_free(&info->parser.pieces, (void *)data);
         if(!ok) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Integer value required");
@@ -370,7 +371,7 @@ void qu_eval_float(qu_config_context *info, const char *value,
         int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         const char *end = parse_double(data, result);
-        obstack_free(&info->parser.pieces, data);
+        obstack_free(&info->parser.pieces, (void *)data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Floating point value required");
@@ -388,9 +389,10 @@ void qu_eval_float(qu_config_context *info, const char *value,
 void qu_eval_str(qu_config_context *info,
     const char *data, int interp, const char **result, int *rlen)
 {
+    const char *c;
     if(interp && strchr(data, '$')) {
         obstack_blank(&info->parser.pieces, 0);
-        for(const char *c = data; *c;) {
+        for(c = data; *c;) {
             if(*c != '$' && *c != '\\') {
                 obstack_1grow(&info->parser.pieces, *c);
                 ++c;

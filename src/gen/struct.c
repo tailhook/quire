@@ -107,9 +107,10 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
     const char *prefix, int level)
 {
     qu_code_print(ctx,
-        "qu_ast_node *node${level:d};\n",
-        "level:d", level+1,
-        NULL);
+        "qu_ast_node *node${level:d};\n"
+        "(void) node${level:d};  /* In case it is unused */\n"
+        , "level:d", level+1
+        , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
         qu_code_print(ctx,

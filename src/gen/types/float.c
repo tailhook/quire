@@ -86,6 +86,7 @@ static void qu_float_parse(struct qu_context *ctx,
 static struct qu_cli_action *qu_float_cli_action(struct qu_option *opt,
     const char *action)
 {
+    (void) opt;
     static struct qu_cli_action set = {1, "Set ${name:q}", "FLOAT"};
     if(action == NULL)  /*  Bare set  */
         return &set;
@@ -95,6 +96,9 @@ static struct qu_cli_action *qu_float_cli_action(struct qu_option *opt,
 static void qu_float_cli_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
+    (void) opt;
+    (void) argname;
+    (void) ctx;
     if(action == NULL) {  /*  Bare set  */
         return;
     }
@@ -125,6 +129,7 @@ static void qu_float_cli_apply(struct qu_context *ctx,
 static void qu_float_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level)
 {
+    (void) opt;
     qu_code_print(ctx,
         "qu_node_to_float(ctx, node${level:d}, &${expr});\n",
         "level:d", level,
@@ -136,6 +141,7 @@ static void qu_float_parser(struct qu_context *ctx,
 static void qu_float_definition(struct qu_context *ctx,
     struct qu_option *opt, const char *varname)
 {
+    (void) opt;
     qu_code_print(ctx,
         "double ${varname:c};\n",
         "varname", varname,
@@ -145,6 +151,7 @@ static void qu_float_definition(struct qu_context *ctx,
 static void qu_float_printer(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, const char *tag)
 {
+    (void) opt;
     qu_code_print(ctx,
         "char buf[64];\n"
         "int vlen = sprintf(buf, `%g`, ${expr});\n"

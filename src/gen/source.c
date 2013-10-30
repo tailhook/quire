@@ -33,6 +33,7 @@ int qu_output_source(struct qu_context *ctx) {
 
     qu_code_print(ctx,
         "int ${pref}_set_defaults(struct ${pref}_main *cfg) {\n"
+        "(void) cfg;  /* In case it is unused */\n"
         , NULL);
 
     if(ctx->root) {
@@ -49,6 +50,7 @@ int qu_output_source(struct qu_context *ctx) {
         "int ${pref}_parse(struct qu_config_context *ctx, "
             "struct ${pref}_cli *cli, struct ${pref}_main *cfg) {\n"
         "qu_ast_node *node0 = qu_config_parse_yaml(ctx, cli->cfg_filename);\n"
+        "(void) node0; (void) cfg;  /* In case they are unused */\n"
         , NULL);
 
     if(ctx->root) {
@@ -135,6 +137,7 @@ int qu_output_source(struct qu_context *ctx) {
 
     qu_code_print(ctx,
         "void ${pref}_print(struct ${pref}_main *cfg, int flags, FILE *stream) {\n"
+        "(void) cfg;  /* In case it is unused */\n"
         "qu_emit_context cctx;\n"
         "qu_emit_context *ctx = &cctx;\n"
         "qu_emit_init(ctx, stream);\n"

@@ -10,6 +10,6 @@
 // Think about ABI compatibility
 void qu_print_error(qu_parse_context *, FILE *err);
 void qu_report_error(qu_parse_context *, qu_ast_node *, const char *text);
-void qu_cli_error(qu_parse_context *, const char *opt, const char *text);
+void qu_cmdline_error(qu_parse_context *ctx, const char *opt, const char *text);
 
 #endif  /* QUIRE_H_ERROR */

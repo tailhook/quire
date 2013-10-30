@@ -10,6 +10,7 @@
 static void qu_code_growstr(const char *val, struct obstack *buf,
     const char *fmt)
 {
+    const char *c;
     if(fmt == NULL) {
         obstack_grow(buf, val, strlen(val));
     } else {
@@ -19,7 +20,7 @@ static void qu_code_growstr(const char *val, struct obstack *buf,
                 return;
             }
             obstack_1grow(buf, '"');
-            for(const char *c = val; *c; ++c) {
+            for(c = val; *c; ++c) {
                 if(*c < 32) {
                     char tbuf[8];
                     int tlen;
@@ -153,6 +154,6 @@ void qu_code_print(struct qu_context *ctx, const char *template, ...) {
     int clen = obstack_object_size(&ctx->parser.pieces);
     const char *data = obstack_finish(&ctx->parser.pieces);
     fwrite(data, 1, clen, ctx->out);
-    obstack_free(&ctx->parser.pieces, data);
+    obstack_free(&ctx->parser.pieces, (void *)data);
 }
 

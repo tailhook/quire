@@ -38,9 +38,11 @@ const char *bool_false[] = {
 
 const char *qu_parse_int(const char *value, long *result) {
     const char *end;
+    struct unit_s *unit;
+
     long val = strtol(value, (char **)&end, 0);
     if(*end) {
-        for(struct unit_s *unit = units; unit->unit; ++unit) {
+        for(unit = units; unit->unit; ++unit) {
             if(!strcmp(end, unit->unit)) {
                 val *= unit->value;
                 end += strlen(unit->unit);
@@ -71,9 +73,11 @@ int qu_parse_bool(const char *value, int *result) {
 
 const char *qu_parse_float(const char *value, double *result) {
     const char *end;
+    struct unit_s *unit;
+
     double val = strtod(value, (char **)&end);
     if(*end) {
-        for(struct unit_s *unit = units; unit->unit; ++unit) {
+        for(unit = units; unit->unit; ++unit) {
             if(!strcmp(end, unit->unit)) {
                 val *= unit->value;
                 end += strlen(unit->unit);

@@ -2,9 +2,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)  # feel free to try lower
 ENABLE_TESTING()
 PROJECT(quire)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu99")
-
-
 ADD_LIBRARY(quire
     src/util/parse.c
     src/util/wrap.c

@@ -52,7 +52,6 @@ static void qu_struct_init(struct qu_context *ctx, struct qu_class *cls,
 
 static void qu_struct_func_decl(struct qu_context *ctx, struct qu_class *cls)
 {
-    struct qu_class_struct *self = cls->classdata;
     qu_code_print(ctx,
         "static void ${pref}_${typname}_defaults("
             "struct ${pref}_${typname} *val);\n"
@@ -98,6 +97,7 @@ static void qu_struct_func_body(struct qu_context *ctx, struct qu_class *cls)
 static void qu_struct_var_decl(struct qu_context *ctx, struct qu_class *cls,
     struct qu_option *opt, const char *varname)
 {
+    (void) cls;
     qu_code_print(ctx,
         "struct ${pref}_${typname} ${varname:c};\n"
         , "typname", opt->typname

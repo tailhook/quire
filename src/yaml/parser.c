@@ -71,7 +71,8 @@ char *token_to_str[] = {
 
 
 static void safeprint(FILE *stream, unsigned char *data, int len) {
-    for(unsigned char *c = data, *end = data + len; c < end; ++c) {
+    unsigned char *c, *end;
+    for(c = data, end = data + len; c < end; ++c) {
         if(chars[(int)*c].flags & CHAR_PRINTABLE) {
             if(*c == '\r') {
                 fprintf(stream, "\\r");

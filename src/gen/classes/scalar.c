@@ -44,6 +44,13 @@ static void qu_scalar_print(struct qu_context *ctx, struct qu_class *cls) {
         "    enum ${pref}_${typename}_tag {\n"
         , "typename", cls->name
         , NULL);
+    if(self->deftag < 0) {
+        qu_code_print(ctx,
+            "${mpref}_${typename:C}_UNDEF = ${deftag:d}, \n"
+            , "deftag:d", self->deftag
+            , "typename", cls->name
+            , NULL);
+    }
     for(i = 0; i < self->tags_len; ++i) {
         qu_code_print(ctx,
             "${mpref}_${typename:C}_${tagname:C} = ${val:d},\n"
@@ -188,6 +195,7 @@ static void qu_scalar_func_body(struct qu_context *ctx, struct qu_class *cls)
         "static void ${pref}_${typname}_print("
             "struct qu_emit_context *ctx, "
             "struct ${pref}_${typname} *obj, int flags, const char *tag) {\n"
+        "    (void) flags; \n"
         "    switch(obj->tag) {\n"
         , "typname", cls->name
         , NULL);
@@ -202,7 +210,12 @@ static void qu_scalar_func_body(struct qu_context *ctx, struct qu_class *cls)
             , NULL);
     }
 
-    qu_code_print(ctx, "}\n\n", NULL);
+    qu_code_print(ctx,
+        "default:\n"
+        "   qu_emit_scalar(ctx, tag, NULL, 0, ``, 0);\n"
+        "   return;\n"
+        "}\n\n"
+        , NULL);
     self->opt->vp->printer(ctx, self->opt, "obj->val", "tag");
     qu_code_print(ctx, "}\n\n", NULL);
 
@@ -211,6 +224,7 @@ static void qu_scalar_func_body(struct qu_context *ctx, struct qu_class *cls)
 static void qu_scalar_var_decl(struct qu_context *ctx, struct qu_class *cls,
     struct qu_option *opt, const char *varname)
 {
+    (void) cls;
     qu_code_print(ctx,
         "struct ${pref}_${typname} ${varname:c};\n"
         , "typname", opt->typname

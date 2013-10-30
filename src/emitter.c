@@ -50,7 +50,8 @@ static int _space_check(qu_emit_context *ctx) {
         ctx->need_space = 0;
     }
     if(ctx->line_start) {
-        for(int i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
+        int i;
+        for(i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
             fputc(' ', ctx->stream);
         }
         ctx->line_start = 0;
@@ -65,7 +66,8 @@ int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len)
         if(!ctx->line_start) {
             qu_emit_whitespace(ctx, QU_WS_ENDLINE, 1);
         }
-        for(int i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
+        int i;
+        for(i = 0; i < ctx->indent_levels[ctx->cur_indent]; ++i) {
             fputc(' ', ctx->stream);
         }
     } else {
@@ -94,22 +96,23 @@ int qu_emit_comment(qu_emit_context *ctx, int flags, const char *data, int len)
 }
 
 int qu_emit_whitespace(qu_emit_context *ctx, int kind, int count) {
+    int i;
     // TODO(tailhook) implement checks
     switch(kind) {
     case QU_WS_SPACE:
-        for(int i = 0; i < count; ++i) {
+        for(i = 0; i < count; ++i) {
             fputc(' ', ctx->stream);
         };
         ctx->need_space = 0;
         break;
     case QU_WS_ENDLINE:
-        for(int i = 0; i < count; ++i) {
+        for(i = 0; i < count; ++i) {
             fputc('\n', ctx->stream);
         };
         ctx->pending_newline = -1;
         break;
     case QU_WS_INDENT:
-        for(int i = 0; i < count; ++i) {
+        for(i = 0; i < count; ++i) {
             fputc(' ', ctx->stream);
         };
         break;
@@ -120,7 +123,8 @@ int qu_emit_whitespace(qu_emit_context *ctx, int kind, int count) {
 int qu_emit_opcode(qu_emit_context *ctx, const char *tag,
                    const char *anchor, int code)
 {
-    int oi;
+    assert(!anchor);
+    int oi, i;
     switch(code) {
         case QU_EMIT_MAP_START:
             if(tag) {
@@ -191,7 +195,7 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag,
                     but have left the space " " at the end as need_space  */
                 oi -= ctx->indent_levels[ctx->cur_indent-1] - 1;
             }
-            for(int i = oi; i > 0; --i) {
+            for(i = oi; i > 0; --i) {
                 fputc(' ', ctx->stream);
             }
             fprintf(ctx->stream, "-");
@@ -231,8 +235,12 @@ int qu_emit_opcode(qu_emit_context *ctx, const char *tag,
 }
 
 int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, int kind,
-    const char *data, int len) {
+    const char *data, int len)
+{
+    assert(!anchor);
     int need_quotes;
+    int i;
+
     if(!len || !data || !*data) {
         if(ctx->doc_start) {
             // document is fully null
@@ -273,7 +281,7 @@ int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, in
     switch(kind) {
         case QU_STYLE_AUTO:
             need_quotes = 0;
-            for(int i = 0; i < len; ++i) {
+            for(i = 0; i < len; ++i) {
                 if(!isprint(data[i])) {
                     need_quotes = 1;
                     break;
@@ -318,7 +326,9 @@ int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, in
 }
 
 int qu_emit_printf(qu_emit_context *ctx, const char *tag, const char *anchor, int kind,
-    const char *format, ...) {
+    const char *format, ...)
+{
+    assert(!anchor);
     if(tag) {
         _space_check(ctx);
         fprintf(ctx->stream, "%s", tag);

@@ -8,7 +8,7 @@ struct qu_context;
 struct qu_struct_member {
     const char *name;
     int is_struct;
-    TAILQ_ENTRY(qu_config_ss_list) lst;
+    TAILQ_ENTRY(qu_struct_member) lst;
     union {
         struct qu_option *opt;
         struct qu_config_struct *str;
@@ -16,7 +16,7 @@ struct qu_struct_member {
 };
 
 struct qu_config_struct {
-    TAILQ_HEAD(qu_config_s_list, qu_config_struct) children;
+    TAILQ_HEAD(qu_config_s_list, qu_struct_member) children;
     struct qu_config_struct *parent;
     const char *path;
 };

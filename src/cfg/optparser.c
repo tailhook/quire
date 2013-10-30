@@ -2,6 +2,7 @@
 
 #include "optparser.h"
 #include "context.h"
+#include "../error.h"
 #include "../quire_int.h"
 
 void qu_optparser_init(struct qu_config_context *ctx,
@@ -69,7 +70,7 @@ static void qu_optparser_long(struct qu_config_context *ctx,
     for(lopt = self->lopt; lopt->opt; ++lopt) {
         if(strncmp(lopt->opt, copt, coptlen))
             continue;
-        if(coptlen != strlen(lopt->opt)) {
+        if(coptlen != (int)strlen(lopt->opt)) {
             if((lopt+1)->opt && !strncmp((lopt+1)->opt, copt, coptlen))
                 qu_optparser_error(ctx, "Ambiguous option abbreviation");
         }
@@ -135,6 +136,6 @@ void qu_optparser_error(struct qu_config_context *ctx,
 {
     struct qu_optparser_struct *self = &ctx->optparser;
     qu_cmdline_error(&ctx->parser,
-		self->curshort ? self->curshort : self->cur,
-		error);
+        self->curshort ? self->curshort : self->cur,
+        error);
 }

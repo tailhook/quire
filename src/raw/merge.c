@@ -49,7 +49,8 @@ void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
     switch(node->kind) {
     case QU_NODE_MAPPING: {
         qu_map_index *map = &node->val.map_index;
-        for(qu_map_member *item = TAILQ_FIRST(&map->items); item;) {
+        qu_map_member *item;
+        for(item = TAILQ_FIRST(&map->items); item;) {
             if(item->value->kind == QU_NODE_ALIAS) {
                 item->value = item->value->val.alias_target;
             }
@@ -87,7 +88,8 @@ void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node)
         } break;
     case QU_NODE_SEQUENCE: {
         qu_seq_index *seq = &node->val.seq_index;
-        for(qu_seq_member *item = TAILQ_FIRST(&seq->items); item;) {
+        qu_seq_member *item;
+        for(item = TAILQ_FIRST(&seq->items); item;) {
             if(item->value->kind == QU_NODE_ALIAS) {
                 item->value = item->value->val.alias_target;
             }

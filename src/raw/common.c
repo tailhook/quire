@@ -62,8 +62,9 @@ static qu_ast_node *qu_raw_process_value(qu_parse_context *ctx,
 static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node) {
     switch(node->kind) {
     case QU_NODE_MAPPING: {
+        qu_map_member *item;
         qu_map_index *map = &node->val.map_index;
-        for(qu_map_member *item = TAILQ_FIRST(&map->items); item;) {
+        for(item = TAILQ_FIRST(&map->items); item;) {
             if(item->value->tag) {
                 item->value = qu_raw_process_value(ctx, item->value);
             }
@@ -73,7 +74,8 @@ static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node) {
         } break;
     case QU_NODE_SEQUENCE: {
         qu_seq_index *seq = &node->val.seq_index;
-        for(qu_seq_member *item = TAILQ_FIRST(&seq->items); item;) {
+        qu_seq_member *item;
+        for(item = TAILQ_FIRST(&seq->items); item;) {
             if(item->value->tag) {
                 item->value = qu_raw_process_value(ctx, item->value);
             }

@@ -48,6 +48,7 @@ const char *qu_c_name(struct obstack *ob, const char *name) {
 }
 
 void qu_append_c_name(struct obstack *ob, const char *name) {
+    const char **word;
     char *namestart = obstack_base(ob) + obstack_object_size(ob);
     if(isdigit(*name))
         obstack_1grow(ob, '_');
@@ -60,7 +61,7 @@ void qu_append_c_name(struct obstack *ob, const char *name) {
         ++name;
     }
     int len = (char *)obstack_base(ob) + obstack_object_size(ob) - namestart;
-    for(const char **word = reserved_words; *word; ++word) {
+    for(word = reserved_words; *word; ++word) {
         if(!strncmp(namestart, *word, len) && len == (int)strlen(*word)) {
             obstack_1grow(ob, '_');
             break;  // can't match keyword twice
@@ -69,7 +70,6 @@ void qu_append_c_name(struct obstack *ob, const char *name) {
 }
 
 void qu_append_c_name_upper(struct obstack *ob, const char *name) {
-    char *namestart = obstack_base(ob) + obstack_object_size(ob);
     if(isdigit(*name))
         obstack_1grow(ob, '_');
     while(*name) {
@@ -83,8 +83,9 @@ void qu_append_c_name_upper(struct obstack *ob, const char *name) {
 }
 
 void qu_print_c_string(FILE *file, const char *str) {
+    const char *c;
     putc('"', file);
-    for(const char *c = str; *c; ++c) {
+    for(c = str; *c; ++c) {
         if(*c < 32) {
             switch(*c) {
             case '\r': fprintf(file, "\\r"); break;

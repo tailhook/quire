@@ -57,7 +57,7 @@ void quire_parse_options(qu_options_t *opt, int argc, char **argv) {
             opt->version_info = optarg;
             break;
         case 'e':
-            if(cursect > sizeof(opt->sections)/sizeof(char *)-1) {
+            if(cursect > (int)(sizeof(opt->sections)/sizeof(char *)-1)) {
                 fprintf(stderr, "Too many --enable flags\n");
                 exit(7);
             }
