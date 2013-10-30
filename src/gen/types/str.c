@@ -93,9 +93,13 @@ static void qu_str_cli_parser(struct qu_context *ctx,
     const char *argname)
 {
     (void) opt;
-    (void) ctx;
-    (void) argname;
     if(action == NULL) {  /*  Bare set  */
+        qu_code_print(ctx,
+            "cli->${optname:c}_set = 1;\n"
+            "cli->${optname:c} = ${argname};\n"
+            , "argname", argname
+            , "optname", opt->path
+            , NULL);
         return;
     }
 }
