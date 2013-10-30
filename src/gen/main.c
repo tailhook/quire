@@ -57,7 +57,12 @@ int main(int argc, char **argv) {
             ctx.out = stdout;  // TODO(tailhook) fix
             ftruncate(1, 0);
             outputting = 1;
-            std_assert(qu_output_source(&ctx));
+            const char *fn = ctx.options.output_header;
+            if(!fn) {
+                /*  TODO(tailhook) better options? maybe s/.c/.h/ */
+                fn = "config.h";
+            }
+            std_assert(qu_output_source(&ctx, fn));
             outputting = 0;
         }
 
