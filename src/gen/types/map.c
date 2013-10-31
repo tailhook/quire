@@ -87,7 +87,7 @@ static void qu_map_parse(struct qu_context *ctx,
     if(self->is_struct) {
         if(val->kind == QU_NODE_MAPPING) {
             self->val.str = qu_struct_new_root(ctx);
-            qu_visit_struct_children(ctx, val, self->val.str);
+            qu_visit_struct_children(ctx, val, self->val.str, NULL);
         } else {
             LONGJUMP_ERR_NODE(ctx, val, "Untagged straw scalar");
         }

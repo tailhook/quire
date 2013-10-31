@@ -67,7 +67,6 @@ int main(int argc, char **argv) {
         }
 
         qu_parser_free(&ctx.parser);
-        return 0;
     } else {
         if(outputting) {
             fprintf(ctx.out,
@@ -83,4 +82,5 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    return 0;
 }

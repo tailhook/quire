@@ -6,6 +6,7 @@
 
 struct qu_context;
 struct qu_option;
+struct qu_guard;
 
 struct qu_cli_options {
     TAILQ_HEAD(qu_cli_grp_lst, qu_cli_group) groups;
@@ -27,8 +28,8 @@ void qu_cli_print_applier(struct qu_context *ctx);
 void qu_cli_print_fwdecl(struct qu_context *ctx);
 void qu_cli_add_quire(struct qu_context *ctx);
 void qu_cli_parse(struct qu_context *ctx,
-	struct qu_option *opt, qu_ast_node *node);
+    struct qu_option *opt, qu_ast_node *node, struct qu_guard *g);
 
-const char *qu_cli_format_usage(struct qu_context *ctx);
+void qu_cli_print_usage(struct qu_context *ctx);
 
 #endif  // QUIRE_H_GEN_CLI

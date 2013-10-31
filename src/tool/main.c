@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
     assert(argc >= 2);
     qu_parse_context ctx;
     if(!(rc = setjmp(jmp))) {
-		ctx.errjmp = &jmp;
+        ctx.errjmp = &jmp;
         qu_parser_init(&ctx);
         if(!options.filename || !strcmp(options.filename, "-")) {
             qu_stream_parse(&ctx, "<stdin>", stdin);
@@ -276,7 +276,6 @@ int main(int argc, char **argv) {
         }
         execute_action(argv + optind, ctx.document);
         qu_parser_free(&ctx);
-        return 0;
     } else {
         if(rc == QU_YAML_ERROR) {
             qu_print_error(&ctx, stderr);
@@ -287,4 +286,5 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    return 0;
 }

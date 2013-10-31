@@ -125,11 +125,16 @@ int qu_output_source(struct qu_context *ctx, const char *filename) {
 
     qu_code_print(ctx,
         "void ${pref}_help(FILE *stream) {\n"
-        "   fprintf(stream, ${usage:q});\n"
+        "   fprintf(stream, \n"
+        , NULL);
+
+    qu_cli_print_usage(ctx);
+
+    qu_code_print(ctx,
+        "   );\n"
         "}\n"
-        "\n",
-        "usage", qu_cli_format_usage(ctx),
-        NULL);
+        "\n"
+        , NULL);
 
     int underlen = strlen(ctx->meta.program_name);
     char underline[underlen+1];

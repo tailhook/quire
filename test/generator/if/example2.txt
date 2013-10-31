@@ -1,0 +1,7 @@
+# if
+# ==
+#
+# Conditional options test
+#
+
+val: B

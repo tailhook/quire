@@ -2,6 +2,7 @@
 
 #include "struct.h"
 #include "context.h"
+#include "guard.h"
 #include "types/types.h"
 #include "util/print.h"
 #include "../yaml/codes.h"
@@ -21,7 +22,7 @@ struct qu_config_struct *qu_struct_new_root(struct qu_context *ctx) {
 }
 
 struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
-    struct qu_config_struct *parent, const char *name)
+    struct qu_config_struct *parent, const char *name, struct qu_guard *guard)
 {
     struct qu_config_struct *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_config_struct));
@@ -40,18 +41,21 @@ struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
     mem->name = name;
     mem->is_struct = 1;
     mem->p.str = self;
+    mem->guard = guard;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
     return self;
 }
 
 void qu_struct_add_option(struct qu_context *ctx,
-    struct qu_config_struct *parent, const char *name, struct qu_option *option)
+    struct qu_config_struct *parent, const char *name,
+    struct qu_option *option, struct qu_guard *guard)
 {
     struct qu_struct_member *mem = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_struct_member));
     mem->name = name;
     mem->is_struct = 0;
     mem->p.opt = option;
+    mem->guard = guard;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
     if(parent->path) {
         option->path = qu_template_alloc(ctx, "${parent}.${name}",
@@ -67,6 +71,7 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
 {
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
             qu_code_print(ctx,
                 "struct {\n"
@@ -79,6 +84,7 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
         } else {
             mem->p.opt->vp->definition(ctx, mem->p.opt, mem->name);
         }
+        qu_guard_print_close(ctx, mem->guard);
     }
 }
 
@@ -87,6 +93,7 @@ void qu_struct_default_setter(struct qu_context *ctx,
 {
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
             const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}.",
                 "prefix", prefix,
@@ -100,6 +107,7 @@ void qu_struct_default_setter(struct qu_context *ctx,
                 NULL);
             mem->p.opt->vp->default_setter(ctx, mem->p.opt, expr);
         }
+        qu_guard_print_close(ctx, mem->guard);
     }
 }
 
@@ -115,6 +123,7 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
     TAILQ_FOREACH(mem, &str->children, lst) {
         if(!mem->is_struct && mem->p.opt->cli_only)
             continue;
+        qu_guard_print_open(ctx, mem->guard);
         qu_code_print(ctx,
             "if((node${nlevel:d} = qu_map_get(node${level:d}, ${name:q}))) {\n",
             "nlevel:d", level+1,
@@ -137,6 +146,7 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
         qu_code_print(ctx,
             "}\n",
             NULL);
+        qu_guard_print_close(ctx, mem->guard);
     }
 }
 
@@ -212,6 +222,7 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
         , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
             int hasex = qu_struct_needs_example(mem->p.str);
             if(!hasex) {
@@ -289,6 +300,7 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
             mem->p.opt->vp->printer(ctx, mem->p.opt, expr, "NULL");
             qu_code_print(ctx, "}\n", NULL);
         }
+        qu_guard_print_close(ctx, mem->guard);
     }
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n"

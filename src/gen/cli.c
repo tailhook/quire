@@ -3,6 +3,7 @@
 
 #include "cli.h"
 #include "context.h"
+#include "guard.h"
 #include "util/print.h"
 #include "../util/wrap.h"
 #include "types/types.h"
@@ -21,6 +22,7 @@ struct qu_cli_optref {
     const char *group;
     const char *description;
     struct qu_option *opt;
+    struct qu_guard *guard;
 
     /*  List by group in definition order  */
     TAILQ_ENTRY(qu_cli_optref) glst;
@@ -148,6 +150,7 @@ void qu_cli_parser_visit_long(struct qu_context *ctx,
         return;
     qu_cli_parser_visit_long(ctx, ref->left);
 
+    qu_guard_print_open(ctx, ref->guard);
     if(ref->name[1] == '-') {
         if(ref->action) {
             act = ref->opt->vp->cli_action(ref->opt, NULL);
@@ -168,6 +171,7 @@ void qu_cli_parser_visit_long(struct qu_context *ctx,
                 , NULL);
         }
     }
+    qu_guard_print_close(ctx, ref->guard);
 
     qu_cli_parser_visit_long(ctx, ref->right);
 }
@@ -181,6 +185,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
         "    ${mpref}_OPT__NONE,\n"
         , NULL);
     for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
+        qu_guard_print_open(ctx, ref->guard);
         if(ref->action) {
             qu_code_print(ctx,
                 "    ${mpref}_OPT_${opath:C}_${action:C},\n"
@@ -198,7 +203,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
            && qu_cmp(nxt->action, ref->action)) {
             nxt = TAILQ_NEXT(nxt, plst);
         }
-
+        qu_guard_print_close(ctx, ref->guard);
     }
     qu_code_print(ctx,
         "};\n"
@@ -218,6 +223,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
     TAILQ_FOREACH(ref, &ctx->cli_options.all, plst) {
         if(ref->name[1] == '-')
             continue; /* only short options here */
+        qu_guard_print_open(ctx, ref->guard);
         if(ref->action) {
             act = ref->opt->vp->cli_action(ref->opt, NULL);
             qu_code_print(ctx,
@@ -236,6 +242,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
                 , "opath", ref->opt->path
                 , NULL);
         }
+        qu_guard_print_close(ctx, ref->guard);
     }
     qu_code_print(ctx,
         "{0, 0, ${mpref}_OPT__NONE}};\n"
@@ -259,6 +266,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
         , NULL);
 
     for(ref = TAILQ_FIRST(&ctx->cli_options.all); ref; ref = nxt) {
+        qu_guard_print_open(ctx, ref->guard);
         if(ref->action) {
             qu_code_print(ctx,
                 "case ${mpref}_OPT_${opath:C}_${action:C}: do {\n"
@@ -281,6 +289,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
             "} while(0);\n"
             "break;\n"
             , NULL);
+        qu_guard_print_close(ctx, ref->guard);
     }
 
     qu_code_print(ctx,
@@ -307,7 +316,9 @@ void qu_cli_print_applier(struct qu_context *ctx) {
                 "cfg->${path}"
                 , "path", ref->opt->path
                 , NULL);
+            qu_guard_print_open(ctx, ref->guard);
             ref->opt->vp->cli_apply(ctx, ref->opt, expr);
+            qu_guard_print_close(ctx, ref->guard);
         }
         nxt = TAILQ_NEXT(ref, plst);
         while(nxt && nxt->opt == ref->opt) {
@@ -359,7 +370,7 @@ static struct qu_cli_group *qu_cli_new_group(struct qu_context *ctx,
 
 int qu_cli_add(struct qu_context *ctx, const char *opt, const char *action,
     const char *metavar, struct qu_option *option,
-    const char *group, const char *descr)
+    const char *group, const char *descr, struct qu_guard *g)
 {
     assert (opt && *opt);
     struct qu_cli_optref **place = qu_cli_find(ctx, opt);
@@ -373,6 +384,7 @@ int qu_cli_add(struct qu_context *ctx, const char *opt, const char *action,
     self->group = group;
     self->description = descr;
     self->opt = option;
+    self->guard = g;
 
     struct qu_cli_group *grp;
     TAILQ_FOREACH(grp, &ctx->cli_options.groups, lst) {
@@ -399,9 +411,9 @@ void qu_cli_add_quire(struct qu_context *ctx) {
     help->path = "_help";
     const char *group = "Configuration Options";
     qu_cli_add(ctx, "-h", NULL, NULL, help,
-        group, "Print this help");
+        group, "Print this help", NULL);
     qu_cli_add(ctx, "--help", NULL, NULL, help,
-        group, "Print this help");
+        group, "Print this help", NULL);
 
     const char *config_descr = qu_template_alloc(ctx,
         "Configuration file name [default: ${filename}]",
@@ -410,23 +422,23 @@ void qu_cli_add_quire(struct qu_context *ctx) {
     struct qu_option *config = qu_option_new(ctx, &qu_cli_config_vptr);
     config->path = "_config";
     qu_cli_add(ctx, "-c", NULL, "PATH", config,
-        group, config_descr);
+        group, config_descr, NULL);
     qu_cli_add(ctx, "--config", NULL, "PATH", config,
-        group, config_descr);
+        group, config_descr, NULL);
 
     struct qu_option *define = qu_option_new(ctx, &qu_cli_define_vptr);
     define->path = "_define";
     qu_cli_add(ctx, "-D", "update", "NAME=VALUE", define,
-        group, "Set value of configuration variable NAME to VALUE");
+        group, "Set value of configuration variable NAME to VALUE", NULL);
     qu_cli_add(ctx, "--config-var", "update", "NAME=VALUE", define,
-        group, "Set value of configuration variable NAME to VALUE");
+        group, "Set value of configuration variable NAME to VALUE", NULL);
 
     struct qu_option *check = qu_option_new(ctx, &qu_cli_check_vptr);
     check->path = "_check";
     qu_cli_add(ctx, "-C", NULL, NULL, check,
-        group, "Check configuration and exit");
+        group, "Check configuration and exit", NULL);
     qu_cli_add(ctx, "--config-check", NULL, NULL, check,
-        group, "Check configuration and exit");
+        group, "Check configuration and exit", NULL);
 
     struct qu_option *print = qu_option_new(ctx, &qu_cli_print_vptr);
     print->path = "_print";
@@ -434,14 +446,15 @@ void qu_cli_add_quire(struct qu_context *ctx) {
         group, "Print configuration after reading, then exit. "
                "The configuration printed by this option includes values "
                "overriden from command-line. Double flag `-PP` prints "
-               "comments.");
+               "comments.", NULL);
     qu_cli_add(ctx, "--config-print", NULL, "TYPE", print,
         group, "Print configuration file after reading. TYPE maybe "
-               "\"current\", \"details\", \"example\", \"all\", \"full\"");
+               "\"current\", \"details\", \"example\", \"all\", \"full\"",
+               NULL);
 }
 
 
-const char *qu_cli_format_usage(struct qu_context *ctx) {
+void qu_cli_print_usage(struct qu_context *ctx) {
     const char *ptr, *end;
     struct obstack *buf = &ctx->parser.pieces;
     obstack_blank(buf, 0);
@@ -457,16 +470,23 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
         ptr = qu_line_grow(buf, ptr, end, 80);
         obstack_1grow(buf, '\n');
     }
+    obstack_1grow(buf, 0);
+    const char *val = obstack_finish(buf);
+    qu_code_print(ctx, "${str:q}\n", "str", val, NULL);
+    obstack_free(buf, val);
 
     struct qu_cli_group *grp;
     TAILQ_FOREACH(grp, &ctx->cli_options.groups, lst) {
-        qu_template_grow(ctx,
+        val = qu_template_alloc(ctx,
             "\n${groupname}:\n",
             "groupname", grp->name,
             NULL);
+        qu_code_print(ctx, "${str:q}\n", "str", val, NULL);
+        obstack_free(buf, val);
         struct qu_cli_optref *opt, *nxt;
         for(opt = TAILQ_FIRST(&grp->children); opt; opt = nxt) {
-            int startoff = obstack_object_size(buf);
+            qu_guard_print_open(ctx, opt->guard);
+            obstack_blank(buf, 0);
             qu_template_grow(ctx,
                 "  ${opt}",
                 "opt", opt->name,
@@ -489,11 +509,11 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
                     "var", opt->metavar,
                     NULL);
             int endoff = obstack_object_size(buf);
-            if(endoff - startoff > 18) {
+            if(endoff > 18) {
                 obstack_grow(buf, "\n                    ", 21);
             } else {
                 obstack_grow(buf,
-                    "                    ", 20 - (endoff - startoff));
+                    "                    ", 20 - endoff);
             }
             ptr = opt->description;
             end = ptr + strlen(ptr);
@@ -503,16 +523,18 @@ const char *qu_cli_format_usage(struct qu_context *ctx) {
                 ptr = qu_line_grow(buf, ptr, end, 60);
             }
             obstack_1grow(buf, '\n');
+            obstack_1grow(buf, 0);
+            val = obstack_finish(buf);
+            qu_code_print(ctx, "${str:q}\n", "str", val, NULL);
+            obstack_free(buf, val);
+            qu_guard_print_close(ctx, opt->guard);
         }
     }
-    obstack_1grow(buf, 0);
-
-    return obstack_finish(buf);
 }
 
-static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
+static void qu_cli_parse_ref(struct qu_context *ctx,
     struct qu_option *opt, const char *action, struct qu_cli_action *act,
-    qu_ast_node *node, qu_ast_node *defnode)
+    qu_ast_node *node, qu_ast_node *defnode, struct qu_guard *g)
 {
     qu_ast_node *tmp;
     const char *descr = NULL;
@@ -523,9 +545,6 @@ static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
 
     if(defnode && (tmp = qu_map_get(defnode, "group")))
         group = qu_node_content(tmp);
-
-    struct qu_cli_optref *ref = obstack_alloc(&ctx->parser.pieces,
-        sizeof(struct qu_cli_optref));
 
     if(node->kind == QU_NODE_MAPPING) {
         name = qu_map_get(node, "name");
@@ -557,21 +576,19 @@ static struct qu_cli_optref *qu_cli_parse_ref(struct qu_context *ctx,
     }
     if(name) {
         const char *oname = qu_node_content(name);
-        qu_cli_add(ctx, oname, action, metavar, opt, group, descr);
+        qu_cli_add(ctx, oname, action, metavar, opt, group, descr, g);
     }
     if(names) {
         qu_seq_member *item;
         TAILQ_FOREACH(item, &names->val.seq_index.items, lst) {
             const char *oname = qu_node_content(item->value);
-            qu_cli_add(ctx, oname, action, metavar, opt, group, descr);
+            qu_cli_add(ctx, oname, action, metavar, opt, group, descr, g);
         }
     }
-
-    return ref;
 }
 
 void qu_cli_parse(struct qu_context *ctx,
-    struct qu_option *opt, qu_ast_node *node)
+    struct qu_option *opt, qu_ast_node *node, struct qu_guard *g)
 {
     const int clen = strlen("command-line");
     qu_ast_node *clinode = qu_map_get(node, "command-line");
@@ -584,7 +601,7 @@ void qu_cli_parse(struct qu_context *ctx,
                 clinode->start_token,
                 "Unsupported command-line action");
         }
-        qu_cli_parse_ref(ctx, opt, NULL, act, clinode, clinode);
+        qu_cli_parse_ref(ctx, opt, NULL, act, clinode, clinode, g);
     }
 
     qu_map_member *item;
@@ -600,7 +617,7 @@ void qu_cli_parse(struct qu_context *ctx,
                 item->key->start_token,
                 "Unsupported command-line action");
         }
-        qu_cli_parse_ref(ctx, opt, action, act, item->value, clinode);
+        qu_cli_parse_ref(ctx, opt, action, act, item->value, clinode, g);
     }
 }
 

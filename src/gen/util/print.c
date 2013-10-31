@@ -156,4 +156,3 @@ void qu_code_print(struct qu_context *ctx, const char *template, ...) {
     fwrite(data, 1, clen, ctx->out);
     obstack_free(&ctx->parser.pieces, (void *)data);
 }
-

@@ -1,0 +1,15 @@
+__meta__:
+  program-name: if
+  default-config: /etc/__quire_test__/if.yaml
+  description: Conditional options test
+
+val: !String
+  default: A
+  example: B
+  command-line: -v
+
+__if__:defined EXTRA:
+  extra: !String
+    default: a
+    example: b
+    command-line: -e

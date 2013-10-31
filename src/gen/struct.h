@@ -4,9 +4,11 @@
 #include <sys/queue.h>
 
 struct qu_context;
+struct qu_guard;
 
 struct qu_struct_member {
     const char *name;
+    struct qu_guard *guard;
     int is_struct;
     TAILQ_ENTRY(qu_struct_member) lst;
     union {
@@ -23,10 +25,10 @@ struct qu_config_struct {
 
 struct qu_config_struct *qu_struct_new_root(struct qu_context *ctx);
 struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
-    struct qu_config_struct *parent, const char *name);
+    struct qu_config_struct *parent, const char *name, struct qu_guard *guard);
 void qu_struct_add_option(struct qu_context *ctx,
     struct qu_config_struct *parent, const char *name,
-    struct qu_option *option);
+    struct qu_option *option, struct qu_guard *guard);
 void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
     const char *prefix, int level);
 void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,

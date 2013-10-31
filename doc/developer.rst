@@ -282,7 +282,7 @@ String Type
 -----------
 
 String is most primitive data type. It accepts any YAML scalar and stores it's
-value as "const char *" along with it's length.
+value as ``const char *`` along with it's length.
 
 The simplest config::
 
@@ -340,6 +340,70 @@ Mapping Type
 
 Custom Type
 -----------
+
+
+
+Special Keys
+============
+
+
+Types
+-----
+
+The ``__types__`` defines the custom types that can be used in multiple
+places inside the configuration. It can also be used to define recursive types.
+Any type defined inside ``__types__`` can be referred by
+``!Type name_of_the_type``. See :ref:`custom types <custom-types>` for more info.
+
+
+Conditionals
+------------
+
+There is a common use case where you have several utilities sharing mostly
+same config with some deviations. The most typical use case is a daemon
+process and a command-line interface to it, with a different set of
+command-line argumemnts. Here is how it looks like:
+
+.. code-block:: yaml
+
+   __if__:defined CLIENT:
+    query: !String
+      only-command-line: yes
+      command-line: --query
+
+When compiling utility you should *define* the ``CLIENT`` macro::
+
+    gcc ... -DCLIENT
+
+And you will get additional command-line arguments for this binary. In code
+it looks like:
+
+.. code-block:: c
+
+   struct cfg_main_t {
+       int val1;
+   #if defined CLIENT
+       const char *query;
+       int query_len;
+   #endif  /* defined CLIENT */
+   }
+
+The rule is: if expression is evaluated to true, you get the configuration with
+all the contents of conditional merged inside the mapping (i.e. conditional
+replaced by ``<<:``). In case expression is evaluated to false, you should get
+the all the configuration structures and semantics as the key and all its
+contents doesn't exist at all.
+
+You can use any expression that C preprocessor is able to evaluate instead of
+``defined CLIENT``
+
+.. warning::
+   You must define the macro consistently across all C files that use
+   configuration header (``config.h``). In particular you can't share
+   ``config.o`` generated for the two executables having different definitions.
+   CMake handles this case automatically but some other build systems don't.
+
+
 
 .. _custom-types:
 

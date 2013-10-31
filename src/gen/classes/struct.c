@@ -43,7 +43,7 @@ static void qu_struct_init(struct qu_context *ctx, struct qu_class *cls,
         sizeof(struct qu_class_struct));
     cls->classdata = self;
     self->body = qu_struct_new_root(ctx);
-    qu_visit_struct_children(ctx, node, self->body);
+    qu_visit_struct_children(ctx, node, self->body, NULL);
     const char *typename = qu_template_alloc(ctx, "struct ${pref}_${name}",
         "name", cls->name,
         NULL);

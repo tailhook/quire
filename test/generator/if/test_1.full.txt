@@ -1,0 +1,8 @@
+# if
+# ==
+#
+# Conditional options test
+#
+
+val: C
+extra: c

@@ -1,5 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)  # feel free to try lower
 PROJECT(quire)
+INCLUDE(CMakeParseArguments)
 ENABLE_TESTING()
 
 ADD_LIBRARY(quire
@@ -52,6 +53,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/source.c
     src/gen/metadata.c
     src/gen/options.c
+    src/gen/guard.c
     )
 TARGET_LINK_LIBRARIES(quire-gen quire)
 
@@ -125,6 +127,21 @@ MACRO(ADD_GEN_TEST name)
         --config-print=example)
 ENDMACRO(ADD_GEN_TEST)
 
+MACRO(ADD_GEN_TEST2 name help example)
+    ADD_TEST(${name}_help
+        ${CMAKE_SOURCE_DIR}/test_quire_gen
+        ${CMAKE_CURRENT_SOURCE_DIR}/${help}.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${help}.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
+        --help)
+    ADD_TEST(${name}_example
+        ${CMAKE_SOURCE_DIR}/test_quire_gen
+        ${CMAKE_CURRENT_SOURCE_DIR}/${example}.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${example}.out
+        ${CMAKE_CURRENT_BINARY_DIR}/test_${name}
+        --config-print=example)
+ENDMACRO(ADD_GEN_TEST2)
+
 MACRO(ADD_GEN_TEST_CONFIG name config mode)
     ADD_TEST(${name}_${config}_${mode}
         ${CMAKE_SOURCE_DIR}/test_quire_gen
@@ -158,6 +175,7 @@ ADD_SUBDIRECTORY(test/generator/arar)
 ADD_SUBDIRECTORY(test/generator/mapmap)
 ADD_SUBDIRECTORY(test/generator/rec)
 ADD_SUBDIRECTORY(test/generator/clionly)
+ADD_SUBDIRECTORY(test/generator/if)
 
 # TESTS FOR QUIRE-TOOL
 
