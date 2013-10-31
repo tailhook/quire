@@ -113,6 +113,8 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
         , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        if(!mem->is_struct && mem->p.opt->cli_only)
+            continue;
         qu_code_print(ctx,
             "if((node${nlevel:d} = qu_map_get(node${level:d}, ${name:q}))) {\n",
             "nlevel:d", level+1,
@@ -232,6 +234,8 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
                 qu_code_print(ctx, "}\n" , NULL);
             }
         } else {
+            if(mem->p.opt->cli_only)
+                continue;
             const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
                 "prefix", prefix,
                 "memname", mem->name,

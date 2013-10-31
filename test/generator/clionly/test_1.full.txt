@@ -1,0 +1,7 @@
+# clionly
+# =======
+#
+# Command-line only options test
+#
+
+val: hello

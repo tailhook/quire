@@ -1,0 +1,11 @@
+__meta__:
+  program-name: clionly
+  default-config: /etc/__quire_test__/clionly.yaml
+  description: Command-line only options test
+
+val: !String
+val2: !String
+  =: val2value
+  description: Command-line only string
+  only-command-line: yes
+  command-line: [-v, --val2]

@@ -33,6 +33,7 @@ struct qu_option {
     const char *typname;
     const char *description;
     const char *path;
+    int cli_only;
     qu_ast_node *example;
     int has_default;
     void *typedata;

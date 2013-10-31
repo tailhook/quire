@@ -4,6 +4,7 @@
 #include "metadata.h"
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
+#include "../util/parse.h"
 #include "types/types.h"
 #include "util/print.h"
 #include "special/special.h"
@@ -11,14 +12,16 @@
 #include "context.h"
 
 static void qu_parse_common(struct qu_context *ctx, struct qu_option *opt,
-    qu_ast_node *node) {
+    qu_ast_node *node)
+{
     (void) ctx;
     qu_ast_node *tmp;
     if((tmp = qu_map_get(node, "description")))
         opt->description = qu_node_content(tmp);
+    if((tmp = qu_map_get(node, "only-command-line")))
+        qu_parse_bool(qu_node_content(tmp), &opt->cli_only);
     if((tmp = qu_map_get(node, "example")))
         opt->example = tmp;
-    opt->has_default = 0;
 }
 
 struct qu_option *qu_parse_option(struct qu_context *ctx, qu_ast_node *node,

@@ -1,0 +1,5 @@
+ADD_GEN_EXECUTABLE(clionly)
+ADD_GEN_TEST(clionly)
+ADD_GEN_TEST_CONFIG(clionly test_1 current)
+ADD_GEN_TEST_CONFIG(clionly test_1 full)
+ADD_GEN_TEST_CONFIG(clionly test_2 current)

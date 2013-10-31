@@ -152,6 +152,7 @@ example, any type could be used):
      description: This value is something that is set in config
      default: nothing-relevant
      example: something-cool
+     only-command-line: no
      command-line:
        names: [-v, --val-set]
        group: Options
@@ -187,6 +188,18 @@ Set's the example value for the configuration variable. It's only output in
 ``--config-print=example`` and may be any piece of yaml. However it's
 recommended to obey same structure as a target value, as it may be enforced in
 the future. See description of ``--config-print`` for more information.
+
+.. code-block:: yaml
+
+   val: !String
+     only-command-line: yes
+
+This flag marks an option to be accepted from the command-line only. It is
+neither parsed in yaml file, nor printed using ``--config-print``, but
+otherwise it is placed in the same place in configuration structure and
+respect same rules. If there is no ``command-line`` (see below) for this
+option, then a member of the structure is generated and default is set
+anyway.
 
 The command-line may be specified in several ways. The simplest is:
 
