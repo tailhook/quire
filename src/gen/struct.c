@@ -222,8 +222,8 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
         , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
-        qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
+            qu_guard_print_open(ctx, mem->guard);
             int hasex = qu_struct_needs_example(mem->p.str);
             if(!hasex) {
                 qu_code_print(ctx,
@@ -244,9 +244,11 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
             if(!hasex) {
                 qu_code_print(ctx, "}\n" , NULL);
             }
+            qu_guard_print_close(ctx, mem->guard);
         } else {
             if(mem->p.opt->cli_only)
                 continue;
+            qu_guard_print_open(ctx, mem->guard);
             const char *expr = qu_template_alloc(ctx, "${prefix}${memname:c}",
                 "prefix", prefix,
                 "memname", mem->name,
@@ -299,8 +301,8 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
                 NULL);
             mem->p.opt->vp->printer(ctx, mem->p.opt, expr, "NULL");
             qu_code_print(ctx, "}\n", NULL);
+            qu_guard_print_close(ctx, mem->guard);
         }
-        qu_guard_print_close(ctx, mem->guard);
     }
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);\n"
