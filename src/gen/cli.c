@@ -225,7 +225,7 @@ void qu_cli_print_parser(struct qu_context *ctx) {
             continue; /* only short options here */
         qu_guard_print_open(ctx, ref->guard);
         if(ref->action) {
-            act = ref->opt->vp->cli_action(ref->opt, NULL);
+            act = ref->opt->vp->cli_action(ref->opt, ref->action);
             qu_code_print(ctx,
                 "{'${opt}', ${hasarg}, ${mpref}_OPT_${opath:C}_${action:C}},\n"
                 , "opt", ref->name+1
@@ -672,11 +672,6 @@ static void qu_print_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *action, const char *argname)
 {
     (void) opt;
-    (void) action;
-    (void) argname;
-    qu_code_print(ctx,
-        "cli->action = QU_CLI_PRINT_CONFIG;\n"
-        , NULL);
     if(action == NULL) {
         qu_code_print(ctx,
             "if(!strcmp(${argname}, `current`))\n"
@@ -691,7 +686,15 @@ static void qu_print_parser(struct qu_context *ctx,
             "    cli->print_flags = QU_PRINT_FULL|QU_PRINT_COMMENTS;\n",
             "argname", argname,
             NULL);
+    } else {
+        qu_code_print(ctx,
+            "if(cli->action == QU_CLI_PRINT_CONFIG)\n"
+            "    cli->print_flags = QU_PRINT_COMMENTS|QU_PRINT_FULL;\n"
+            , NULL);
     }
+    qu_code_print(ctx,
+        "cli->action = QU_CLI_PRINT_CONFIG;\n"
+        , NULL);
 }
 struct qu_cli_action *qu_define_action(struct qu_option *opt, const char *action)
 {

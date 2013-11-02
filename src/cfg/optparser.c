@@ -119,6 +119,7 @@ int qu_optparser_next(struct qu_config_context *ctx,
     self->cur = *self->last;
     assert(self->cur);
     self->curshort = NULL;
+	self->curarg = NULL;
     if(self->cur[0] != '-' || self->cur[1] == 0 ||
         (self->cur[1] == '-' && self->cur[2] == 0))
         return 0;
