@@ -1,0 +1,8 @@
+int:
+- &ten 10
+- *ten
+- $ten
+str:
+- &a hello
+- *a
+- $a

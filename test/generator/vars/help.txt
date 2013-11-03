@@ -1,0 +1,20 @@
+Usage:
+    vars [-c CONFIG_PATH] [options]
+
+Variables test
+
+Configuration Options:
+  -h,--help         Print this help
+  -c,--config PATH  Configuration file name
+                    [default: /etc/__quire_test__/vars.yaml]
+  -D,--config-var NAME=VALUE
+                    Set value of configuration variable NAME to VALUE
+  -C,--config-check
+                    Check configuration and exit
+  -P                Print configuration after reading, then exit. The
+                    configuration printed by this option includes values
+                    overriden from command-line. Double flag `-PP` prints
+                    comments.
+  --config-print TYPE
+                    Print configuration file after reading. TYPE maybe
+                    "current", "details", "example", "all", "full"

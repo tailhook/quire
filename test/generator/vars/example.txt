@@ -1,0 +1,8 @@
+# vars
+# ====
+#
+# Variables test
+#
+
+int: # required
+str: # required

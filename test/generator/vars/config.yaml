@@ -1,0 +1,9 @@
+__meta__:
+  program-name: vars
+  default-config: /etc/__quire_test__/vars.yaml
+  description: Variables test
+
+int: !Array
+  element: !Int
+str: !Array
+  element: !String

@@ -708,10 +708,18 @@ static void qu_define_parser(struct qu_context *ctx,
 {
     (void) opt;
     (void) action;
-    (void) argname;
     qu_code_print(ctx,
-        "// TODO: define\n",
-        NULL);
+        "const char *eq = strchr(${argname}, '=');\n"
+        "if(!eq) {\n"
+        "   qu_set_string(ctx, ${argname}, ``);\n"
+        "} else {\n"
+        "   char buf[eq - ${argname} + 1];\n"
+        "   memcpy(buf, ${argname}, eq - ${argname});\n"
+        "   buf[eq - ${argname}] = 0;\n"
+        "   qu_set_string(ctx, buf, eq+1);\n"
+        "}\n"
+        , "argname", argname
+        , NULL);
 }
 struct qu_cli_action *qu_check_action(struct qu_option *opt, const char *action)
 {
