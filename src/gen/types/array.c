@@ -115,6 +115,7 @@ static void qu_array_parser(struct qu_context *ctx,
         "   qu_ast_node *node${nlevel:d} = qu_seq_node(mem);\n"
         "   struct ${pref}_${typname} *el${level:d} = "
             "qu_config_alloc(ctx, sizeof(struct ${pref}_${typname}));\n"
+        "   el${level:d}->next = NULL;\n"
         , "level:d", level
         , "nlevel:d", level+1
         , "typname", opt->typname

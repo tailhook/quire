@@ -121,6 +121,7 @@ static void qu_map_parser(struct qu_context *ctx,
         "   node${nlevel:d}= qu_map_key(mem);\n"
         "   struct ${pref}_${typname} *el${level:d} = "
             "qu_config_alloc(ctx, sizeof(struct ${pref}_${typname}));\n"
+        "   el${level:d}->next = NULL;\n"
         , "level:d", level
         , "nlevel:d", level+1
         , "typname", opt->typname
