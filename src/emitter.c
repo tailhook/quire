@@ -256,14 +256,10 @@ int qu_emit_scalar(qu_emit_context *ctx, const char *tag, const char *anchor, in
         }
         // force newline
         ctx->pending_newline = 0;
-        /*
-        fputc('\n', ctx->stream);
-        ctx->pending_newline = -1;
-        ctx->line_start = 1;
-        ctx->need_space = 0;
-        */
+
         ctx->map_start = 0;
         ctx->seq_start = 0;
+        ctx->seq_item = 0;
         return 0;
     }
     if(tag) {
