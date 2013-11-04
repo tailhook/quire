@@ -1,0 +1,12 @@
+# mapar
+# =====
+#
+# Array in mapping test
+#
+
+map:
+  one:
+  - A
+  - B
+  two:
+  - C

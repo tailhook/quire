@@ -1,0 +1,6 @@
+map:
+  one:
+  - A
+  - B
+  two:
+  - C

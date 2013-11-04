@@ -1,0 +1,12 @@
+__meta__:
+  program-name: mapar
+  default-config: /etc/__quire_test__/mapar.yaml
+  description: Array in mapping test
+
+map: !Mapping
+  key-element: !String
+  value-element: !Array
+    element: !String
+  example:
+    1: [a, b]
+    2: [c]

@@ -119,16 +119,16 @@ static void qu_map_parser(struct qu_context *ctx,
         "for(mem = qu_map_iter(node${level:d}); mem; mem = qu_map_next(mem)) {\n"
         "   qu_ast_node *node${nlevel:d};\n"
         "   node${nlevel:d}= qu_map_key(mem);\n"
-        "   struct ${pref}_${typname} *el${level:d} = "
+        "   struct ${pref}_${typname} *mel${level:d} = "
             "qu_config_alloc(ctx, sizeof(struct ${pref}_${typname}));\n"
-        "   el${level:d}->next = NULL;\n"
+        "   mel${level:d}->next = NULL;\n"
         , "level:d", level
         , "nlevel:d", level+1
         , "typname", opt->typname
         , NULL);
 
     const char *elkey = qu_template_alloc(ctx,
-        "el${level:d}->key", "level:d", level, NULL);
+        "mel${level:d}->key", "level:d", level, NULL);
     self->key->vp->default_setter(ctx, self->key, elkey);
     self->key->vp->parser(ctx, self->key, elkey, level+1);
 
@@ -139,19 +139,19 @@ static void qu_map_parser(struct qu_context *ctx,
 
     if(self->is_struct) {
         const char *elpref = qu_template_alloc(ctx,
-            "el${level:d}->", "level:d", level, NULL);
+            "mel${level:d}->", "level:d", level, NULL);
         qu_struct_default_setter(ctx, self->val.str, elpref);
         qu_struct_parser(ctx, self->val.str, elpref, level+1);
     } else {
         const char *elname = qu_template_alloc(ctx,
-            "el${level:d}->val", "level:d", level, NULL);
+            "mel${level:d}->val", "level:d", level, NULL);
         self->val.opt->vp->default_setter(ctx, self->val.opt, elname);
         self->val.opt->vp->parser(ctx, self->val.opt, elname, level+1);
     }
 
     qu_code_print(ctx,
-        "*${expr}_tail = el${level:d};\n"
-        "${expr}_tail = &el${level:d}->next;\n"
+        "*${expr}_tail = mel${level:d};\n"
+        "${expr}_tail = &mel${level:d}->next;\n"
         "${expr}_len += 1;\n"
         "}\n"
         , "expr", expr
@@ -177,8 +177,9 @@ static void qu_map_printer(struct qu_context *ctx,
     struct qu_map_option *self = opt->typedata;
     qu_code_print(ctx,
         "qu_emit_opcode(ctx, ${tag}, NULL, QU_EMIT_MAP_START);\n"
-        "struct ${pref}_${typname} *el${idx:d};\n"
-        "for(el${idx:d} = ${expr}; el${idx:d}; el${idx:d} = el${idx:d}->next) {\n"
+        "struct ${pref}_${typname} *mel${idx:d};\n"
+        "for(mel${idx:d} = ${expr}; mel${idx:d}; "
+            "mel${idx:d} = mel${idx:d}->next) {\n"
         , "tag", tag
         , "typname", opt->typname
         , "idx:d", self->idx
@@ -186,7 +187,7 @@ static void qu_map_printer(struct qu_context *ctx,
         , NULL);
 
     const char *elkey = qu_template_alloc(ctx,
-        "el${idx:d}->key", "idx:d", self->idx, NULL);
+        "mel${idx:d}->key", "idx:d", self->idx, NULL);
     self->key->vp->printer(ctx, self->key, elkey, "NULL");
 
     qu_code_print(ctx,
@@ -195,11 +196,11 @@ static void qu_map_printer(struct qu_context *ctx,
 
     if(self->is_struct) {
         const char *elpref = qu_template_alloc(ctx,
-            "el${idx:d}->", "idx:d", self->idx, NULL);
+            "mel${idx:d}->", "idx:d", self->idx, NULL);
         qu_struct_printer(ctx, self->val.str, elpref, "NULL");
     } else {
         const char *elname = qu_template_alloc(ctx,
-            "el${idx:d}->val", "idx:d", self->idx, NULL);
+            "mel${idx:d}->val", "idx:d", self->idx, NULL);
         self->val.opt->vp->printer(ctx, self->val.opt, elname, "NULL");
     }
 
