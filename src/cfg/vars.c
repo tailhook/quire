@@ -109,7 +109,7 @@ int qu_get_string_len(qu_config_context *ctx, const char *name, int nlen,
                 return -1; // maybe will fix this
         };
     }
-    qu_ast_node *node = qu_find_anchor(&ctx->parser, name, strlen(name));
+    qu_ast_node *node = qu_find_anchor(&ctx->parser, name, nlen);
     if(node) {
         *data = qu_node_content(node);
         if(*data) {

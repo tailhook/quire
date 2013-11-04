@@ -2,7 +2,13 @@ int:
 - 10
 - 10
 - 10
+- 10
+- 20
+- 323
+- 10000
 str:
 - hello
 - hello
 - hello
+- hello
+- 20x hello

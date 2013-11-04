@@ -106,9 +106,9 @@ int qu_output_source(struct qu_context *ctx, const char *filename) {
         "}  /*  end of setjmp */\n"
         // TODO(tailhook) print errors
         "if(ctx) {\n"
-        "    qu_config_parser_free(ctx);\n"
         "    if(rc > 0)\n"
         "        qu_print_error(ctx, stderr);\n"
+        "    qu_config_parser_free(ctx);\n"
         "}\n"
         "return rc;\n"
         "}\n"

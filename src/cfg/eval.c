@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "eval.h"
 #include "vars.h"
@@ -46,14 +47,16 @@ typedef enum {
     MAX_TOK
 } token_t;
 
-typedef struct eval_context_s {
-    qu_config_context *info;
+struct qu_eval_ctx {
+    struct qu_config_context *ctx;
+    struct obstack *buf;
+    qu_ast_node *node;
     const char *data;
     const char *token;
     const char *next;
     const char *end;
     token_t curtok;
-} eval_context_t;
+};
 
 static struct char_token_s {
     char chvalue;
@@ -68,25 +71,6 @@ static struct char_token_s {
     {')', TOK_RPAREN},
     {'}', TOK_END},
     {'\0', TOK_END}  // to feel safer
-    };
-
-static struct unit_s {
-    const char *unit;
-    size_t value;
-} units[] = {
-    {"k", 1000L},
-    {"ki", 1L << 10},
-    {"M", 1000000L},
-    {"Mi", 1L << 20},
-    {"G", 1000000000L},
-    {"Gi", 1L << 30},
-    {"T", 1000000000000L},
-    {"Ti", 1L << 40},
-    {"P", 1000000000000000L},
-    {"Pi", 1L << 50},
-    {"E", 1000000000000000000L},
-    {"Ei", 1L << 60},
-    {NULL, 0},
     };
 
 static token_t _next_tok(const char **data, const char *end) {
@@ -119,8 +103,9 @@ static token_t _next_tok(const char **data, const char *end) {
     return TOK_NONE;
 }
 
-static void next_tok(eval_context_t *ctx) {
+static void next_tok(struct qu_eval_ctx *ctx) {
     ctx->token = ctx->next;
+    while(isspace(*ctx->token)) ++ctx->token;
     if(ctx->token == ctx->end) {
         ctx->curtok = TOK_END;
     } else {
@@ -128,89 +113,68 @@ static void next_tok(eval_context_t *ctx) {
     }
 }
 
-
-static const char *parse_double(const char *value, double *result) {
+static void qu_var_to_int(struct qu_eval_ctx *ctx, variable_t *var) {
     const char *end;
-    struct unit_s *unit;
-    double val = strtod(value, (char **)&end);
-    if(*end) {
-        for(unit = units; unit->unit; ++unit) {
-            if(!strcmp(end, unit->unit)) {
-                val *= unit->value;
-                end += strlen(unit->unit);
-                break;
-            }
+    long value;
+    switch(var->type) {
+    case VAR_INT:
+        break;
+    case VAR_STRING:
+        end = qu_parse_int(var->data.str.value, &value);
+        if(end != var->data.str.value + var->data.str.length) {
+            qu_report_error(&ctx->ctx->parser, ctx->node, "Bad integer value");
         }
+        var->type = VAR_INT;
+        var->data.intvalue = value;
+        break;
+    default:
+        qu_report_error(&ctx->ctx->parser, ctx->node, "Undefined var type");
     }
-    *result = val;
-    return end;
 }
 
-static int var_to_integer(variable_t **var) {
-    variable_t *v = *var;
-    if(v->type == VAR_INT) return 0;
-    if(v->type != VAR_STRING) {
-        errno = ENOTSUP;
-        return -1;
+static void qu_append_var_to(variable_t *var, struct obstack *buf) {
+    int len;
+    char intbuf[24];  // should be enought for long
+
+    if(!var)
+        return;
+    switch(var->type) {
+    case VAR_STRING:
+        obstack_grow(buf, var->data.str.value, var->data.str.length);
+        break;
+    case VAR_INT:
+        len = sprintf(intbuf, "%ld", var->data.intvalue);
+        if(len <= 0)
+            return;
+        obstack_grow(buf, intbuf, len);
+        break;
+    default:
+        break;
     }
-    char *end;
-    long val = strtol(v->data.str.value, &end, 0);
-    if(end != v->data.str.value + v->data.str.length) {
-        errno = EINVAL;
-        return -1;
-    }
-    v->type = VAR_INT;
-    v->data.intvalue = val;
-    return 0;
 }
 
-static int var_to_string(variable_t **var) {
-    if(!*var) return -1;
-    if((*var)->type == VAR_STRING) return 0;
-    if((*var)->type != VAR_INT) {
-        errno = ENOTSUP;
-        return -1;
-    }
-    char buf[128];  // should be enought for long
-    int len = sprintf(buf, "%ld", (*var)->data.intvalue);
-    if(len <= 0) return -1;
-    variable_t *nvar = realloc(*var, sizeof(variable_t)+len+1);
-    if(!nvar) return -1;
-    char *data = (char*)nvar + sizeof(variable_t);
-    memcpy(data, buf, len);
-    data[len] = 0;
-    nvar->type = VAR_STRING;
-    nvar->data.str.value = data;
-    nvar->data.str.length = len;
-    *var = nvar;
-    return 0;
-}
+static variable_t *eval_sum(struct qu_eval_ctx *ctx);
 
-static variable_t *eval_sum(eval_context_t *ctx);
-
-static variable_t *eval_atom(eval_context_t *ctx) {
+static variable_t *eval_atom(struct qu_eval_ctx *ctx) {
+    variable_t *res;
     next_tok(ctx);
     if(ctx->curtok == TOK_LPAREN) {
         variable_t *res = eval_sum(ctx);
-        if(!res) return NULL;
         if(ctx->curtok != TOK_RPAREN) {
-            free(res);
-            errno = EINVAL;
-            return NULL;
+            qu_report_error(&ctx->ctx->parser, ctx->node,
+                "Unclosed parenthesis");
         }
         next_tok(ctx);
         return res;
     } else if(ctx->curtok == TOK_INT) {
-        variable_t *res = (variable_t *)malloc(sizeof(variable_t));
-        if(!res) return NULL;
+        res = obstack_alloc(ctx->buf, sizeof(variable_t));
         res->type = VAR_INT;
         res->data.intvalue = atoi(ctx->token);
         next_tok(ctx);
         return res;
     } else if(ctx->curtok == TOK_STRING) {
-        variable_t *res = (variable_t *)malloc(sizeof(variable_t)
-            + ctx->next - ctx->token - 1);
-        if(!res) return NULL;
+        res = obstack_alloc(ctx->buf,
+            sizeof(variable_t) + ctx->next - ctx->token - 1);
         res->type = VAR_STRING;
         char *data = (char *)res + sizeof(variable_t);
         memcpy(data, ctx->token+1, ctx->next - ctx->token - 1);
@@ -220,42 +184,30 @@ static variable_t *eval_atom(eval_context_t *ctx) {
         next_tok(ctx);
         return res;
     } else if(ctx->curtok == TOK_IDENT) {
-        const char *value;
-        int value_len;
-        if(qu_get_string_len(ctx->info, ctx->token, ctx->next - ctx->token,
-            &value, &value_len) < 0) {
-            return NULL;
-        }
-        variable_t *res = (variable_t *)malloc(sizeof(variable_t));
-        if(!res) return NULL;
+        res = obstack_alloc(ctx->buf, sizeof(variable_t));
         res->type = VAR_STRING;
-        res->data.str.value = value;
-        res->data.str.length = strlen(value);
+        if(qu_get_string_len(ctx->ctx, ctx->token, ctx->next - ctx->token,
+            &res->data.str.value, &res->data.str.length) < 0) {
+            res->data.str.value = "";
+            res->data.str.length = 0;
+        }
         next_tok(ctx);
         return res;
     } else {
-        errno = EINVAL;
-        return NULL;
+        qu_report_error(&ctx->ctx->parser, ctx->node, "Bad token");
+        abort();
     }
 }
 
-static variable_t *eval_product(eval_context_t *ctx) {
+static variable_t *eval_product(struct qu_eval_ctx *ctx) {
     variable_t *left = eval_atom(ctx);
-    if(!left) return NULL;
     while(ctx->curtok == TOK_PRODUCT
         || ctx->curtok == TOK_DIVISION
         || ctx->curtok == TOK_MODULO) {
         token_t op = ctx->curtok;
         variable_t *right = eval_product(ctx);
-        if(!right) {
-            free(left);
-            return NULL;
-        }
-        if(var_to_integer(&left) || var_to_integer(&right)) {
-            free(left);
-            free(right);
-            return NULL;
-        }
+        qu_var_to_int(ctx, left);
+        qu_var_to_int(ctx, right);
         if(op == TOK_PRODUCT) {
             left->data.intvalue *= right->data.intvalue;
         }
@@ -265,42 +217,34 @@ static variable_t *eval_product(eval_context_t *ctx) {
         if(op == TOK_MODULO) {
             left->data.intvalue %= right->data.intvalue;
         }
-        free(right);
     }
     return left;
 }
 
-static variable_t *eval_sum(eval_context_t *ctx) {
+static variable_t *eval_sum(struct qu_eval_ctx *ctx) {
     variable_t *left = eval_product(ctx);
-    if(!left) return NULL;
     while(ctx->curtok == TOK_PLUS || ctx->curtok == TOK_MINUS) {
         token_t op = ctx->curtok;
         variable_t *right = eval_product(ctx);
-        if(!right) {
-            free(left);
-            return NULL;
-        }
-        if(var_to_integer(&left) || var_to_integer(&right)) {
-            free(left);
-            free(right);
-            return NULL;
-        }
+        qu_var_to_int(ctx, left);
+        qu_var_to_int(ctx, right);
         if(op == TOK_PLUS) {
             left->data.intvalue += right->data.intvalue;
         }
         if(op == TOK_MINUS) {
             left->data.intvalue -= right->data.intvalue;
         }
-        free(right);
     }
     return left;
 }
 
-static variable_t *evaluate(qu_config_context *info,
-    const char *data, int dlen)
+static variable_t *qu_evaluate(struct qu_config_context *ctx,
+    const char *data, int dlen, qu_ast_node *node)
 {
-    eval_context_t eval = {
-        .info = info,
+    struct qu_eval_ctx eval = {
+        .ctx = ctx,
+        .buf = &ctx->parser.pieces,
+        .node = node,
         .data = data,
         .end = data+dlen,
         .token = data,
@@ -309,21 +253,23 @@ static variable_t *evaluate(qu_config_context *info,
         };
     variable_t *res = eval_sum(&eval);
     if(eval.token != eval.end || eval.curtok != TOK_END) {
-        if(res) {
-            free(res);
-        }
-        return NULL;
+        qu_report_error(&ctx->parser, node,
+            "Garbage at the end of expression");
     }
     return res;
 }
 
+void qu_eval_str(qu_config_context *info,
+    const char *data, int interp, qu_ast_node *node,
+    const char **result, int *rlen);
+
 void qu_eval_int(qu_config_context *info, const char *value,
-    int interp, long *result)
+    int interp, qu_ast_node *node, long *result)
 {
     if(interp && strchr(value, '$')) {
         const char *data;
         int dlen;
-        qu_eval_str(info, value, interp, &data, &dlen);
+        qu_eval_str(info, value, interp, node, &data, &dlen);
         const char *end = qu_parse_int(data, result);
         obstack_free(info->alloc, (void *)data);
         if(end != data + dlen) {
@@ -342,12 +288,12 @@ void qu_eval_int(qu_config_context *info, const char *value,
 }
 
 void qu_eval_bool(qu_config_context *info, const char *value,
-    int interp, int *result)
+    int interp, qu_ast_node *node, int *result)
 {
     if(interp && strchr(value, '$')) {
         const char *data;
         int dlen;
-        qu_eval_str(info, value, interp, &data, &dlen);
+        qu_eval_str(info, value, interp, node, &data, &dlen);
         int ok = qu_parse_bool(data, result);
         obstack_free(info->alloc, (void *)data);
         if(!ok) {
@@ -364,13 +310,13 @@ void qu_eval_bool(qu_config_context *info, const char *value,
 }
 
 void qu_eval_float(qu_config_context *info, const char *value,
-    int interp, double *result)
+    int interp, qu_ast_node *node, double *result)
 {
     if(interp && strchr(value, '$')) {
         const char *data;
         int dlen;
-        qu_eval_str(info, value, interp, &data, &dlen);
-        const char *end = parse_double(data, result);
+        qu_eval_str(info, value, interp, node, &data, &dlen);
+        const char *end = qu_parse_float(data, result);
         obstack_free(info->alloc, (void *)data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -378,7 +324,7 @@ void qu_eval_float(qu_config_context *info, const char *value,
         }
         return;
     }
-    const char *end = parse_double(value, result);
+    const char *end = qu_parse_float(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
         LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
@@ -387,7 +333,8 @@ void qu_eval_float(qu_config_context *info, const char *value,
 }
 
 void qu_eval_str(qu_config_context *info,
-    const char *data, int interp, const char **result, int *rlen)
+    const char *data, int interp, qu_ast_node *node,
+    const char **result, int *rlen)
 {
     const char *c;
     if(interp && strchr(data, '$')) {
@@ -421,18 +368,10 @@ void qu_eval_str(qu_config_context *info,
                         info->parser.cur_token,
                         "Expected closing }");
                 }
-                variable_t *var = evaluate(info, name, nlen);
-                if(var) {
-                    if(var_to_string(&var)) {
-                        free(var);
-                        LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
-                            info->parser.cur_token,
-                            "Variable not found");
-                    }
-                    obstack_grow(info->alloc,
-                        var->data.str.value, var->data.str.length);
-                    free(var);
-                }
+                void *base = obstack_base(&info->parser.pieces);
+                variable_t *var = qu_evaluate(info, name, nlen, node);
+                qu_append_var_to(var, info->alloc);
+                obstack_free(&info->parser.pieces, base);
             } else {
                 while(*c && (isalnum(*c) || *c == '_')) ++c;
                 nlen = c - name;
@@ -462,13 +401,13 @@ void qu_eval_str(qu_config_context *info,
 void qu_node_to_int(qu_config_context *ctx, qu_ast_node *node, long *result) {
     const char *content = qu_node_content(node);
     if(content)
-        qu_eval_int(ctx, content, 1, result);
+        qu_eval_int(ctx, content, 1, node, result);
 }
 
 void qu_node_to_bool(qu_config_context *ctx, qu_ast_node *node, int *result) {
     const char *content = qu_node_content(node);
     if(content)
-        qu_eval_bool(ctx, content, 1, result);
+        qu_eval_bool(ctx, content, 1, node, result);
 }
 
 void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
@@ -476,12 +415,12 @@ void qu_node_to_float(qu_config_context *ctx, qu_ast_node *node,
 {
     const char *content = qu_node_content(node);
     if(content)
-        qu_eval_float(ctx, content, 1, result);
+        qu_eval_float(ctx, content, 1, node, result);
 }
 
 void qu_node_to_str(qu_config_context *ctx, qu_ast_node *node,
     const char **result, int *rlen) {
     const char *content = qu_node_content(node);
     if(content)
-        qu_eval_str(ctx, content, 1, result, rlen);
+        qu_eval_str(ctx, content, 1, node, result, rlen);
 }
