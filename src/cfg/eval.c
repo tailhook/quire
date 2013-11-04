@@ -325,7 +325,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
         int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         const char *end = qu_parse_int(data, result);
-        obstack_free(&info->parser.pieces, (void *)data);
+        obstack_free(info->alloc, (void *)data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Integer value required");
@@ -349,7 +349,7 @@ void qu_eval_bool(qu_config_context *info, const char *value,
         int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         int ok = qu_parse_bool(data, result);
-        obstack_free(&info->parser.pieces, (void *)data);
+        obstack_free(info->alloc, (void *)data);
         if(!ok) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Integer value required");
@@ -371,7 +371,7 @@ void qu_eval_float(qu_config_context *info, const char *value,
         int dlen;
         qu_eval_str(info, value, interp, &data, &dlen);
         const char *end = parse_double(data, result);
-        obstack_free(&info->parser.pieces, (void *)data);
+        obstack_free(info->alloc, (void *)data);
         if(end != data + dlen) {
             LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
                 "Floating point value required");
@@ -381,9 +381,9 @@ void qu_eval_float(qu_config_context *info, const char *value,
     const char *end = parse_double(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
-		LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-			"Floating point value required");
-	}
+        LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
+            "Floating point value required");
+    }
 }
 
 void qu_eval_str(qu_config_context *info,
@@ -391,20 +391,20 @@ void qu_eval_str(qu_config_context *info,
 {
     const char *c;
     if(interp && strchr(data, '$')) {
-        obstack_blank(&info->parser.pieces, 0);
+        obstack_blank(info->alloc, 0);
         for(c = data; *c;) {
             if(*c != '$' && *c != '\\') {
-                obstack_1grow(&info->parser.pieces, *c);
+                obstack_1grow(info->alloc, *c);
                 ++c;
                 continue;
             }
             if(*c == '\\') {
-				if(!*++c) {
-					LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                if(!*++c) {
+                    LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
                         info->parser.cur_token,
-						"Expected char after backslash");
-				}
-                obstack_1grow(&info->parser.pieces, *c);
+                        "Expected char after backslash");
+                }
+                obstack_1grow(info->alloc, *c);
                 ++c;
                 continue;
             }
@@ -417,19 +417,19 @@ void qu_eval_str(qu_config_context *info,
                 while(*++c && *c != '}');
                 nlen = c - name;
                 if(*c++ != '}') {
-					LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                    LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
                         info->parser.cur_token,
-						"Expected closing }");
-				}
+                        "Expected closing }");
+                }
                 variable_t *var = evaluate(info, name, nlen);
                 if(var) {
                     if(var_to_string(&var)) {
                         free(var);
-						LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                        LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
                             info->parser.cur_token,
-							"Variable not found");
+                            "Variable not found");
                     }
-                    obstack_grow(&info->parser.pieces,
+                    obstack_grow(info->alloc,
                         var->data.str.value, var->data.str.length);
                     free(var);
                 }
@@ -437,24 +437,24 @@ void qu_eval_str(qu_config_context *info,
                 while(*c && (isalnum(*c) || *c == '_')) ++c;
                 nlen = c - name;
                 if(nlen == 0) {
-                    obstack_1grow(&info->parser.pieces, '$');
+                    obstack_1grow(info->alloc, '$');
                     continue;
                 }
                 const char *value;
                 int value_len;
                 if(!qu_get_string_len(info, name, nlen, &value, &value_len)) {
-                    obstack_grow(&info->parser.pieces, value, strlen(value));
+                    obstack_grow(info->alloc, value, strlen(value));
                 } else {
                     //COYAML_DEBUG("Not found variable ``%.*s''", nlen, name);
                 }
             }
         }
-        obstack_1grow(&info->parser.pieces, 0);
-        *rlen = obstack_object_size(&info->parser.pieces)-1;
-        *result = obstack_finish(&info->parser.pieces);
+        obstack_1grow(info->alloc, 0);
+        *rlen = obstack_object_size(info->alloc)-1;
+        *result = obstack_finish(info->alloc);
     } else {
         *rlen = strlen(data);
-        *result = obstack_copy0(&info->parser.pieces, data, *rlen);
+        *result = obstack_copy0(info->alloc, data, *rlen);
     }
 }
 
