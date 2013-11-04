@@ -473,7 +473,7 @@ void qu_cli_print_usage(struct qu_context *ctx) {
     obstack_1grow(buf, 0);
     const char *val = obstack_finish(buf);
     qu_code_print(ctx, "${str:q}\n", "str", val, NULL);
-    obstack_free(buf, val);
+    obstack_free(buf, (void *)val);
 
     struct qu_cli_group *grp;
     TAILQ_FOREACH(grp, &ctx->cli_options.groups, lst) {
@@ -482,7 +482,7 @@ void qu_cli_print_usage(struct qu_context *ctx) {
             "groupname", grp->name,
             NULL);
         qu_code_print(ctx, "${str:q}\n", "str", val, NULL);
-        obstack_free(buf, val);
+        obstack_free(buf, (void *)val);
         struct qu_cli_optref *opt, *nxt;
         for(opt = TAILQ_FIRST(&grp->children); opt; opt = nxt) {
             qu_guard_print_open(ctx, opt->guard);
@@ -526,7 +526,7 @@ void qu_cli_print_usage(struct qu_context *ctx) {
             obstack_1grow(buf, 0);
             val = obstack_finish(buf);
             qu_code_print(ctx, "${str:q}\n", "str", val, NULL);
-            obstack_free(buf, val);
+            obstack_free(buf, (void *)val);
             qu_guard_print_close(ctx, opt->guard);
         }
     }
