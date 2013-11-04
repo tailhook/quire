@@ -229,6 +229,19 @@ In config it looks like:
      number: 5
      distance: 2
 
+.. note::
+
+   The presence of nested structures in quire doesn't mean that nesting too
+   deep is encouraged. Probably the example above is better written as:
+
+   .. code-block:: yaml
+
+      jumping-number: !Int 3
+      jumping-distance: !Float 1
+
+   Particularly, flat structure is more convenient for
+   :ref:`merging <map-merge>` maps. So use nested structures sparingly.
+
 
 Command-line Arguments
 ======================
@@ -323,9 +336,81 @@ This works as following:
    $ ./frog --jump
    Option error "--jump": Ambiguous option abbreviation
 
+.. note::
+
+   Making command-line arguments is easy. However, too many command-line
+   options makes ``--help`` output too long. There is another mechanism to
+   expose configuration variables to the command-line:
+   :ref:`variables <variables>`. Variables in quire are even more powerful, but
+   somewhat less easy to use. At the end of the day, declare command-line
+   arguments for options that either useful for almost every user, or
+   should only be specified in the command-line.
+
 
 Arrays
 ======
+
+So far we have only declared simple options, that every configuration library,
+supports. But here is where the power of the quire comes. The arrays are
+declared like the following:
+
+.. code-block:: yaml
+
+   sounds: !Array
+     element: !String
+
+Here we declared array of strings. Here is how it looks like in C structure:
+
+.. code-block:: c
+
+    struct cfg_a_str {
+        struct cfg_a_str *next;
+        const char *val;
+        int val_len;
+    };
+
+    struct cfg_main {
+        qu_config_head head;
+        struct cfg_a_str *sounds;
+        struct cfg_a_str **sounds_tail;
+        int sounds_len;
+    };
+
+It's looks too ugly at the first glance. But the rules are:
+
+1. The array is a linked list
+2. The type of list element is named ``cfg_a_TYPENAME``
+3. The head of the linked list is named as variable in yaml
+4. The tail may be ignored unless you want to insert another element
+5. There is ``_len``-suffixed element for the number of elements in array
+6. The element of linked list is named ``val`` (suffixes work here too)
+
+Ok, let's see how to use it in code:
+
+.. code-block:: c
+
+   struct cfg_a_str *el;
+   for(el = cfg->sounds; el; el = el->next) {
+       printf("%s\n", el->val);
+   }
+
+Now if we write following config:
+
+.. code-block:: yaml
+
+   sounds:
+   - croak
+   - ribbit
+
+We can have a frog that can cry with both USA and UK slang :)
+
+.. code-block:: console
+
+    $ ./frog -c flog.yaml
+    croak
+    ribbit
+
+You can also create nested arrays, and arrays of structures.
 
 
 Mappings
@@ -334,6 +419,7 @@ Mappings
 
 Custom Types
 ============
+
 
 
 .. _YAML: http://yaml.org
