@@ -62,6 +62,10 @@ void qu_visit_struct_children(struct qu_context *ctx,
                 }
                 struct qu_guard *ng = qu_guard_new(ctx, mname + 7);
                 qu_visit_struct_children(ctx, item->value, str, ng);
+            } else if(mname[1] != '_' &&
+                !strcmp(item->value->tag, "!CDecl")) {
+                qu_struct_add_decl(ctx, str,
+                    mname, qu_node_content(item->value), g);
             } else {
                 qu_special_parse(ctx, mname, item->value);
             }

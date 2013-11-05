@@ -423,5 +423,24 @@ Enumeration Type
 Tagged Scalar Type
 ------------------
 
+C Fields
+--------
+
+Ocasionally there is a need to put custom C field into generated structure.
+You can do that with the following syntax:
+
+.. code-block:: yaml
+
+   _field-name: !CDecl struct some_c_struct
+
+Where ``_field-name`` may be arbitrary but must start with underscore. And at
+the right of the ``!CDecl`` may be any C type that compiler is able to
+understand. It's output as is so may potentially produce broken header if some
+garbage is written instead of the type info.
+
+.. warning::
+   This functionality is currently discouraged, and may be removed/adjusted in
+   future releases.
+
 .. _YAML: http://yaml.org
 .. _cmake: http://cmake.org

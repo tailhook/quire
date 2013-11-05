@@ -40,6 +40,7 @@ struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
         sizeof(struct qu_struct_member));
     mem->name = name;
     mem->is_struct = 1;
+    mem->is_decl = 0;
     mem->p.str = self;
     mem->guard = guard;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
@@ -54,6 +55,7 @@ void qu_struct_add_option(struct qu_context *ctx,
         sizeof(struct qu_struct_member));
     mem->name = name;
     mem->is_struct = 0;
+    mem->is_decl = 0;
     mem->p.opt = option;
     mem->guard = guard;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
@@ -65,6 +67,20 @@ void qu_struct_add_option(struct qu_context *ctx,
     } else {
         option->path = name;
     }
+}
+
+void qu_struct_add_decl(struct qu_context *ctx,
+    struct qu_config_struct *parent, const char *name,
+    const char *type, struct qu_guard *guard)
+{
+    struct qu_struct_member *mem = obstack_alloc(&ctx->parser.pieces,
+        sizeof(struct qu_struct_member));
+    mem->name = name;
+    mem->is_struct = 0;
+    mem->is_decl = 1;
+    mem->p.decl.type = type;
+    mem->guard = guard;
+    TAILQ_INSERT_TAIL(&parent->children, mem, lst);
 }
 
 void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
@@ -81,6 +97,12 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
                 "} ${name:c};\n",
                 "name", mem->name,
                 NULL);
+        } else if(mem->is_decl) {
+            qu_code_print(ctx,
+                "${type} ${name:c};\n"
+                , "type", mem->p.decl.type
+                , "name", mem->name
+                , NULL);
         } else {
             mem->p.opt->vp->definition(ctx, mem->p.opt, mem->name);
         }
@@ -93,6 +115,8 @@ void qu_struct_default_setter(struct qu_context *ctx,
 {
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        if(mem->is_decl)
+            continue;
         qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
             const char *npref = qu_template_alloc(ctx, "${prefix}${memname:c}.",
@@ -121,6 +145,8 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
         , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        if(mem->is_decl)
+            continue;
         if(!mem->is_struct && mem->p.opt->cli_only)
             continue;
         qu_guard_print_open(ctx, mem->guard);
@@ -203,6 +229,8 @@ static void qu_print_node_emitter(struct qu_context *ctx, qu_ast_node *node) {
 int qu_struct_needs_example(struct qu_config_struct *str) {
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        if(mem->is_decl)
+            continue;
         if(mem->is_struct) {
             if(qu_struct_needs_example(mem->p.str))
                 return 1;
@@ -222,6 +250,8 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
         , NULL);
     struct qu_struct_member *mem;
     TAILQ_FOREACH(mem, &str->children, lst) {
+        if(mem->is_decl)
+            continue;
         if(mem->is_struct) {
             qu_guard_print_open(ctx, mem->guard);
             int hasex = qu_struct_needs_example(mem->p.str);
