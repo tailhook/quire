@@ -416,6 +416,79 @@ You can also create nested arrays, and arrays of structures.
 Mappings
 ========
 
+We can also declare a mapping:
+
+.. code-block:: yaml
+
+   sounds: !Mapping
+     key-element: !String
+     value-element: !String
+
+Here we declared mapping of string to string. Here is how it looks like in C
+structure:
+
+.. code-block:: c
+
+    struct cfg_m_str_str {
+        struct cfg_m_str_str *next;
+        const char *key;
+        int key_len;
+        const char *val;
+        int val_len;
+    };
+
+    struct cfg_main {
+        qu_config_head head;
+        struct cfg_m_str_str *sounds;
+        struct cfg_m_str_str **sounds_tail;
+        int sounds_len;
+    };
+
+The structure is very similar to array's one, but the element type is named
+``cfg_m_KEYTYPE_VALUETYPE``.
+
+Ok, let's see how to use it in code:
+
+.. code-block:: c
+
+   struct cfg_a_str *el;
+   for(el = cfg->sounds; el; el = el->next) {
+       printf("%s -- %s\n", el->key, el->val);
+   }
+
+Now if we write following config:
+
+.. code-block:: yaml
+
+   sounds:
+    gb: croak
+    usa: ribbit
+
+We can have a frog that can display both the slang and the text:
+
+.. code-block:: console
+
+    $ ./frog -c flog.yaml
+    gb -- croak
+    usa -- ribbit
+
+.. note::
+   The mapping is represented by a linked list too. There is no hash table or
+   other mapping structures that makes access by key fast. There are few
+   reasons for this decision, the most imporant one is that most programs will
+   copy the mapping into their own hash table implementation anyway.
+
+
+.. warning::
+   The order of the elements in the linked list is preserved. But this
+   shouldn't be relied upon, as the YAML spec doesn't guarantee that.
+   For example some tool may rewrite yaml file and get keys reordered.
+
+
+The ``key-element`` can be any scalar type (string, int, float...).
+
+The ``value-element`` can be any type supported by quire, including nested
+arrays and mappings.
 
 Custom Types
 ============
