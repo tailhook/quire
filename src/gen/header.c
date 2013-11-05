@@ -22,6 +22,8 @@ int qu_output_header(qu_context_t *ctx) {
         "\n"
         , NULL);
 
+    qu_include_print(ctx);
+
     qu_code_print(ctx,
         "\n"
         "/*  Forward declarations  */\n"

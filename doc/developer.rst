@@ -424,7 +424,11 @@ Tagged Scalar Type
 ------------------
 
 C Fields
---------
+========
+
+.. warning::
+   The functionality described in this section is currently discouraged and is
+   subject to removing/adjusting at any time.
 
 Ocasionally there is a need to put custom C field into generated structure.
 You can do that with the following syntax:
@@ -435,12 +439,19 @@ You can do that with the following syntax:
 
 Where ``_field-name`` may be arbitrary but must start with underscore. And at
 the right of the ``!CDecl`` may be any C type that compiler is able to
-understand. It's output as is so may potentially produce broken header if some
-garbage is written instead of the type info.
+understand. It's written as is, so may potentially produce broken header if
+some garbage is written instead of the type name.
 
-.. warning::
-   This functionality is currently discouraged, and may be removed/adjusted in
-   future releases.
+If you need to add some header for type to be known to the compiler use
+``__include__`` special key:
+
+.. code-block:: yaml
+
+    __include__: "types.h"
+    _field-name: !CDecl struct some_c_struct
+
+Note all files are added with ``#include "filename"`` syntax, *not* the
+``#include <filename>``.
 
 .. _YAML: http://yaml.org
 .. _cmake: http://cmake.org

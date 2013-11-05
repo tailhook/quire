@@ -9,6 +9,7 @@
 #include "metadata.h"
 #include "util/fwdecl.h"
 #include "special/types.h"
+#include "special/include.h"
 #include "../yaml/parser.h"
 
 typedef struct qu_context {
@@ -21,6 +22,7 @@ typedef struct qu_context {
     struct qu_fwdecl_index fwdecl_index;
     struct qu_class_index class_index;
     struct qu_cli_options cli_options;
+    struct qu_includes includes;
 
     struct qu_config_struct *root;
 

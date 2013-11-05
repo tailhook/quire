@@ -6,4 +6,5 @@ void qu_context_init(qu_context_t *ctx, jmp_buf *jmp) {
     qu_fwdecl_init(ctx);
     qu_cli_init(ctx);
     qu_classes_init(ctx);
+    qu_include_init(ctx);
 }
