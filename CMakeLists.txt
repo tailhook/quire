@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)  # feel free to try lower
-PROJECT(quire)
+PROJECT(quire C)
 INCLUDE(CMakeParseArguments)
 ENABLE_TESTING()
 
