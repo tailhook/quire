@@ -31,6 +31,46 @@ interpreted as an octal number.
 Units
 -----
 
+A lot of integer values in configuration files are quite big, e.g. should be
+expressed in megabytes or gigabytes. Instead of common case of making default
+units of megabytes or any other arbitrary choice, quire allows to specify
+order of magnitude units for every integer and floating point value. E.g:
+
+.. code-block:: yaml
+
+    int1: 1M
+    int2: 2k
+    int3: 2ki
+
+Results into the following, after parsing:
+
+.. code-block:: yaml
+
+   int1: 1000000
+   int2: 2000
+   int3: 2048
+
+Note that there is a difference between prefixes for powers of 1024 and powers
+of the 1000.
+
+The following table summarizes all units supported:
+
+===== ===================
+Unit  Value
+===== ===================
+k     1000
+ki    1024
+M     1000000
+Mi    1048576
+G     1000000000
+Gi    1073741824
+T     1000000000000
+Ti    1099511627776
+P     1000000000000000
+Pi    1125899906842624
+E     1000000000000000000
+Ei    1152921504606846976
+===== ===================
 
 
 .. _variables:
