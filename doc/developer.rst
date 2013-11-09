@@ -326,6 +326,75 @@ Note that the string is both nul-terminated and has length in the structure.
 Integer Type
 ------------
 
+Unlike in C there is only one integer type in quire. And it's represented by
+``long`` value in C.
+
+The simplest config::
+
+    val: !Int
+
+If you supply scalar, is stands for the default value::
+
+    val: !Int 10
+
+The comprehensive specification for integer is something like the following:
+
+.. code-block:: yaml
+
+   val: !Int
+     default: 1
+     min: 0
+     max: 10
+     description: This value is something that is set in config
+     example: some example
+     command-line:
+       names: [-v, --val-set]
+       group: Options
+       metavar: NUM
+       descr: This option sets val
+     command-line-incr:
+       name: --incr
+       group: Options
+       descr: This option increments val
+     command-line-decr:
+       name: --decr
+       group: Options
+       descr: This option decrements val
+
+The fields in C structure look like the following:
+
+.. code-block:: c
+
+   long val;
+
+The additinal keys represent minimum and maximum value for the integer:
+
+.. code-block:: yaml
+
+   val: !Int
+     min: 0
+     max: 10
+
+Both values are inclusive. If user specifies bigger or smaller value either
+in configuration file or on command-line, error is printed and configuration
+rejected. If value overflows by using increments by command-line argumenents
+(see below), the value is simply adjusted to the maximum or minimum value as
+appropriate.
+
+The additional command-line actions:
+
+.. code-block:: yaml
+
+   command-line-incr: --incr
+   command-line-decr --incr
+
+May be used to incement the value in the configuration file. They are applied
+after parsing the configuration file, and *set* options (regardless of the
+order of the command-line options). Mostly useful for log-level or similar
+things. The value printed using ``--config-print`` option includes
+all incr/decr arguments applied.
+
+
 Boolean Type
 ------------
 
