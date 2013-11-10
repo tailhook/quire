@@ -346,7 +346,7 @@ The comprehensive specification for integer is something like the following:
      min: 0
      max: 10
      description: This value is something that is set in config
-     example: some example
+     example: 100
      command-line:
        names: [-v, --val-set]
        group: Options
@@ -361,7 +361,7 @@ The comprehensive specification for integer is something like the following:
        group: Options
        descr: This option decrements val
 
-The fields in C structure look like the following:
+The field in C structure look like the following:
 
 .. code-block:: c
 
@@ -386,9 +386,9 @@ The additional command-line actions:
 .. code-block:: yaml
 
    command-line-incr: --incr
-   command-line-decr --incr
+   command-line-decr: --decr
 
-May be used to increment the value in the configuration file. They are applied
+May be used to increment the value in the configuration. They are applied
 after parsing the configuration file, and *set*-style options (regardless of
 the order of the command-line options). Mostly useful for log-level or similar
 things. The value printed using ``--config-print`` option includes all
@@ -401,6 +401,71 @@ million)
 
 Boolean Type
 ------------
+
+The simplest boolean::
+
+    val: !Bool
+
+If you supply scalar, is stands for the default value::
+
+    val: !Bool yes
+
+The comprehensive specification for boolean is something like the following:
+
+.. code-block:: yaml
+
+   val: !Bool
+     default: no
+     description: This value is something that is set in config
+     example: true
+     command-line:
+       names: [-v, --val-set]
+       group: Options
+       metavar: BOOL
+       descr: This option sets val
+     command-line-enable:
+       name: --yes
+       group: Options
+       descr: This option sets val to true
+     command-line-disable:
+       name: --no
+       group: Options
+       descr: This option sets val to false
+
+The field in C structure look like the following:
+
+.. code-block:: c
+
+   int val;
+
+The value of ``val`` is always either ``0`` or ``1`` which stands for boolean
+false and true respectively.
+
+The additional command-line actions:
+
+.. code-block:: yaml
+
+   command-line-enable: --yes
+   command-line-disable: --no
+
+May be used to enable/disable the value in the configuration. They are applied
+after parsing the configuration file, and after *set*-style options. If
+multiple enable/disable options used, the last one wins. The value printed
+using ``--config-print`` option includes all enable/disable arguments applied.
+
+The following values may be used as booleans, both on the command-line and in
+configuration file. The values are case insensitive:
+
+============== =====
+False          True
+============== =====
+false          true
+no             yes
+n              y
+``~``
+*empty string*
+============== =====
+
 
 Floating Point Type
 -------------------
