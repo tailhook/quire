@@ -377,7 +377,7 @@ The additinal keys represent minimum and maximum value for the integer:
 
 Both values are inclusive. If user specifies bigger or smaller value either
 in configuration file or on command-line, error is printed and configuration
-rejected. If value overflows by using increments by command-line argumenents
+rejected. If value overflows by using increments by command-line arguments
 (see below), the value is simply adjusted to the maximum or minimum value as
 appropriate.
 
@@ -388,11 +388,15 @@ The additional command-line actions:
    command-line-incr: --incr
    command-line-decr --incr
 
-May be used to incement the value in the configuration file. They are applied
-after parsing the configuration file, and *set* options (regardless of the
-order of the command-line options). Mostly useful for log-level or similar
-things. The value printed using ``--config-print`` option includes
-all incr/decr arguments applied.
+May be used to increment the value in the configuration file. They are applied
+after parsing the configuration file, and *set*-style options (regardless of
+the order of the command-line options). Mostly useful for log-level or similar
+things. The value printed using ``--config-print`` option includes all
+incr/decr arguments applied.
+
+All integer values support parsing different :ref:`bases <integers>` (e.g.
+``0xA1`` for hexadecimal 161) and :ref:`units <units>` (e.g. ``1M`` for one
+million)
 
 
 Boolean Type

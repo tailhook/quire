@@ -19,6 +19,8 @@ Quire Tricks
 Underscore Names
 ----------------
 
+.. _integers:
+
 Integers
 --------
 
