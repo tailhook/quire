@@ -199,13 +199,33 @@ static void qu_int_cli_apply(struct qu_context *ctx,
 static void qu_int_parser(struct qu_context *ctx,
     struct qu_option *opt, const char *expr, int level)
 {
-    (void) opt;
+    struct qu_int_option *self = (struct qu_int_option *)opt->typedata;
     qu_code_print(ctx,
-        "qu_node_to_int(ctx, node${level:d}, &${expr});\n",
-        // TODO(tailhook) check min and max
-        "level:d", level,
-        "expr", expr,
-        NULL);
+        "qu_node_to_int(ctx, node${level:d}, &${expr});\n"
+        , "level:d", level
+        , "expr", expr
+        , NULL);
+
+    if(self->min) {
+        qu_code_print(ctx,
+            "if(${expr} < ${min:l})\n"
+            "    qu_report_error(ctx, node${level:d}, "
+                "`Integer too low, min ${min:l}`);\n"
+            , "min:l", self->min
+            , "level:d", level
+            , "expr", expr
+            , NULL);
+    }
+    if(self->max) {
+        qu_code_print(ctx,
+            "if(${expr} > ${max:d})\n"
+            "    qu_report_error(ctx, node${level:d}, "
+                "`Integer too big, max ${max:d}`);\n"
+            , "max:l", self->max
+            , "level:d", level
+            , "expr", expr
+            , NULL);
+    }
 
 }
 
