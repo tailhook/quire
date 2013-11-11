@@ -126,7 +126,6 @@ void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node,
 
 // Methods from cfg/vars.h
 int qu_set_string(struct qu_config_context *ctx, const char *name, const char *data);
-int qu_set_integer(struct qu_config_context *ctx, const char *name, long value);
 
 // Methods from error.c
 void qu_print_error(struct qu_config_context *, FILE *err);

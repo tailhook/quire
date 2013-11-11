@@ -50,6 +50,7 @@ typedef enum {
 struct qu_eval_ctx {
     struct qu_config_context *ctx;
     struct obstack *buf;
+    struct obstack *targbuf;
     qu_ast_node *node;
     const char *data;
     const char *token;
@@ -85,12 +86,12 @@ static token_t _next_tok(const char **data, const char *end) {
         }
     }
     if(isalpha(*cur)) {
-        while(cur < end && isalnum(*cur)) ++cur;
+        while(cur < end && (isalnum(*cur) || *cur == '_')) ++cur;
         *data = cur;
         return TOK_IDENT;
     }
     if(isdigit(*cur)) {
-        while(cur < end && isalnum(*cur)) ++cur;
+        while(cur < end && (isalnum(*cur) || *cur == '_')) ++cur;
         *data = cur;
         return TOK_INT;
     }
@@ -112,6 +113,9 @@ static void next_tok(struct qu_eval_ctx *ctx) {
         ctx->curtok = _next_tok(&ctx->next, ctx->end);
     }
 }
+
+static void qu_eval_intern(qu_config_context *info, const char *data,
+    qu_ast_node *node);
 
 static void qu_var_to_int(struct qu_eval_ctx *ctx, variable_t *var) {
     const char *end;
@@ -186,10 +190,29 @@ static variable_t *eval_atom(struct qu_eval_ctx *ctx) {
     } else if(ctx->curtok == TOK_IDENT) {
         res = obstack_alloc(ctx->buf, sizeof(variable_t));
         res->type = VAR_STRING;
-        if(qu_get_string_len(ctx->ctx, ctx->token, ctx->next - ctx->token,
-            &res->data.str.value, &res->data.str.length) < 0) {
-            res->data.str.value = "";
-            res->data.str.length = 0;
+        if(!qu_string_var(ctx->ctx, ctx->token, ctx->next - ctx->token,
+            &res->data.str.value, &res->data.str.length)) {
+            if(qu_anchor_var(ctx->ctx, ctx->token, ctx->next - ctx->token,
+                &res->data.str.value, &res->data.str.length)) {
+
+                /*  Temporary evaluating anchor value into target buffer  */
+                int csize = obstack_object_size(ctx->targbuf);
+                qu_eval_intern(ctx->ctx, res->data.str.value, ctx->node);
+                int varlen = obstack_object_size(ctx->targbuf) - csize;
+
+                /*  Copy data into the our evaluation buffer  */
+                char *val = obstack_alloc(ctx->buf, varlen + 1);
+                memcpy(val, obstack_base(ctx->targbuf) + csize, varlen);
+                val[varlen] = 0;
+                res->data.str.value = val;
+                res->data.str.length = varlen;
+
+                /*  Free memory in target buffer  */
+                obstack_blank(ctx->targbuf, -varlen);
+            } else {
+                res->data.str.value = "";
+                res->data.str.length = 0;
+            }
         }
         next_tok(ctx);
         return res;
@@ -244,6 +267,7 @@ static variable_t *qu_evaluate(struct qu_config_context *ctx,
     struct qu_eval_ctx eval = {
         .ctx = ctx,
         .buf = &ctx->parser.pieces,
+        .targbuf = ctx->alloc,
         .node = node,
         .data = data,
         .end = data+dlen,
@@ -253,6 +277,7 @@ static variable_t *qu_evaluate(struct qu_config_context *ctx,
         };
     variable_t *res = eval_sum(&eval);
     if(eval.token != eval.end || eval.curtok != TOK_END) {
+        fprintf(stderr, "TOKEN ``%s''\n", eval.token);
         qu_report_error(&ctx->parser, node,
             "Garbage at the end of expression");
     }
@@ -332,62 +357,69 @@ void qu_eval_float(qu_config_context *info, const char *value,
     }
 }
 
+static void qu_eval_intern(qu_config_context *info, const char *data,
+    qu_ast_node *node) {
+    const char *c;
+    for(c = data; *c;) {
+        if(*c != '$' && *c != '\\') {
+            obstack_1grow(info->alloc, *c);
+            ++c;
+            continue;
+        }
+        if(*c == '\\') {
+            if(!*++c) {
+                LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                    info->parser.cur_token,
+                    "Expected char after backslash");
+            }
+            obstack_1grow(info->alloc, *c);
+            ++c;
+            continue;
+        }
+        ++c;
+        const char *name = c;
+        int nlen;
+        if(*c == '{') {
+            ++c;
+            ++name;
+            while(*++c && *c != '}');
+            nlen = c - name;
+            if(*c++ != '}') {
+                LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
+                    info->parser.cur_token,
+                    "Expected closing }");
+            }
+            void *base = obstack_base(&info->parser.pieces);
+            variable_t *var = qu_evaluate(info, name, nlen, node);
+            qu_append_var_to(var, info->alloc);
+            obstack_free(&info->parser.pieces, base);
+        } else {
+            while(*c && (isalnum(*c) || *c == '_')) ++c;
+            nlen = c - name;
+            if(nlen == 0) {
+                obstack_1grow(info->alloc, '$');
+                continue;
+            }
+            const char *value;
+            int value_len;
+            if(qu_string_var(info, name, nlen, &value, &value_len)) {
+                obstack_grow(info->alloc, value, strlen(value));
+            } else if(qu_anchor_var(info, name, nlen, &value, &value_len)) {
+                qu_eval_intern(info, value, node);
+            }
+        }
+    }
+}
+
 void qu_eval_str(qu_config_context *info,
     const char *data, int interp, qu_ast_node *node,
     const char **result, int *rlen)
 {
-    const char *c;
     if(interp && strchr(data, '$')) {
         obstack_blank(info->alloc, 0);
-        for(c = data; *c;) {
-            if(*c != '$' && *c != '\\') {
-                obstack_1grow(info->alloc, *c);
-                ++c;
-                continue;
-            }
-            if(*c == '\\') {
-                if(!*++c) {
-                    LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
-                        info->parser.cur_token,
-                        "Expected char after backslash");
-                }
-                obstack_1grow(info->alloc, *c);
-                ++c;
-                continue;
-            }
-            ++c;
-            const char *name = c;
-            int nlen;
-            if(*c == '{') {
-                ++c;
-                ++name;
-                while(*++c && *c != '}');
-                nlen = c - name;
-                if(*c++ != '}') {
-                    LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
-                        info->parser.cur_token,
-                        "Expected closing }");
-                }
-                void *base = obstack_base(&info->parser.pieces);
-                variable_t *var = qu_evaluate(info, name, nlen, node);
-                qu_append_var_to(var, info->alloc);
-                obstack_free(&info->parser.pieces, base);
-            } else {
-                while(*c && (isalnum(*c) || *c == '_')) ++c;
-                nlen = c - name;
-                if(nlen == 0) {
-                    obstack_1grow(info->alloc, '$');
-                    continue;
-                }
-                const char *value;
-                int value_len;
-                if(!qu_get_string_len(info, name, nlen, &value, &value_len)) {
-                    obstack_grow(info->alloc, value, strlen(value));
-                } else {
-                    //COYAML_DEBUG("Not found variable ``%.*s''", nlen, name);
-                }
-            }
-        }
+
+        qu_eval_intern(info, data, node);
+
         obstack_1grow(info->alloc, 0);
         *rlen = obstack_object_size(info->alloc)-1;
         *result = obstack_finish(info->alloc);

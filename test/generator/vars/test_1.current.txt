@@ -12,3 +12,5 @@ str:
 - hello
 - hello
 - 20x hello
+- 10k dollars
+- $10k

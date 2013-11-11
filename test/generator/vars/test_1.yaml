@@ -5,10 +5,13 @@ int:
 - ${ten}
 - ${ten*2}
 - ${1 + (1 + ten)*2 + 3*ten*ten}
-- ${ten}k
+- &ten_thousand ${ten}k
 str:
 - &a hello
 - *a
 - $a
 - ${a}
 - ${ten*2}x $a
+- $ten_thousand dollars
+- $${ten_thousand}
+
