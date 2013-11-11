@@ -162,9 +162,21 @@ static void qu_int_cli_parser(struct qu_context *ctx,
         return;
     }
     if(!strcmp(action, "incr")) {
+        qu_code_print(ctx,
+            "cli->${optname:c}_delta_set = 1;\n"
+            "cli->${optname:c}_delta += 1;\n"
+            , "argname", argname
+            , "optname", opt->path
+            , NULL);
         return;
     }
     if(!strcmp(action, "decr")) {
+        qu_code_print(ctx,
+            "cli->${optname:c}_delta_set = 1;\n"
+            "cli->${optname:c}_delta -= 1;\n"
+            , "argname", argname
+            , "optname", opt->path
+            , NULL);
         return;
     }
 }
@@ -184,15 +196,34 @@ static void qu_int_cli_definition(struct qu_context *ctx,
 static void qu_int_cli_apply(struct qu_context *ctx,
     struct qu_option *opt, const char *expr)
 {
+    struct qu_int_option *self = (struct qu_int_option *)opt->typedata;
     qu_code_print(ctx,
         "if(cli->${name:c}_set) {\n"
         "   ${expr} = cli->${name:c};\n"
         "}\n"
         "if(cli->${name:c}_delta_set) {\n"
         "   ${expr} += cli->${name:c}_delta;\n"
-        "}\n"
         , "name", opt->path
         , "expr", expr
+        , NULL);
+    if(self->min) {
+        qu_code_print(ctx,
+            "if(${expr} < ${min:l})\n"
+            "    ${expr} = ${min:l};\n"
+            , "min:l", self->min
+            , "expr", expr
+            , NULL);
+    }
+    if(self->max) {
+        qu_code_print(ctx,
+            "if(${expr} > ${max:l})\n"
+            "    ${expr} = ${max:l};\n"
+            , "max:l", self->max
+            , "expr", expr
+            , NULL);
+    }
+    qu_code_print(ctx,
+        "}\n"
         , NULL);
 }
 

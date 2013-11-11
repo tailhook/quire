@@ -24,3 +24,17 @@ ADD_TEST(int_err_5
     --config ${CMAKE_CURRENT_SOURCE_DIR}/test_3.yaml)
 SET_TESTS_PROPERTIES(int_err_5 PROPERTIES
 	PASS_REGULAR_EXPRESSION "test_3\\.yaml\":1: Integer too low, min 5")
+ADD_TEST(int_incr
+	${CMAKE_CURRENT_BINARY_DIR}/test_int
+    --config ${CMAKE_CURRENT_SOURCE_DIR}/test_1.yaml
+    --val3-incr --val3-incr
+    --config-print=current)
+SET_TESTS_PROPERTIES(int_incr PROPERTIES
+	PASS_REGULAR_EXPRESSION "val3: 9")
+ADD_TEST(int_decr
+	${CMAKE_CURRENT_BINARY_DIR}/test_int
+    --config ${CMAKE_CURRENT_SOURCE_DIR}/test_1.yaml
+    --val3-decr --val3-decr --val3-decr --val3-decr
+    --config-print=current)
+SET_TESTS_PROPERTIES(int_decr PROPERTIES
+	PASS_REGULAR_EXPRESSION "val3: 5")

@@ -153,7 +153,7 @@ void qu_cli_parser_visit_long(struct qu_context *ctx,
     qu_guard_print_open(ctx, ref->guard);
     if(ref->name[1] == '-') {
         if(ref->action) {
-            act = ref->opt->vp->cli_action(ref->opt, NULL);
+            act = ref->opt->vp->cli_action(ref->opt, ref->action);
             qu_code_print(ctx,
                 "{${opt:q}, ${hasarg}, ${mpref}_OPT_${opath:C}_${action:C}},\n"
                 , "opt", ref->name
