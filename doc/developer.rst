@@ -322,7 +322,6 @@ Note that the string is both nul-terminated and has length in the structure.
    of the string after ``strdup`` or similar operation.
 
 
-
 Integer Type
 ------------
 
@@ -469,6 +468,41 @@ n              y
 
 Floating Point Type
 -------------------
+
+The simplest config::
+
+    val: !Float
+
+If you supply scalar, is stands for the default value::
+
+    val: !Float 1.5
+
+The comprehensive specification for floating point is something like the
+following:
+
+.. code-block:: yaml
+
+   val: !Float
+     default: 1.5
+     description: This value is something that is set in config
+     example: 2.5
+     command-line:
+       names: [-v, --val-set]
+       group: Options
+       metavar: FLOAT
+       descr: This option sets val
+
+The field in C structure look like the following:
+
+.. code-block:: c
+
+   double val;
+
+All floating point values support parsing decimal numbers, optionally followed
+by ``e`` and a decimal exponent. Floating point values also support
+:ref:`units <units>` (e.g. ``1M`` for one million). Note that fractional units
+are not supported yet.
+
 
 Array Type
 ----------
