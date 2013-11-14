@@ -1,0 +1,27 @@
+a:
+  ? fruit
+  : apple
+  ? vegetable
+  ? berry
+  anything: something
+b: 1
+...
+---
+- command-line: quire-tool -E /a/fruit
+  output: "apple"
+  result: 0
+- command-line: quire-tool -E /a/vegetable
+  output: ""
+  result: 0
+- command-line: quire-tool -E /a/berry
+  output: ""
+  result: 0
+- command-line: quire-tool -E /a/anything
+  output: "something"
+  result: 0
+- command-line: quire-tool -E /a/test
+  result: 1
+  output: ""
+- command-line: quire-tool -E /b
+  result: 0
+  output: "1"

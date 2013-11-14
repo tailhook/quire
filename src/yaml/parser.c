@@ -227,6 +227,7 @@ void _qu_tokenize(qu_parse_context *ctx) {
             case '?': // key, plainstring
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
+                    ctx->linestart = 0;
                     ctok->kind = QU_TOK_MAPPING_KEY;
                     break;
                 } else {
@@ -235,6 +236,7 @@ void _qu_tokenize(qu_parse_context *ctx) {
             case ':': // value, plainstring
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
+                    ctx->linestart = 0;
                     ctok->kind = QU_TOK_MAPPING_VALUE;
                     break;
                 } else if(CIRCLEQ_PREV(ctok, lst) &&
@@ -609,39 +611,56 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
             NEXT;
         }
     }
-    if(QU_TOK_SCALAR(CTOK)) {
-        if(NTOK
-            && NTOK->kind == QU_TOK_MAPPING_VALUE
-            && NTOK->start_line == CTOK->start_line) {
-            //printf("STARTING MAP "); print_token(CTOK, stdout);
+    if(QU_TOK_SCALAR(CTOK) || CTOK->kind == QU_TOK_MAPPING_KEY) {
+        if(CTOK->kind == QU_TOK_MAPPING_KEY ||
+            (NTOK && NTOK->kind == QU_TOK_MAPPING_VALUE
+            && NTOK->start_line == CTOK->start_line)) {
+            // printf("STARTING MAP "); print_token(CTOK, stdout);
             if(CTOK->indent <= ctx->cur_mapping)
                 return qu_new_text_node(ctx, NULL);  // null node
-            //printf("OK\n");
+            // printf("OK\n");
             // MAPPING
             qu_ast_node *node = qu_new_mapping_node(ctx, CTOK);
             int mapping_indent = CTOK->indent;
             int oldmap = ctx->cur_mapping;
             ctx->cur_mapping = CTOK->indent;
-            while(CTOK && QU_TOK_SCALAR(CTOK)
+            while(CTOK && CTOK->indent == mapping_indent && (
+                (CTOK->kind == QU_TOK_MAPPING_KEY)
+                ||
+                (QU_TOK_SCALAR(CTOK)
                 && NTOK->kind == QU_TOK_MAPPING_VALUE
-                && NTOK->start_line == CTOK->start_line
-                && CTOK->indent == mapping_indent) {
-                //printf("MAP KEY "); print_token(CTOK, stdout);
+                && NTOK->start_line == CTOK->start_line)))
+            {
+                int exkey = CTOK->kind == QU_TOK_MAPPING_KEY;
+                if(exkey) {
+                    NEXT;
+                }
+                // printf("MAP KEY "); print_token(CTOK, stdout);
                 qu_ast_node *knode = qu_new_text_node(ctx, CTOK);
                 const char *cont = qu_node_content(knode);
                 if(!cont) {  // duplicate key check
                     LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
                         "Only scalar keys allowed");
                 }
-                NEXT; NEXT;
-                qu_ast_node *vnode = parse_node(ctx, mapping_indent);
+                qu_ast_node *vnode;
+                NEXT;
+                if(CTOK->kind == QU_TOK_MAPPING_VALUE) {
+                    NEXT;
+                    vnode = parse_node(ctx, mapping_indent);
+                } else {
+                    if(!exkey) {
+                        LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                            "Expected colon");
+                    }
+                    vnode = qu_new_text_node(ctx, NULL);
+                }
                 assert(vnode);
                 if(!qu_mapping_add(ctx, node, knode, cont, vnode)) {
                     LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
                         "Duplicate key in mapping");
                 }
             }
-            //printf("END MAP\n");
+            // printf("END MAP\n");
             ctx->cur_mapping = oldmap;
             node->end_token = CIRCLEQ_PREV(CTOK, lst);
             return node;

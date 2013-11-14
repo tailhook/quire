@@ -199,6 +199,7 @@ ADD_TOOL_TEST(incmap)
 ADD_TOOL_TEST(incseq)
 ADD_TOOL_TEST(longstr)
 ADD_TOOL_TEST(listblock)
+ADD_TOOL_TEST(exkeys)
 
 ENDIF()
 
