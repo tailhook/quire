@@ -21,31 +21,31 @@ things2:
 ...
 ---
 
-- command-line: quire-tool -Ep /fruits
+- command-line: quire-tool -EpPu /fruits
   output: |
     - apple
     - banana
-- command-line: quire-tool -Ep /furniture
+- command-line: quire-tool -EpPu /furniture
   output: |
     - chair
     - table
-- command-line: quire-tool -Ep /eatable
+- command-line: quire-tool -EpPu /eatable
   output: |
     - vodka
     - apple
     - banana
     - meat
-- command-line: quire-tool -Ep /fruits2
+- command-line: quire-tool -EpPu /fruits2
   output: |
     - apple
     - banana
-- command-line: quire-tool -Ep /things
+- command-line: quire-tool -EpPu /things
   output: |
     - apple
     - banana
     - chair
     - table
-- command-line: quire-tool -Ep /things2
+- command-line: quire-tool -EpPu /things2
   output: |
     - knife
     - apple

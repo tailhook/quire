@@ -27,7 +27,7 @@ qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
     const char *filename)
 {
     qu_file_parse(&ctx->parser, filename);
-    qu_raw_process(&ctx->parser);
+    qu_raw_process(&ctx->parser, ~0);
     return ctx->parser.document;
 }
 

@@ -14,11 +14,12 @@
 #include "../emitter.h"
 #include "../../objpath/objpath.h"
 
-char short_options[] = "Ehf:vkp";
+char short_options[] = "Ehf:vkpP:";
 struct option long_options[] = {
     {"extract", 0, NULL, 'E'},
     {"verbose", 0, NULL, 'v'},
     {"plain", 0, NULL, 'p'},
+    {"plain-flags", 1, NULL, 'P'},
     {"keep-formatting", 0, NULL, 'k'},
     {"error-basename", 0, NULL, 'r'},
     {"help", 0, NULL, 'h'},
@@ -32,10 +33,17 @@ struct {
     } action;
     int verbosity;
     char *filename;
-    int error_basename;
     int keep_formatting;
     int plain;
-} options;
+    char *plain_flags;
+} options = {
+    .action = 0,
+    .verbosity = 0,
+    .filename = NULL,
+    .keep_formatting = 0,
+    .plain = 0,
+    .plain_flags = "ma"
+    };
 
 
 void print_usage(FILE *stream) {
@@ -55,6 +63,11 @@ void print_usage(FILE *stream) {
                     "(incl. comments and anchors)\n"
         "  -p, --plain\n"
         "            Process plain structure (merge maps, resolve anchors..)\n"
+        "  -P, --plain-flags\n"
+        "            Specifies which flags to turn on when preprocessing YAML\n"
+        "            file. A set of letters \"muaiv\" optionally preceded by\n"
+        "            \"^\" to signify exclusion of flags. Default is \'ma\"\n"
+        "            which is what YAML spec declares."
         "  -f, --input FILE\n"
         "            Input filename (stdin by default)\n"
         "\n"
@@ -70,14 +83,14 @@ void parse_options(int argc, char **argv) {
         case 'E':
             options.action = A_EXTRACT;
             break;
-        case 'r':
-            options.error_basename = 1;
-            break;
         case 'k':
             options.keep_formatting = 1;
             break;
         case 'p':
             options.plain = 1;
+            break;
+        case 'P':
+            options.plain_flags = optarg;
             break;
         case 'v':
             options.verbosity += 1;
@@ -272,7 +285,7 @@ int main(int argc, char **argv) {
             qu_file_parse(&ctx, options.filename);
         }
         if(options.plain) {
-            qu_raw_process(&ctx);
+            qu_raw_process(&ctx, qu_raw_flags_from_str(options.plain_flags));
         }
         execute_action(argv + optind, ctx.document);
         qu_parser_free(&ctx);

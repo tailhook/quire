@@ -7,5 +7,5 @@ vegetable: carrot
 berry: cherry
 ...
 ---
-- command-line: quire-tool -E /fruits/apple --error-basename
+- command-line: quire-tool -E /fruits/apple
   output: 'Value error at "duplicatekey.test":5: Duplicate key in mapping'

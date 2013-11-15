@@ -16,12 +16,13 @@ typedef qu_ast_node *(*qu_directive_processor)(qu_parse_context *ctx,
 
 static struct {
     const char *tag;
+    unsigned flag;
     qu_directive_processor processor;
 } qu_tag_registry[] = {
-    {"!Include", qu_raw_include},
-    {"!FromFile", qu_raw_fromfile},
-    {"!GlobSeq", qu_raw_globseq},
-    {"!GlobMap", qu_raw_globmap},
+    {"!Include", QU_RAW_FLAG_INCLUDE, qu_raw_include},
+    {"!FromFile", QU_RAW_FLAG_INCLUDE, qu_raw_fromfile},
+    {"!GlobSeq", QU_RAW_FLAG_INCLUDE, qu_raw_globseq},
+    {"!GlobMap", QU_RAW_FLAG_INCLUDE, qu_raw_globmap},
 };
 
 const int qu_tag_registry_len =
@@ -47,28 +48,31 @@ const char *qu_join_filenames(qu_parse_context *ctx,
 
 
 static qu_ast_node *qu_raw_process_value(qu_parse_context *ctx,
-    qu_ast_node *node)
+    qu_ast_node *node, unsigned flags)
 {
     const char *tag = node->tag;
     int i;
     for (i = 0; i < qu_tag_registry_len; ++i) {
-        if(!strcmp(qu_tag_registry[i].tag, tag)) {
+        unsigned flag = qu_tag_registry[i].flag;
+        if(flag & flags && !strcmp(qu_tag_registry[i].tag, tag)) {
            return qu_tag_registry[i].processor(ctx, node);
         }
     }
     return node;
 }
 
-static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node) {
+static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node,
+    unsigned flags)
+{
     switch(node->kind) {
     case QU_NODE_MAPPING: {
         qu_map_member *item;
         qu_map_index *map = &node->val.map_index;
         for(item = TAILQ_FIRST(&map->items); item;) {
             if(item->value->tag) {
-                item->value = qu_raw_process_value(ctx, item->value);
+                item->value = qu_raw_process_value(ctx, item->value, flags);
             }
-            qu_raw_visitor(ctx, item->value);
+            qu_raw_visitor(ctx, item->value, flags);
             item = TAILQ_NEXT(item, lst);
         }
         } break;
@@ -77,9 +81,9 @@ static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node) {
         qu_seq_member *item;
         for(item = TAILQ_FIRST(&seq->items); item;) {
             if(item->value->tag) {
-                item->value = qu_raw_process_value(ctx, item->value);
+                item->value = qu_raw_process_value(ctx, item->value, flags);
             }
-            qu_raw_visitor(ctx, item->value);
+            qu_raw_visitor(ctx, item->value, flags);
             item = TAILQ_NEXT(item, lst);
         }
         } break;
@@ -88,7 +92,26 @@ static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node) {
     }
 }
 
-void qu_raw_process(qu_parse_context *ctx) {
-    qu_raw_visitor (ctx, ctx->document);
-    qu_raw_maps_visitor(ctx, ctx->document);
+void qu_raw_process(qu_parse_context *ctx, unsigned flags) {
+    qu_raw_visitor (ctx, ctx->document, flags);
+    qu_raw_maps_visitor(ctx, ctx->document, flags);
+}
+
+unsigned qu_raw_flags_from_str(char *flags) {
+    unsigned result = QU_RAW_FLAGS_NONE;
+    if(strchr(flags, '*'))
+        return ~0;
+    if(strchr(flags, 'm'))
+        result |= QU_RAW_FLAG_MERGE;
+    if(strchr(flags, 'u'))
+        result |= QU_RAW_FLAG_UNPACK;
+    if(strchr(flags, 'a'))
+        result |= QU_RAW_FLAG_ALIAS;
+    if(strchr(flags, 'i'))
+        result |= QU_RAW_FLAG_INCLUDE;
+    if(strchr(flags, 'v'))
+        result |= QU_RAW_FLAG_VARS;
+    if(*flags == '^')
+        return ~result;
+    return result;
 }

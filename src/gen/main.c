@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
         qu_context_init(&ctx, &jmp);
         quire_parse_options(&ctx.options, argc, argv);
         qu_file_parse(&ctx.parser, ctx.options.source_file);
-        qu_raw_process(&ctx.parser);
+        qu_raw_process(&ctx.parser, ~0);
         qu_config_preprocess(&ctx);
 
         if(ctx.options.output_header) {

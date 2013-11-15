@@ -2,9 +2,9 @@ world: !GlobMap "incl/(*).yaml"
 ...
 ---
 
-- command-line: quire-tool -Ep /world/fruits/apple
+- command-line: quire-tool -EpPi /world/fruits/apple
   output: "yes"
-- command-line: quire-tool -Ep /world/fruits/cherry
+- command-line: quire-tool -EpPi /world/fruits/cherry
   output: "no"
-- command-line: quire-tool -Ep /world/furniture/chair
+- command-line: quire-tool -EpPi /world/furniture/chair
   output: "yes"
