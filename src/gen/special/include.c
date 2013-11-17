@@ -1,5 +1,6 @@
 #include "include.h"
 #include "../context.h"
+#include "../util/print.h"
 #include "../../yaml/access.h"
 
 struct qu_include {

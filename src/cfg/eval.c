@@ -8,6 +8,7 @@
 #include "eval.h"
 #include "vars.h"
 #include "context.h"
+#include "../error.h"
 #include "../util/parse.h"
 #include "../yaml/access.h"
 #include "../quire_int.h"
@@ -50,6 +51,7 @@ typedef enum {
 struct qu_eval_ctx {
     struct qu_config_context *ctx;
     struct obstack *buf;
+    struct qu_errbuf *err;
     struct obstack *targbuf;
     qu_ast_node *node;
     const char *data;
@@ -126,13 +128,13 @@ static void qu_var_to_int(struct qu_eval_ctx *ctx, variable_t *var) {
     case VAR_STRING:
         end = qu_parse_int(var->data.str.value, &value);
         if(end != var->data.str.value + var->data.str.length) {
-            qu_report_error(&ctx->ctx->parser, ctx->node, "Bad integer value");
+            qu_err_node_error(ctx->err, ctx->node, "Bad integer value");
         }
         var->type = VAR_INT;
         var->data.intvalue = value;
         break;
     default:
-        qu_report_error(&ctx->ctx->parser, ctx->node, "Undefined var type");
+        qu_err_node_error(ctx->err, ctx->node, "Undefined var type");
     }
 }
 
@@ -165,8 +167,7 @@ static variable_t *eval_atom(struct qu_eval_ctx *ctx) {
     if(ctx->curtok == TOK_LPAREN) {
         variable_t *res = eval_sum(ctx);
         if(ctx->curtok != TOK_RPAREN) {
-            qu_report_error(&ctx->ctx->parser, ctx->node,
-                "Unclosed parenthesis");
+            qu_err_node_error(ctx->err, ctx->node, "Unclosed parenthesis");
         }
         next_tok(ctx);
         return res;
@@ -217,8 +218,7 @@ static variable_t *eval_atom(struct qu_eval_ctx *ctx) {
         next_tok(ctx);
         return res;
     } else {
-        qu_report_error(&ctx->ctx->parser, ctx->node, "Bad token");
-        abort();
+        qu_err_node_fatal(ctx->err, ctx->node, "Bad token");
     }
 }
 
@@ -267,6 +267,7 @@ static variable_t *qu_evaluate(struct qu_config_context *ctx,
     struct qu_eval_ctx eval = {
         .ctx = ctx,
         .buf = &ctx->parser.pieces,
+        .err = ctx->parser.err,
         .targbuf = ctx->alloc,
         .node = node,
         .data = data,
@@ -278,8 +279,7 @@ static variable_t *qu_evaluate(struct qu_config_context *ctx,
     variable_t *res = eval_sum(&eval);
     if(eval.token != eval.end || eval.curtok != TOK_END) {
         fprintf(stderr, "TOKEN ``%s''\n", eval.token);
-        qu_report_error(&ctx->parser, node,
-            "Garbage at the end of expression");
+        qu_err_node_error(ctx->err, node, "Garbage at the end of expression");
     }
     return res;
 }
@@ -298,8 +298,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
         const char *end = qu_parse_int(data, result);
         obstack_free(info->alloc, (void *)data);
         if(end != data + dlen) {
-            LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-                "Integer value required");
+            qu_err_node_warn(info->err, node, "Bad integer");
         }
 
         return;
@@ -307,8 +306,7 @@ void qu_eval_int(qu_config_context *info, const char *value,
     const char *end = qu_parse_int(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
-        LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-            "Integer value required");
+        qu_err_node_warn(info->err, node, "Bad integer");
     }
 }
 
@@ -322,15 +320,13 @@ void qu_eval_bool(qu_config_context *info, const char *value,
         int ok = qu_parse_bool(data, result);
         obstack_free(info->alloc, (void *)data);
         if(!ok) {
-            LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-                "Integer value required");
+            qu_err_node_warn(info->err, node, "Bad boolean value");
         }
 
         return;
     }
     if(!qu_parse_bool(value, result)) {
-        LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-            "Integer value required");
+        qu_err_node_warn(info->err, node, "Bad boolean value");
     }
 }
 
@@ -344,16 +340,14 @@ void qu_eval_float(qu_config_context *info, const char *value,
         const char *end = qu_parse_float(data, result);
         obstack_free(info->alloc, (void *)data);
         if(end != data + dlen) {
-            LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-                "Floating point value required");
+            qu_err_node_warn(info->err, node, "Bad floating point value");
         }
         return;
     }
     const char *end = qu_parse_float(value, result);
     int vlen = strlen(value);
     if(end != value + vlen) {
-        LONGJUMP_WITH_CONTENT_ERROR(&info->parser, info->parser.cur_token,
-            "Floating point value required");
+        qu_err_node_warn(info->err, node, "Bad floating point value");
     }
 }
 
@@ -368,8 +362,7 @@ static void qu_eval_intern(qu_config_context *info, const char *data,
         }
         if(*c == '\\') {
             if(!*++c) {
-                LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
-                    info->parser.cur_token,
+                qu_err_node_warn(info->err, node,
                     "Expected char after backslash");
             }
             obstack_1grow(info->alloc, *c);
@@ -385,9 +378,7 @@ static void qu_eval_intern(qu_config_context *info, const char *data,
             while(*++c && *c != '}');
             nlen = c - name;
             if(*c++ != '}') {
-                LONGJUMP_WITH_CONTENT_ERROR(&info->parser,
-                    info->parser.cur_token,
-                    "Expected closing }");
+                qu_err_node_warn(info->err, node, "Expected closing }");
             }
             void *base = obstack_base(&info->parser.pieces);
             variable_t *var = qu_evaluate(info, name, nlen, node);

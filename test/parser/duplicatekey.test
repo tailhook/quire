@@ -8,4 +8,4 @@ berry: cherry
 ...
 ---
 - command-line: quire-tool -E /fruits/apple
-  output: 'Value error at "duplicatekey.test":5: Duplicate key in mapping'
+  output: 'Syntax error at "duplicatekey.test":5: Duplicate key in mapping'

@@ -69,16 +69,14 @@ static void qu_int_parse(struct qu_context *ctx,
             const char *strvalue = qu_node_content(value);
             const char *end = qu_parse_int(strvalue, &self->defvalue);
             if(end != strvalue + strlen(strvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, value->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, value, "Bad integer value");
         }
         if((value = qu_map_get(node, "min"))) {
             self->min_set = 1;
             const char *strvalue = qu_node_content(value);
             const char *end = qu_parse_int(strvalue, &self->min);
             if(end != strvalue + strlen(strvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, value->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, value, "Bad integer value");
         }
 
         if((value = qu_map_get(node, "max"))) {
@@ -86,8 +84,7 @@ static void qu_int_parse(struct qu_context *ctx,
             const char *strvalue = qu_node_content(value);
             const char *end = qu_parse_int(strvalue, &self->max);
             if(end != strvalue + strlen(strvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, value->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, value, "Bad integer value");
         }
 
     } else if (node->kind == QU_NODE_SCALAR) {
@@ -97,12 +94,11 @@ static void qu_int_parse(struct qu_context *ctx,
             self->defvalue_set = 1;
             const char *end = qu_parse_int(strvalue, &self->defvalue);
             if(end != strvalue + strlen(strvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, node, "Bad integer value");
         }
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-            "Int type must contain either integer or mapping");
+        qu_err_node_error(ctx->err, node,
+            "Int type definition must contain either integer or mapping");
     }
 }
 

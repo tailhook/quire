@@ -4,11 +4,12 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "../error.h"
 #include "fromfile.h"
 #include "../yaml/parser.h"
 #include "../yaml/access.h"
 
-qu_ast_node *qu_raw_fromfile(qu_parse_context *ctx, qu_ast_node *src) {
+qu_ast_node *qu_raw_fromfile(struct qu_parser *ctx, qu_ast_node *src) {
     int rc, eno;
     unsigned char *data = NULL;
 
@@ -18,16 +19,16 @@ qu_ast_node *qu_raw_fromfile(qu_parse_context *ctx, qu_ast_node *src) {
 
     int fd = open(fn, O_RDONLY);
     if(fd < 0) {
-        LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-            "Can't open file");
+        qu_err_system_error(ctx->err, errno, "Can't open file \"%s\"", fn);
+        return src;
     }
     struct stat stinfo;
     rc = fstat(fd, &stinfo);
     if(rc < 0) {
         eno = errno;
         close(fd);
-        LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-            "Can't stat file");
+        qu_err_system_error(ctx->err, eno, "Can't stat file \"%s\"", fn);
+        return src;
     }
     data = obstack_alloc(&ctx->pieces, stinfo.st_size+1);
     int so_far = 0;
@@ -37,8 +38,9 @@ qu_ast_node *qu_raw_fromfile(qu_parse_context *ctx, qu_ast_node *src) {
             eno = errno;
             if(eno == EINTR) continue;
             close(fd);
-            LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-                "Error reading file");
+            qu_err_system_error(ctx->err, eno,
+                "Error reading file \"%s\"", fn);
+            return src;
         }
         if(!rc) {
             // WARNING: file truncated

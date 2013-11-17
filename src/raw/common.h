@@ -3,7 +3,7 @@
 
 #include "../yaml/parser.h"
 
-const char *qu_join_filenames(qu_parse_context *ctx,
+const char *qu_join_filenames(struct qu_parser *ctx,
     const char *base, const char *target);
 
 enum {
@@ -15,7 +15,7 @@ enum {
     QU_RAW_FLAG_VARS = 16
 };
 
-void qu_raw_process(qu_parse_context *ctx, unsigned flags);
+void qu_raw_process(struct qu_parser *ctx, unsigned flags);
 unsigned qu_raw_flags_from_str(char *flags);
 
 #endif  // QUIRE_RAW_COMMON_H

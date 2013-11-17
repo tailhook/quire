@@ -1,5 +1,6 @@
 #include "types.h"
 #include "../context.h"
+#include "../../error.h"
 #include "../../yaml/access.h"
 #include "../classes/classes.h"
 #include "../../quire_int.h"
@@ -22,13 +23,16 @@ struct qu_class *qu_class_new(struct qu_context *ctx, const char *name,
     qu_ast_node *definition)
 {
     if(!definition->tag) {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, definition->start_token,
+        qu_err_node_error(ctx->err, definition,
             "Custom type must be tagged");
+        return NULL;
     }
     struct qu_class_vptr *vp = qu_class_get_vptr(definition->tag);
-    if(!vp)
-        LONGJUMP_ERR_NODE(ctx, definition,
-            "Unsupported custom type kind ${tag:q}", "tag", definition->tag);
+    if(!vp) {
+        qu_err_node_error(ctx->err, definition,
+            "Unsupported custom type kind \"%s\"", definition->tag);
+        return NULL;
+    }
     struct qu_class *self = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_class));
     self->name = name;
@@ -51,10 +55,12 @@ void qu_special_types(struct qu_context *ctx, qu_ast_node *typesnode) {
         const char *cname = qu_node_content(item->key);
         cls = qu_class_find(&ctx->class_index, cname);
         if(*cls) {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, item->key->start_token,
-                "Duplicate type");
+            qu_err_node_error(ctx->err, item->key, "Duplicate type");
+            continue;
         }
         *cls = qu_class_new(ctx, cname, item->value);
+        if(!*cls)
+            continue;  /*  Error is already reported  */
         (*cls)->vp->init(ctx, (*cls), item->value);
     }
 }

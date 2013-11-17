@@ -1,15 +1,17 @@
 
 #include <sys/types.h>
+#include <stdlib.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <stddef.h>
 #include <errno.h>
 
 #include "globmap.h"
+#include "../error.h"
 #include "../yaml/access.h"
 
 
-qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
+qu_ast_node *qu_raw_globseq(struct qu_parser *ctx, qu_ast_node *src) {
     const char *pat = qu_node_content(src);
     const char *pattern = qu_join_filenames(ctx,
         src->tag_token->filename, pat);
@@ -17,7 +19,7 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
     const char *star = strchr(pattern, '*');
 
     if(!star || star != strrchr(pattern, '*')) {
-        LONGJUMP_WITH_CONTENT_ERROR(ctx, src->start_token,
+        qu_err_node_fatal(ctx->err, src,
             "Exactly one star in glob pattern required");
     }
 
@@ -42,8 +44,8 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
 
     DIR *d = opendir(dir);
     if(!d) {
-        LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-            "Can't open directory");
+        qu_err_node_fatal(ctx->err, src,
+            "Can't open directory \"%s\"", dir);
     }
 
     qu_ast_node *result = qu_new_sequence_node(ctx, NULL);
@@ -84,11 +86,13 @@ qu_ast_node *qu_raw_globseq(qu_parse_context *ctx, qu_ast_node *src) {
             continue;
 
         qu_ast_node *next = qu_file_newparse(ctx, fn);
-        qu_sequence_add(ctx, result, next);
+        if(next) {
+            qu_sequence_add(ctx, result, next);
+        }
     }
     if(rc) {
-        LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-            "Can't read directory");
+        qu_err_node_fatal(ctx->err, src,
+            "Can't read directory \"%s\"", dir);
     }
     closedir(d);
 

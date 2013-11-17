@@ -84,17 +84,18 @@ static void qu_scalar_init(struct qu_context *ctx, struct qu_class *cls,
     qu_ast_node *type = qu_map_get(node, "type");
 
     if(!tags || !type)
-        LONGJUMP_ERR_NODE(ctx, node, "TagScalar must have `type` and `tags`");
+        qu_err_node_fatal(ctx->err, node,
+            "TagScalar must have `type` and `tags`");
 
     if(tags->kind != QU_NODE_MAPPING)
-        LONGJUMP_ERR_NODE(ctx, tags, "`tags` must be mapping");
+        qu_err_node_fatal(ctx->err, tags, "`tags` must be mapping");
 
     int numtags = 0;
     qu_map_member *mem;
     TAILQ_FOREACH(mem, &tags->val.map_index.items, lst)
         numtags += 1;
     if(!numtags)
-        LONGJUMP_ERR_NODE(ctx, tags, "At least one tag required");
+        qu_err_node_error(ctx->err, tags, "At least one tag required");
     self->tags = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_scalar_tag)*numtags);
     self->tags_len = numtags;
@@ -102,13 +103,15 @@ static void qu_scalar_init(struct qu_context *ctx, struct qu_class *cls,
     TAILQ_FOREACH(mem, &tags->val.map_index.items, lst) {
         self->tags[i].name = qu_node_content(mem->key);
         const char *strvalue = qu_node_content(mem->value);
-        if(!strvalue)
-            LONGJUMP_ERR_NODE(ctx, mem->value, "Scalar value required");
-        const char *end = qu_parse_int(strvalue, &tmpval);
-        if(end != strvalue + strlen(strvalue))
-            LONGJUMP_ERR_NODE(ctx, mem->value, "Wrong numeric value");
-        self->tags[i].value = (int)tmpval;
-        i += 1;
+        if(strvalue) {
+            const char *end = qu_parse_int(strvalue, &tmpval);
+            if(end != strvalue + strlen(strvalue))
+                qu_err_node_error(ctx->err, mem->value, "Wrong numeric value");
+            self->tags[i].value = (int)tmpval;
+            i += 1;
+        } else {
+            qu_err_node_error(ctx->err, mem->value, "Scalar value required");
+        }
     }
 
     if((tmp = qu_map_get(node, "default-tag"))) {
@@ -120,7 +123,7 @@ static void qu_scalar_init(struct qu_context *ctx, struct qu_class *cls,
             }
         }
         if(i == numtags) {
-            LONGJUMP_ERR_NODE(ctx, node, "Default tag is wrong");
+            qu_err_node_error(ctx->err, tmp, "Default tag is wrong");
         }
     }
 

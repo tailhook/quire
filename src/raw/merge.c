@@ -4,7 +4,7 @@
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
 
-static void qu_raw_merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
+static void qu_raw_merge_mapping(struct qu_parser *ctx, qu_map_index *idx,
     qu_ast_node *source, qu_map_member *after) {
     qu_map_member *item;
     TAILQ_FOREACH(item, &source->val.map_index.items, lst) {
@@ -32,7 +32,7 @@ static void qu_raw_merge_mapping(qu_parse_context *ctx, qu_map_index *idx,
     }
 }
 
-static void qu_raw_merge_sequence(qu_parse_context *ctx, qu_seq_index *idx,
+static void qu_raw_merge_sequence(struct qu_parser *ctx, qu_seq_index *idx,
     qu_ast_node *source, qu_seq_member *after) {
     qu_seq_member *item;
     TAILQ_FOREACH(item, &source->val.seq_index.items, lst) {
@@ -45,7 +45,7 @@ static void qu_raw_merge_sequence(qu_parse_context *ctx, qu_seq_index *idx,
 }
 
 
-void qu_raw_maps_visitor(qu_parse_context *ctx, qu_ast_node *node,
+void qu_raw_maps_visitor(struct qu_parser *ctx, qu_ast_node *node,
     unsigned flags)
 {
     int merge = flags & QU_RAW_FLAG_MERGE;

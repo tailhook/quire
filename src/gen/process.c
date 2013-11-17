@@ -3,6 +3,7 @@
 
 #include "metadata.h"
 #include "process.h"
+#include "../error.h"
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
 #include "../util/parse.h"
@@ -31,8 +32,8 @@ struct qu_option *qu_parse_option(struct qu_context *ctx, qu_ast_node *node,
 {
     struct qu_option *opt = qu_option_resolve(ctx, node->tag);
     if(!opt->vp)
-        LONGJUMP_ERR_NODE(ctx, node,
-            "Unknown object type ${tag}", "tag", node->tag);
+        qu_err_node_fatal(ctx->err, node,
+            "Unknown object type \"%s\"", node->tag);
     qu_parse_common(ctx, opt, node);
     if(parent && parent->path) {
         opt->path = qu_template_alloc(ctx, "${parent}.${name}",
@@ -56,7 +57,7 @@ void qu_visit_struct_children(struct qu_context *ctx,
         if(*mname == '_') {
             if(!strncmp("__if__:", mname, 7)) {
                 if(g) {
-                    LONGJUMP_ERR_NODE(ctx, item->value,
+                    qu_err_node_error(ctx->err, item->value,
                         "Nested guards are not supported, "
                         "use boolean expressions instead");
                 }
@@ -77,8 +78,7 @@ void qu_visit_struct_children(struct qu_context *ctx,
                 child = qu_struct_substruct(ctx, str, mname, g);
                 qu_visit_struct_children(ctx, item->value, child, NULL);
             } else {
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-                    item->value->start_token,
+                qu_err_node_error(ctx->err, item->value,
                     "Untagged straw scalar");
             }
         } else {

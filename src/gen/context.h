@@ -11,9 +11,11 @@
 #include "special/types.h"
 #include "special/include.h"
 #include "../yaml/parser.h"
+#include "../error.h"
 
 typedef struct qu_context {
-    qu_parse_context parser;
+    struct qu_parser parser;
+    struct qu_errbuf errbuf;
     qu_options_t options;
     qu_metadata_t meta;
     const char *prefix;
@@ -30,6 +32,7 @@ typedef struct qu_context {
     char node_vars[16];
 
     FILE *out;
+    struct qu_errbuf *err;
 } qu_context_t;
 
 _Static_assert(sizeof(qu_context_t) < 4096,

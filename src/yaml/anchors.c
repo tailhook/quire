@@ -36,7 +36,7 @@ void qu_anchor_init(struct qu_anchor_node *anch, qu_ast_node *node) {
     anch->right = NULL;
 }
 
-void qu_insert_anchor(qu_parse_context *ctx, qu_ast_node *node) {
+void qu_insert_anchor(struct qu_parser *ctx, qu_ast_node *node) {
     struct qu_anchor_node **a;
 
     a = qu_anchor_find(&ctx->anchor_index,
@@ -48,7 +48,7 @@ void qu_insert_anchor(qu_parse_context *ctx, qu_ast_node *node) {
         qu_anchor_init(*a, node);
     }
 }
-qu_ast_node *qu_find_anchor(qu_parse_context *ctx,
+qu_ast_node *qu_find_anchor(struct qu_parser *ctx,
     const char *name, int name_len)
 {
     struct qu_anchor_node **a;

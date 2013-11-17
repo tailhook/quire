@@ -3,12 +3,15 @@
 #include <unistd.h>
 #include <stddef.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #include "globmap.h"
+#include "../error.h"
 #include "../yaml/access.h"
 
 
-qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
+qu_ast_node *qu_raw_globmap(struct qu_parser *ctx, qu_ast_node *src) {
     const char *pat = qu_node_content(src);
     const char *pattern = qu_join_filenames(ctx,
         src->tag_token->filename, pat);
@@ -16,7 +19,7 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
     const char *star = strchr(pattern, '*');
 
     if(!star || star != strrchr(pattern, '*')) {
-        LONGJUMP_WITH_CONTENT_ERROR(ctx, src->start_token,
+        qu_err_node_fatal(ctx->err, src,
             "Exactly one star in glob pattern required");
     }
     const char *startbr = strchr(pattern, '(');
@@ -24,7 +27,7 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
     if(!startbr || startbr != strrchr(pattern, '(') ||
        !endbr || endbr != strchr(pattern, ')')
        || startbr > star || endbr <= star) {
-        LONGJUMP_WITH_CONTENT_ERROR(ctx, src->start_token,
+        qu_err_node_fatal(ctx->err, src,
             "Exactly one pair of brackets \"(\", \")\" required"
             " and brackets should contain a star pattern");
     }
@@ -90,8 +93,8 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
 
     DIR *d = opendir(dir);
     if(!d) {
-        LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-            "Can't open directory");
+        qu_err_system_fatal(ctx->err, errno,
+            "Can't open directory \"%s\"", dir);
     }
 
     qu_ast_node *result = qu_new_mapping_node(ctx, NULL);
@@ -148,16 +151,15 @@ qu_ast_node *qu_raw_globmap(qu_parse_context *ctx, qu_ast_node *src) {
             obstack_1grow(&ctx->pieces, 0);
         }
         char *name = obstack_finish(&ctx->pieces);
-
-
         qu_ast_node *knode = qu_new_raw_text_node(ctx, name);
-        assert(ctx->errjmp);
         qu_ast_node *next = qu_file_newparse(ctx, fn);
-        qu_mapping_add(ctx, result, knode, name, next);
+        if(next) {
+            qu_mapping_add(ctx, result, knode, name, next);
+        }
     }
     if(rc) {
-        LONGJUMP_WITH_SYSTEM_ERROR(ctx, src->start_token,
-            "Can't read directory");
+        qu_err_system_fatal(ctx->err, errno,
+            "Can't read directory \"%s\"", dir);
     }
     closedir(d);
 

@@ -70,7 +70,7 @@ static void qu_map_parse(struct qu_context *ctx,
     self->idx = mapping_index++;
 
     if(node->kind != QU_NODE_MAPPING) {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
+        qu_err_node_fatal(ctx->err, node,
             "Mapping type definition must be mapping");
     }
 
@@ -79,7 +79,7 @@ static void qu_map_parse(struct qu_context *ctx,
     val = qu_map_get(node, "value-element");
 
     if(!key || !val) {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
+        qu_err_node_fatal(ctx->err, node,
             "Mapping type definition must have key-element and value-element");
     }
     self->key = qu_parse_option(ctx, key, "<key>", NULL);
@@ -89,7 +89,7 @@ static void qu_map_parse(struct qu_context *ctx,
             self->val.str = qu_struct_new_root(ctx);
             qu_visit_struct_children(ctx, val, self->val.str, NULL);
         } else {
-            LONGJUMP_ERR_NODE(ctx, val, "Untagged straw scalar");
+            qu_err_node_fatal(ctx->err, val, "Untagged straw scalar");
         }
         opt->typname = qu_template_alloc(ctx, "m_${key}_${optpath:c}"
             , "key", self->key->typname

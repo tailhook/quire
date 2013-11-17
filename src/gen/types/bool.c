@@ -63,8 +63,7 @@ static void qu_bool_parse(struct qu_context *ctx,
             self->defvalue_set = 1;
             const char *strvalue = qu_node_content(value);
             if(!qu_parse_bool(strvalue, &self->defvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, value->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, value, "Bad boolean value");
         }
 
     } else if (node->kind == QU_NODE_SCALAR) {
@@ -73,12 +72,11 @@ static void qu_bool_parse(struct qu_context *ctx,
             opt->has_default = 1;
             self->defvalue_set = 1;
             if(!qu_parse_bool(strvalue, &self->defvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, node, "Bad boolean value");
         }
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-            "Int type must contain either integer or mapping");
+        qu_err_node_error(ctx->err, node,
+            "Boolean type definition must contain either boolean or mapping");
     }
 }
 

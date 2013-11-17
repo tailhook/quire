@@ -11,7 +11,7 @@
 #include "merge.h"
 #include "../yaml/codes.h"
 
-typedef qu_ast_node *(*qu_directive_processor)(qu_parse_context *ctx,
+typedef qu_ast_node *(*qu_directive_processor)(struct qu_parser *ctx,
                                               qu_ast_node *source);
 
 static struct {
@@ -30,7 +30,7 @@ const int qu_tag_registry_len =
 
 
 
-const char *qu_join_filenames(qu_parse_context *ctx,
+const char *qu_join_filenames(struct qu_parser *ctx,
     const char *base, const char *target)
 {
     if(!target)
@@ -47,7 +47,7 @@ const char *qu_join_filenames(qu_parse_context *ctx,
 }
 
 
-static qu_ast_node *qu_raw_process_value(qu_parse_context *ctx,
+static qu_ast_node *qu_raw_process_value(struct qu_parser *ctx,
     qu_ast_node *node, unsigned flags)
 {
     const char *tag = node->tag;
@@ -61,7 +61,7 @@ static qu_ast_node *qu_raw_process_value(qu_parse_context *ctx,
     return node;
 }
 
-static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node,
+static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
     unsigned flags)
 {
     switch(node->kind) {
@@ -92,7 +92,7 @@ static void qu_raw_visitor(qu_parse_context *ctx, qu_ast_node *node,
     }
 }
 
-void qu_raw_process(qu_parse_context *ctx, unsigned flags) {
+void qu_raw_process(struct qu_parser *ctx, unsigned flags) {
     qu_raw_visitor (ctx, ctx->document, flags);
     qu_raw_maps_visitor(ctx, ctx->document, flags);
 }

@@ -5,6 +5,8 @@
 #include "map.h"
 #include "seq.h"
 
+struct qu_parser;
+
 typedef struct qu_token_s {
     CIRCLEQ_ENTRY(qu_token_s) lst;
     int kind;
@@ -25,7 +27,7 @@ typedef struct qu_token_s {
 
 typedef struct qu_node_s {
     enum qu_node_kind_enum kind;
-    struct qu_parse_context_s *ctx;
+    struct qu_parser *ctx;
     qu_token *anchor;
     qu_token *tag_token;
     qu_token *start_token;
@@ -44,18 +46,18 @@ typedef struct qu_node_s {
     void *userdata;
 } qu_ast_node;
 
-qu_ast_node *qu_new_text_node(struct qu_parse_context_s *ctx, qu_token *tok);
-qu_ast_node *qu_new_raw_text_node(struct qu_parse_context_s *ctx,
+qu_ast_node *qu_new_text_node(struct qu_parser *ctx, qu_token *tok);
+qu_ast_node *qu_new_raw_text_node(struct qu_parser *ctx,
     const char *data);
-qu_ast_node *qu_new_alias_node(struct qu_parse_context_s *ctx,
+qu_ast_node *qu_new_alias_node(struct qu_parser *ctx,
     qu_token *tok, qu_ast_node *target);
-qu_ast_node *qu_new_mapping_node(struct qu_parse_context_s *ctx,
+qu_ast_node *qu_new_mapping_node(struct qu_parser *ctx,
     qu_token *start_tok);
-qu_ast_node *qu_new_sequence_node(struct qu_parse_context_s *ctx,
+qu_ast_node *qu_new_sequence_node(struct qu_parser *ctx,
     qu_token *start_tok);
-void qu_sequence_add(struct qu_parse_context_s *ctx,
+void qu_sequence_add(struct qu_parser *ctx,
     qu_ast_node *seq, qu_ast_node *child);
-int qu_mapping_add(struct qu_parse_context_s *ctx,
+int qu_mapping_add(struct qu_parser *ctx,
     qu_ast_node *map, qu_ast_node *knode, const char *key, qu_ast_node *value);
 
-#endif // QUIRE_H_YAML_NODE
+#endif  /* QUIRE_H_YAML_NODE */

@@ -1,6 +1,7 @@
 #include <malloc.h>
 #include <setjmp.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "api.h"
 #include "context.h"
@@ -61,4 +62,24 @@ void qu_config_free(qu_config_head *cfg) {
 
 void *qu_config_alloc(struct qu_config_context *ctx, int size) {
     return obstack_alloc(ctx->alloc, size);
+}
+
+void qu_report_error(struct qu_config_context *ctx, qu_ast_node *node,
+    const char *text) {
+    qu_err_node_fatal(ctx->err, node, "%s", text);
+}
+void qu_cli_error(struct qu_config_context *ctx, const char *opt,
+    const char *text) {
+    qu_err_cli_fatal(ctx->err, opt, "%s", text);
+}
+
+void qu_check_config_errors(struct qu_config_context *ctx) {
+    if(ctx->err->error) {
+        longjmp(*ctx->err->jmp, 1);
+    }
+    qu_print_errors(ctx->err, stderr);
+}
+
+void qu_print_config_errors(struct qu_config_context *ctx) {
+    qu_print_errors(ctx->err, stderr);
 }

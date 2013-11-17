@@ -128,11 +128,12 @@ void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node,
 int qu_set_string(struct qu_config_context *ctx, const char *name, const char *data);
 
 // Methods from error.c
-void qu_print_error(struct qu_config_context *, FILE *err);
 void qu_report_error(struct qu_config_context *, qu_ast_node *node,
     const char *text);
 void qu_cli_error(struct qu_config_context *, const char *opt,
     const char *text);
+void qu_check_config_errors(struct qu_config_context *ctx);
+void qu_print_config_errors(struct qu_config_context *ctx);
 
 // Methods from emitter.c
 int qu_emit_init(qu_emit_context *, FILE *stream);

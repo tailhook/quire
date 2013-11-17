@@ -275,10 +275,11 @@ int main(int argc, char **argv) {
     jmp_buf jmp;
     parse_options(argc, argv);
     assert(argc >= 2);
-    qu_parse_context ctx;
+    struct qu_parser ctx;
+    struct qu_errbuf err;
     if(!(rc = setjmp(jmp))) {
-        ctx.errjmp = &jmp;
-        qu_parser_init(&ctx);
+        qu_err_init(&err, &jmp);
+        qu_parser_init(&ctx, &err);
         if(!options.filename || !strcmp(options.filename, "-")) {
             qu_stream_parse(&ctx, "<stdin>", stdin);
         } else {
@@ -287,11 +288,14 @@ int main(int argc, char **argv) {
         if(options.plain) {
             qu_raw_process(&ctx, qu_raw_flags_from_str(options.plain_flags));
         }
+        if(err.error)
+            longjmp(jmp, 1);
+        qu_print_errors(&err, stderr);
         execute_action(argv + optind, ctx.document);
         qu_parser_free(&ctx);
     } else {
-        if(rc == QU_YAML_ERROR) {
-            qu_print_error(&ctx, stderr);
+        if(rc > 0) {
+            qu_print_errors(&err, stderr);
             return 1;
         } else if(rc < 0) {
             fprintf(stderr, "quire-gen: Error parsing \"%s\": %s\n",

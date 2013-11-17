@@ -136,7 +136,7 @@ void qu_optparser_error(struct qu_config_context *ctx,
     const char *error)
 {
     struct qu_optparser_struct *self = &ctx->optparser;
-    qu_cmdline_error(&ctx->parser,
+    qu_err_cli_error(ctx->err,
         self->curshort ? self->curshort : self->cur,
-        error);
+        "%s", error);
 }

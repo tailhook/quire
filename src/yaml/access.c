@@ -7,8 +7,9 @@
 #include "codes.h"
 
 
+const char *qu_parse_content(qu_ast_node *node, struct obstack *buf);
+
 const char *qu_node_content(qu_ast_node *node) {
-    char *c, *end;
     if(node->kind == QU_NODE_ALIAS)
         return qu_node_content(node->val.alias_target);
     if(node->kind != QU_NODE_SCALAR) {
@@ -19,19 +20,24 @@ const char *qu_node_content(qu_ast_node *node) {
         }
         return NULL;
     }
-    if(node->content)
-        return node->content;
+    if(!node->content)
+        node->content = qu_parse_content(node, &node->ctx->pieces);
+    return node->content;
+}
+
+const char *qu_parse_content(qu_ast_node *node, struct obstack *buf) {
+    char *c, *end;
     if(!node->start_token)
         return "";
     if(node->start_token == node->end_token
         && node->start_token->kind == QU_TOK_PLAINSTRING) {
-        node->content = obstack_copy0(&node->ctx->pieces,
+        node->content = obstack_copy0(buf,
             (char *)node->start_token->data,
             node->start_token->bytelen);
         return node->content;
     }
     // TODO(tailhook) better parse text
-    obstack_blank(&node->ctx->pieces, 0);
+    obstack_blank(buf, 0);
     for(c = (char *)node->start_token->data,
              end = c+node->start_token->bytelen;
         c < end; ++c) {
@@ -39,16 +45,16 @@ const char *qu_node_content(qu_ast_node *node) {
             continue;
         else if(*c == '\\' && *(c+1))
             switch(*++c) {
-            case 'n': obstack_1grow(&node->ctx->pieces, '\n'); break;
-            case 'r': obstack_1grow(&node->ctx->pieces, '\r'); break;
-            default: obstack_1grow(&node->ctx->pieces, *c); break;
+            case 'n': obstack_1grow(buf, '\n'); break;
+            case 'r': obstack_1grow(buf, '\r'); break;
+            default: obstack_1grow(buf, *c); break;
             }
         else
-            obstack_1grow(&node->ctx->pieces, *c);
+            obstack_1grow(buf, *c);
     }
-    obstack_1grow(&node->ctx->pieces, 0);
+    obstack_1grow(buf, 0);
 
-    node->content = obstack_finish(&node->ctx->pieces);
+    node->content = obstack_finish(buf);
     return node->content;
 }
 
@@ -97,10 +103,6 @@ int qu_get_boolean(qu_ast_node *node, int *value) {
        return 0;
     }
     return -1;
-}
-
-qu_ast_node *qu_get_root(qu_parse_context *ctx) {
-    return ctx->document;
 }
 
 qu_seq_member *qu_seq_iter(qu_ast_node *node) {

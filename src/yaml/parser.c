@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <setjmp.h>
 
+#include "../error.h"
 #include "parser.h"
 #include "access.h"
 #include "codes.h"
@@ -95,33 +96,35 @@ static void print_token(qu_token *tok, FILE *stream) {
 }
 
 
-static void *parser_chunk_alloc(qu_parse_context *ctx, int size) {
+static void *parser_chunk_alloc(struct qu_parser *ctx, int size) {
     void *res = malloc(size);
     if(!res) {
-        LONGJUMP_WITH_ERRCODE(ctx, ENOMEM);
+        qu_err_system_fatal(ctx->err, ENOMEM, "Obstack error");
     }
     return res;
 }
 
-static void obstack_chunk_free(qu_parse_context *ctx, void *ptr) {
+static void obstack_chunk_free(struct qu_parser *ctx, void *ptr) {
     (void) ctx;
     free(ptr);
 }
 
-static void _qu_context_reinit(qu_parse_context *ctx) {
+static void _qu_context_reinit(struct qu_parser *ctx) {
     CIRCLEQ_INIT(&ctx->tokens);
     ctx->buf = NULL;
     ctx->error_kind = 0;
 }
 
-void qu_parser_init(qu_parse_context *ctx) {
+void qu_parser_init(struct qu_parser *ctx, struct qu_errbuf *err) {
+    ctx->err = err;
     obstack_specify_allocation_with_arg(&ctx->pieces, 4096, 0,
         parser_chunk_alloc, obstack_chunk_free, ctx);
     ctx->anchor_index.node = NULL;
     _qu_context_reinit(ctx);
 }
 
-static void qu_load_stream(qu_parse_context *ctx, FILE *stream) {
+static void qu_load_stream(struct qu_parser *ctx, FILE *stream, const char *fn)
+{
     int rc, eno;
     char chunk[4096];
     obstack_blank(&ctx->pieces, 0);
@@ -133,7 +136,7 @@ static void qu_load_stream(qu_parse_context *ctx, FILE *stream) {
             if(ferror(stream)) {
                 eno = errno;
                 fclose(stream);
-                LONGJUMP_WITH_ERRCODE(ctx, eno);
+                qu_err_system_fatal(ctx->err, eno, "Can't read \"%s\"", fn);
             }
         }
         obstack_grow(&ctx->pieces, chunk, rc);
@@ -143,11 +146,11 @@ static void qu_load_stream(qu_parse_context *ctx, FILE *stream) {
     ctx->buf = obstack_finish(&ctx->pieces);
 }
 
-void qu_parser_free(qu_parse_context *ctx) {
+void qu_parser_free(struct qu_parser *ctx) {
     obstack_free(&ctx->pieces, NULL);
 }
 
-static qu_token *init_token(qu_parse_context *ctx) {
+static qu_token *init_token(struct qu_parser *ctx) {
     qu_token *ctok = obstack_alloc(&ctx->pieces, sizeof(qu_token));
     ctok->kind = QU_TOK_ERROR;
     CIRCLEQ_INSERT_TAIL(&ctx->tokens, ctok, lst);
@@ -164,7 +167,7 @@ static qu_token *init_token(qu_parse_context *ctx) {
     return ctok;
 }
 
-void _qu_tokenize(qu_parse_context *ctx) {
+void qu_tokenize(struct qu_parser *ctx) {
 
 #define KLASS (chars[(int)CHAR].klass)
 #define FLAGS (chars[(int)CHAR].flags)
@@ -173,17 +176,14 @@ void _qu_tokenize(qu_parse_context *ctx) {
 #define LOOP for(; ctx->ptr < end; ++ctx->ptr, ++ctx->curpos)
 #define NEXT ((++ctx->curpos, ++ctx->ptr) < end)
 #define FORCE_NEXT if((++ctx->curpos, ++ctx->ptr) >= end) { \
+    SYNTAX_ERROR("Premature end of file"); \
+    }
+#define SYNTAX_ERROR(message) do {\
     ctok->kind = QU_TOK_ERROR; \
     ctok->end_line = ctx->curline; \
     ctok->end_char = ctx->curpos; \
-    LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok, "Premature en of file"); \
-    }
-#define SYNTAX_ERROR(message) {\
-    ctok->kind = QU_TOK_ERROR; \
-    ctok->end_line = ctx->curline; \
-    ctok->end_char = ctx->curpos; \
-    LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok, (message)); \
-    }
+    qu_err_file_fatal(ctx->err, ctok->filename, ctok->start_line, (message)); \
+    } while(0);
 
 #define CONSUME_WHILE(cond) LOOP { if(!(cond)) break; }
 #define CONSUME_UNTIL(cond) LOOP { if(cond) break; }
@@ -210,9 +210,8 @@ void _qu_tokenize(qu_parse_context *ctx) {
                 if(KLASS == CHAR_WHITESPACE) {
                     ctok->kind = QU_TOK_SEQUENCE_ENTRY;
                     if(!ctx->linestart) {
-                        LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok,
-                            "Sequence entry dash sign is only"
-                            " allowed at the start of line")
+                        SYNTAX_ERROR("Sequence entry dash sign is only"
+                                     " allowed at the start of line")
                     }
                     ctx->indent += 1;
                     ctok->indent = ctx->indent;
@@ -254,8 +253,7 @@ void _qu_tokenize(qu_parse_context *ctx) {
             case '@': case '`':
                 ctok->end_char += 1;
                 ctok->kind = QU_TOK_ERROR;
-                LONGJUMP_WITH_SCANNER_ERROR(ctx, ctok,
-                    "Characters '@' and '`' are reserved")
+                SYNTAX_ERROR("Characters '@' and '`' are reserved")
             case '"':
                 FORCE_NEXT;
                 ctok->kind = QU_TOK_DOUBLESTRING;
@@ -481,32 +479,24 @@ void _qu_tokenize(qu_parse_context *ctx) {
                             || CTOK->kind == QU_TOK_COMMENT)) { \
     CTOK = NTOK; \
     }
-#define SYNTAX_ERROR(message) { \
-    if(!CTOK) { \
-        ctok = CIRCLEQ_LAST(&ctx->tokens); \
-    } \
-    ctx->error_kind = YAML_PARSER_ERROR; \
-    ctx->error_text = message; \
-    ctx->error_token = CTOK; \
-    return NULL; \
-    }
 #define QU_TOK_SCALAR(tok) ((tok)->kind == QU_TOK_PLAINSTRING || \
                            (tok)->kind == QU_TOK_SINGLESTRING || \
                            (tok)->kind == QU_TOK_DOUBLESTRING || \
                            (tok)->kind == QU_TOK_LITERAL || \
                            (tok)->kind == QU_TOK_FOLDED)
 
-qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
+qu_ast_node *parse_flow_node(struct qu_parser *ctx) {
     if(CTOK->kind == QU_TOK_ALIAS) {
         qu_ast_node *target = qu_find_anchor(ctx,
             (char *)CTOK->data+1, CTOK->bytelen-1);
-        if(target) {
-            qu_ast_node *node = qu_new_alias_node(ctx, CTOK, target);
-            NEXT;
-            return node;
-        } else {
-            LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Anchor target not found");
+        qu_ast_node *node = qu_new_alias_node(ctx, CTOK, target);
+        if(!target) {
+            node->val.alias_target = qu_new_text_node(ctx, NULL);
+            qu_err_node_error(ctx->err, node, "Anchor \"%.*s\" not found",
+                CTOK->bytelen-1, (const char *)CTOK->data+1);
         }
+        NEXT;
+        return node;
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
@@ -535,23 +525,25 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             qu_ast_node *knode = qu_new_text_node(ctx, CTOK);
             const char *cont = qu_node_content(knode);
             if(!cont) {
-                LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                qu_err_node_fatal(ctx->err, node,
                     "Only string keys supported");
             }
             NEXT; NEXT;
             qu_ast_node *vnode = parse_flow_node(ctx);
             if(!vnode) {
-                LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
+                qu_err_file_fatal(ctx->err, CTOK->filename, CTOK->start_line,
+                    "Unexpected token");
             }
             if(!qu_mapping_add(ctx, node, knode, cont, vnode)) {
-                LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
-                    "Duplicate mapping key");
+                qu_err_node_error(ctx->err, knode,
+                    "Duplicate key in mapping");
             }
 
             if(CTOK->kind == QU_TOK_FLOW_MAP_END)
                 break;
             if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
-                LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
+                qu_err_file_fatal(ctx->err, CTOK->filename, CTOK->start_line,
+                    "Unexpected token");
             }
             NEXT;
         }
@@ -568,7 +560,8 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
             if(CTOK->kind == QU_TOK_FLOW_SEQ_END)
                 break;
             if(CTOK->kind != QU_TOK_FLOW_ENTRY) {
-                LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unexpected token");
+                qu_err_file_fatal(ctx->err, CTOK->filename, CTOK->start_line,
+                    "Unexpected token");
             }
             NEXT;
         }
@@ -579,22 +572,24 @@ qu_ast_node *parse_flow_node(qu_parse_context *ctx) {
     if(CTOK->kind == QU_TOK_DOC_END) {
         return qu_new_text_node(ctx, NULL);
     }
-    LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Unknown syntax");
+    qu_err_file_fatal(ctx->err, CTOK->filename, CTOK->start_line,
+        "Unknown syntax");
 }
 
-qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
+qu_ast_node *parse_node(struct qu_parser *ctx, int current_indent) {
     (void) current_indent;
     //printf("PARSE_NODE "); print_token(CTOK, stdout);
     if(CTOK->kind == QU_TOK_ALIAS) {
         qu_ast_node *target = qu_find_anchor(ctx,
             (char *)CTOK->data+1, CTOK->bytelen-1);
-        if(target) {
-            qu_ast_node *node = qu_new_alias_node(ctx, CTOK, target);
-            NEXT;
-            return node;
-        } else {
-            LONGJUMP_WITH_CONTENT_ERROR(ctx, CTOK, "Anchor target not found");
+        qu_ast_node *node = qu_new_alias_node(ctx, CTOK, target);
+        if(!target) {
+            node->val.alias_target = qu_new_text_node(ctx, NULL);
+            qu_err_node_error(ctx->err, node, "Anchor \"%.*s\" not found",
+                CTOK->bytelen-1, (const char *)CTOK->data+1);
         }
+        NEXT;
+        return node;
     }
     if(CTOK->kind == QU_TOK_ANCHOR) {
         ctx->cur_anchor = CTOK;
@@ -639,8 +634,8 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
                 qu_ast_node *knode = qu_new_text_node(ctx, CTOK);
                 const char *cont = qu_node_content(knode);
                 if(!cont) {  // duplicate key check
-                    LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
-                        "Only scalar keys allowed");
+                    qu_err_node_fatal(ctx->err, node,
+                        "Only string keys supported");
                 }
                 qu_ast_node *vnode;
                 NEXT;
@@ -649,14 +644,13 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
                     vnode = parse_node(ctx, mapping_indent);
                 } else {
                     if(!exkey) {
-                        LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
-                            "Expected colon");
+                        qu_err_node_fatal(ctx->err, node, "Expected colon");
                     }
                     vnode = qu_new_text_node(ctx, NULL);
                 }
                 assert(vnode);
                 if(!qu_mapping_add(ctx, node, knode, cont, vnode)) {
-                    LONGJUMP_WITH_CONTENT_ERROR(ctx, knode->start_token,
+                    qu_err_node_error(ctx->err, knode,
                         "Duplicate key in mapping");
                 }
             }
@@ -692,7 +686,7 @@ qu_ast_node *parse_node(qu_parse_context *ctx, int current_indent) {
 }
 
 
-qu_ast_node *_qu_parse(qu_parse_context *ctx) {
+qu_ast_node *_qu_parse(struct qu_parser *ctx) {
 
     ctx->cur_token = CIRCLEQ_FIRST(&ctx->tokens);
     ctx->cur_anchor = NULL;
@@ -715,59 +709,59 @@ qu_ast_node *_qu_parse(qu_parse_context *ctx) {
     assert(!ctx->error_kind);  // long jump is done
 
     if(CTOK->kind != QU_TOK_DOC_END) {
-        LONGJUMP_WITH_PARSER_ERROR(ctx, CTOK, "Unexpected token");
+        qu_err_file_fatal(ctx->err, CTOK->filename, CTOK->start_line,
+            "Unexpected token");
     }
     return node;
 }
 
 
-void qu_print_tokens(qu_parse_context *ctx, FILE *stream) {
+void qu_print_tokens(struct qu_parser *ctx, FILE *stream) {
     qu_token *tok;
     CIRCLEQ_FOREACH(tok, &ctx->tokens, lst) {
         print_token(tok, stream);
     }
 }
 
-void qu_file_parse(qu_parse_context *ctx, const char *filename) {
-    assert(ctx->errjmp);
+void qu_file_parse(struct qu_parser *ctx, const char *filename) {
     ctx->filename = obstack_copy0(&ctx->pieces,
         filename, strlen(filename));
     FILE *file = fopen(filename, "rb");
     if(!file)
-        LONGJUMP_WITH_ERRNO(ctx);
-    qu_load_stream(ctx, file);
+        qu_err_system_fatal(ctx->err, errno, "Can't open \"%s\"", filename);
+    qu_load_stream(ctx, file, filename);
     fclose(file);
-    _qu_tokenize(ctx);
+    qu_tokenize(ctx);
     ctx->document = _qu_parse(ctx);
     assert (ctx->cur_anchor == NULL);
     assert (ctx->cur_tag == NULL);
     assert (ctx->document != NULL);
 }
 
-void qu_stream_parse(qu_parse_context *ctx, const char *filename, FILE *stream)
+void qu_stream_parse(struct qu_parser *ctx, const char *filename, FILE *stream)
 {
-    assert(ctx->errjmp);
     ctx->filename = obstack_copy0(&ctx->pieces,
         filename, strlen(filename));
-    qu_load_stream(ctx, stream);
+    qu_load_stream(ctx, stream, filename);
     fclose(stream);
-    _qu_tokenize(ctx);
+    qu_tokenize(ctx);
     ctx->document = _qu_parse(ctx);
     assert (ctx->cur_anchor == NULL);
     assert (ctx->cur_tag == NULL);
     assert (ctx->document != NULL);
 }
 
-qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename) {
-    assert(ctx->errjmp);
+qu_ast_node *qu_file_newparse(struct qu_parser *ctx, const char *filename) {
     _qu_context_reinit(ctx);
     ctx->filename = obstack_copy0(&ctx->pieces,
         filename, strlen(filename));
     FILE *file = fopen(filename, "rb");
-    if(!file)
-        LONGJUMP_WITH_ERRNO(ctx);
-    qu_load_stream(ctx, file);
+    if(!file) {
+        qu_err_system_error(ctx->err, errno, "Can't open \"%s\"", filename);
+        return NULL;
+    }
+    qu_load_stream(ctx, file, filename);
     fclose(file);
-    _qu_tokenize(ctx);
+    qu_tokenize(ctx);
     return _qu_parse(ctx);
 }

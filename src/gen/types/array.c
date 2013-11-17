@@ -68,7 +68,7 @@ static void qu_array_parse(struct qu_context *ctx,
     self->idx = array_index++;
 
     if(node->kind != QU_NODE_MAPPING) {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
+        qu_err_node_fatal(ctx->err, node,
             "Array type definition must be mapping");
     }
 
@@ -82,7 +82,7 @@ static void qu_array_parse(struct qu_context *ctx,
                 self->el.str = qu_struct_new_root(ctx);
                 qu_visit_struct_children(ctx, element, self->el.str, NULL);
             } else {
-                LONGJUMP_ERR_NODE(ctx, element, "Untagged straw scalar");
+                qu_err_node_fatal(ctx->err, element, "Untagged straw scalar");
             }
             opt->typname = qu_template_alloc(ctx, "a_${optpath:c}",
                 "optpath", opt->path,
@@ -94,7 +94,7 @@ static void qu_array_parse(struct qu_context *ctx,
                 NULL);
         }
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
+        qu_err_node_fatal(ctx->err, node,
             "Array type definition must contain element definition");
     }
 

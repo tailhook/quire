@@ -19,7 +19,6 @@ qu_map_member **qu_find_node(qu_map_member **root, const char *value);
 // PUBLIC API
 // Keep in sync with quire.h
 // Think about ABI compatibility
-qu_ast_node *qu_get_root(qu_parse_context *ctx);
 qu_ast_node *qu_map_get(qu_ast_node *node, const char *key);
 qu_seq_member *qu_seq_iter(qu_ast_node *node);
 qu_seq_member *qu_seq_next(qu_seq_member *iter);

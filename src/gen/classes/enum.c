@@ -67,17 +67,17 @@ static void qu_enum_init(struct qu_context *ctx, struct qu_class *cls,
     qu_ast_node *options = qu_map_get(node, "options");
 
     if(!options)
-        LONGJUMP_ERR_NODE(ctx, node, "Enum must have `options`");
+        qu_err_node_fatal(ctx->err, node, "Enum must have `options`");
 
     if(options->kind != QU_NODE_MAPPING)
-        LONGJUMP_ERR_NODE(ctx, options, "`options` must be mapping");
+        qu_err_node_fatal(ctx->err, options, "`options` must be mapping");
 
     int numopt = 0;
     qu_map_member *mem;
     TAILQ_FOREACH(mem, &options->val.map_index.items, lst)
         numopt += 1;
     if(!numopt)
-        LONGJUMP_ERR_NODE(ctx, options, "At least one option required");
+        qu_err_node_error(ctx->err, options, "At least one option required");
     self->options = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_enum_option)*numopt);
     self->options_len = numopt;
@@ -85,13 +85,15 @@ static void qu_enum_init(struct qu_context *ctx, struct qu_class *cls,
     TAILQ_FOREACH(mem, &options->val.map_index.items, lst) {
         self->options[i].name = qu_node_content(mem->key);
         const char *strvalue = qu_node_content(mem->value);
-        if(!strvalue)
-            LONGJUMP_ERR_NODE(ctx, mem->value, "Scalar value required");
-        const char *end = qu_parse_int(strvalue, &tmpval);
-        if(end != strvalue + strlen(strvalue))
-            LONGJUMP_ERR_NODE(ctx, mem->value, "Wrong numeric value");
-        self->options[i].value = (int)tmpval;
-        i += 1;
+        if(strvalue) {
+            const char *end = qu_parse_int(strvalue, &tmpval);
+            if(end != strvalue + strlen(strvalue))
+                qu_err_node_error(ctx->err, mem->value, "Wrong integer");
+            self->options[i].value = (int)tmpval;
+            i += 1;
+        } else {
+            qu_err_node_error(ctx->err, mem->value, "Scalar value required");
+        }
     }
 
     if((tmp = qu_map_get(node, "default"))) {
@@ -104,7 +106,7 @@ static void qu_enum_init(struct qu_context *ctx, struct qu_class *cls,
             }
         }
         if(i == numopt) {
-            LONGJUMP_ERR_NODE(ctx, node, "Default option is wrong");
+            qu_err_node_error(ctx->err, tmp, "Default option is wrong");
         }
     }
 

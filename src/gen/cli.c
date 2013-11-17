@@ -597,11 +597,11 @@ void qu_cli_parse(struct qu_context *ctx,
     if(clinode) {
         act = opt->vp->cli_action(opt, NULL);
         if(!act) {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-                clinode->start_token,
+            qu_err_node_error(ctx->err, clinode,
                 "Unsupported command-line action");
+        } else {
+            qu_cli_parse_ref(ctx, opt, NULL, act, clinode, clinode, g);
         }
-        qu_cli_parse_ref(ctx, opt, NULL, act, clinode, clinode, g);
     }
 
     qu_map_member *item;
@@ -613,11 +613,11 @@ void qu_cli_parse(struct qu_context *ctx,
         const char *action = mname + clen + 1;
         act = opt->vp->cli_action(opt, action);
         if(!act) {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser,
-                item->key->start_token,
+            qu_err_node_error(ctx->err, item->key,
                 "Unsupported command-line action");
+        } else {
+            qu_cli_parse_ref(ctx, opt, action, act, item->value, clinode, g);
         }
-        qu_cli_parse_ref(ctx, opt, action, act, item->value, clinode, g);
     }
 }
 

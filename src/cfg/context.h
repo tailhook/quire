@@ -4,13 +4,16 @@
 #include "../yaml/parser.h"
 #include "vars.h"
 #include "optparser.h"
+#include "../error.h"
 
 struct qu_config_head;
 
 typedef struct qu_config_context {
-    qu_parse_context parser;
+    struct qu_errbuf errbuf;
+    struct qu_parser parser;
     struct qu_vars_index variables;
     struct qu_optparser_struct optparser;
+    struct qu_errbuf *err;
     struct obstack *alloc;
 } qu_config_context;
 

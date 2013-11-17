@@ -63,8 +63,7 @@ static void qu_float_parse(struct qu_context *ctx,
             const char *strvalue = qu_node_content(value);
             const char *end = qu_parse_float(strvalue, &self->defvalue);
             if(end != strvalue + strlen(strvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, value->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, value, "Bad floating point value");
         }
 
     } else if (node->kind == QU_NODE_SCALAR) {
@@ -74,12 +73,11 @@ static void qu_float_parse(struct qu_context *ctx,
             self->defvalue_set = 1;
             const char *end = qu_parse_float(strvalue, &self->defvalue);
             if(end != strvalue + strlen(strvalue))
-                LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-                    "Bad integer value")
+                qu_err_node_error(ctx->err, node, "Bad floating point value");
         }
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-            "Int type must contain either integer or mapping");
+        qu_err_node_error(ctx->err, node,
+            "Float type defintion must contain either float or mapping");
     }
 }
 

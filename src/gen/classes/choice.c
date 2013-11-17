@@ -1,6 +1,7 @@
 #include "choice.h"
 #include "classes.h"
 #include "../struct.h"
+#include "../util/print.h"
 #include "../context.h"
 #include "../../quire_int.h"
 #include "../../yaml/access.h"
@@ -86,14 +87,15 @@ static void qu_choice_init(struct qu_context *ctx, struct qu_class *cls,
     qu_ast_node *choices = qu_map_get(node, "choices");
 
     if(!choices || choices->kind != QU_NODE_MAPPING)
-        LONGJUMP_ERR_NODE(ctx, node, "Choice should contain mapping `choices`");
+        qu_err_node_fatal(ctx->err, node,
+            "Choice should contain mapping `choices`");
 
     int numch = 0;
     qu_map_member *mem;
     TAILQ_FOREACH(mem, &choices->val.map_index.items, lst)
         numch += 1;
     if(!numch)
-        LONGJUMP_ERR_NODE(ctx, choices, "At least one choice required");
+        qu_err_node_error(ctx->err, choices, "At least one choice required");
 
     self->choices = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_choice)*numch);

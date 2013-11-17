@@ -66,6 +66,9 @@ int main(int argc, char **argv) {
             outputting = 0;
         }
 
+        if(ctx.errbuf.error)
+            longjmp(jmp, 1);
+        qu_print_errors(ctx.err, stderr);
         qu_parser_free(&ctx.parser);
     } else {
         if(outputting) {
@@ -73,7 +76,7 @@ int main(int argc, char **argv) {
                 "\n#error Code generation failed. Don't use this file\n");
         }
         if(rc > 0) {
-            qu_print_error(&ctx.parser, stderr);
+            qu_print_errors(ctx.err, stderr);
             qu_parser_free(&ctx.parser);
             return 1;
         } else if(rc < 0) {

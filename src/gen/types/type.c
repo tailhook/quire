@@ -55,7 +55,7 @@ static void qu_type_parse(struct qu_context *ctx,
             (typnode = qu_map_get(node, "="))) {
             opt->typname = qu_node_content(typnode);
         } else {
-            LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
+            qu_err_node_fatal(ctx->err, node,
                 "Type declaration must contain `type` field");
         }
         if((self->defvalue = qu_map_get(node, "default"))) {
@@ -65,13 +65,13 @@ static void qu_type_parse(struct qu_context *ctx,
     } else if (node->kind == QU_NODE_SCALAR) {
         opt->typname = qu_node_content(node);
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
+        qu_err_node_fatal(ctx->err, node,
             "Type declaraiont must contain either string or mapping");
     }
     self->cls = qu_class_get(ctx, opt->typname);
     if(!self->cls) {
-        LONGJUMP_ERR_NODE(ctx, node,
-            "Type ${typ:q} not found", "typ", opt->typname);
+        qu_err_node_fatal(ctx->err, node,
+            "Type \"%s\" not found", opt->typname);
     }
     if(!opt->has_default) {
         opt->has_default = self->cls->has_default;

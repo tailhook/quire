@@ -6,8 +6,6 @@
 #include <sys/queue.h>
 #include <setjmp.h>
 
-struct qu_parse_context_s;
-
 #include "node.h"
 #include "map.h"
 #include "anchors.h"
@@ -16,10 +14,9 @@ struct qu_parse_context_s;
 #define MAX_NODE_STACK 256
 
 
-
-typedef struct qu_parse_context_s {
+struct qu_parser {
+    struct qu_errbuf *err;
     struct obstack pieces;
-    jmp_buf *errjmp;
     char *filename;
     unsigned char *buf;
     int buflen;
@@ -51,14 +48,14 @@ typedef struct qu_parse_context_s {
         int errnum;
     } err_ptr;
 
-} qu_parse_context;
+};
 
-qu_ast_node *qu_file_newparse(qu_parse_context *ctx, const char *filename);
+qu_ast_node *qu_file_newparse(struct qu_parser *ctx, const char *filename);
 
-void qu_file_parse(qu_parse_context *ctx, const char *filename);
-void qu_stream_parse(qu_parse_context *ctx, const char *filename, FILE *stream);
-void qu_parser_init(qu_parse_context *ctx);
-void qu_parser_free(qu_parse_context *ctx);
+void qu_file_parse(struct qu_parser *ctx, const char *filename);
+void qu_stream_parse(struct qu_parser *ctx, const char *filename, FILE *stream);
+void qu_parser_init(struct qu_parser *ctx, struct qu_errbuf *err);
+void qu_parser_free(struct qu_parser *ctx);
 
 
 #endif // QUIRE_H_YAML_PARSER

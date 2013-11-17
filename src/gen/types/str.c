@@ -73,8 +73,8 @@ static void qu_str_parse(struct qu_context *ctx,
             self->defvalue = strvalue;
         }
     } else {
-        LONGJUMP_WITH_CONTENT_ERROR(&ctx->parser, node->start_token,
-            "String type must contain either string or mapping");
+        qu_err_node_error(ctx->err, node,
+            "String type definition must contain either string or mapping");
     }
 }
 

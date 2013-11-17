@@ -3,6 +3,6 @@
 
 #include "common.h"
 
-qu_ast_node *qu_raw_include(qu_parse_context *ctx, qu_ast_node *node);
+qu_ast_node *qu_raw_include(struct qu_parser *ctx, qu_ast_node *node);
 
 #endif // QUIRE_H_RAW_INCLUDE
