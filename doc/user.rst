@@ -208,10 +208,35 @@ Include Mapping From Set of Files
 Merging Mappings
 ================
 
-We use standard YAML way for merging_ mapppings.
+We use standard YAML way for merging_ mappings. It's achieved using ``<<`` key
+and either mapping or a list of mappings for the value.
 
 .. _merging: http://yaml.org/type/merge.html
 
+The most useful merging is with aliases. Example:
+
+.. code-block:: yaml
+
+    fruits: &fruits
+      apple: yes
+      banana: yes
+    food:
+      bread: yes
+      milk: yes
+      <<: *fruits
+
+Will be parsed as:
+
+.. code-block:: yaml
+
+   fruits:
+     apple: yes
+     banana: yes
+   food:
+     bread: yes
+     milk: yes
+     apple: yes
+     banana: yes
 
 .. _seq-merge:
 
