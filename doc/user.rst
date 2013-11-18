@@ -187,6 +187,53 @@ Few comments:
    may use :ref:`units <units>` as well.
 
 
+Templates
+=========
+
+Even more powerful construction in a combination with variables is a template.
+Template is basically an anchored node which has some variable references, and
+may be used with different variable values in different contexts. For example:
+
+.. code-block:: yaml
+
+   _tpl: &price !NoVars
+     chair: $x dollars
+     table: ${x*4} dollars
+
+   shops:
+     cheap: !Template:price
+       x: 50
+     expensive: !Template:price
+       x: 150
+
+The example above will be expanded as the following:
+
+.. code-block:: yaml
+
+    shops:
+      cheap:
+        chair: 50 dollars
+        table: 200 dollars
+      expensive:
+        chair: 150 dollars
+        table: 600 dollars
+
+The templates may be arbitrarily complex. There are few limitations:
+
+1. Template-scoped variables may only be scalar
+
+2. The anchored node is expanded too, you may either use ``!NoVars`` like in
+   example, or define all the variables to get rid of warnings of
+   ``Undefined variable``
+
+3. Variables in mapping keys or tags are not supported
+
+Note, the limitation #1, doesn't limit you to use anchor or templates inside
+a template (the anchored node), just the scoped variables inside the template
+invocation (the items of a mapping tagged ``!Template``) must be scalar. And
+anchors are never scoped.
+
+
 Includes
 ========
 
