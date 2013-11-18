@@ -181,7 +181,7 @@ static void eval_atom(struct qu_eval_ctx *ctx, struct qu_eval_var *res) {
                 &res->data.str.value, &res->data.str.length))
         {
             qu_err_node_warn(ctx->err, ctx->node,
-                "Undefined variable \"%.*s\'",
+                "Undefined variable \"%.*s\"",
                 (int)(ctx->next - ctx->token), ctx->token);
             res->data.str.value = "";
             res->data.str.length = 0;

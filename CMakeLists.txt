@@ -200,6 +200,7 @@ ADD_TOOL_TEST(incseq)
 ADD_TOOL_TEST(longstr)
 ADD_TOOL_TEST(listblock)
 ADD_TOOL_TEST(exkeys)
+ADD_TOOL_TEST(vars)
 
 ENDIF()
 

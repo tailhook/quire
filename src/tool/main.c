@@ -11,6 +11,7 @@
 #include "../yaml/access.h"
 #include "../yaml/codes.h"
 #include "../raw/common.h"
+#include "../raw/vars.h"
 #include "../emitter.h"
 #include "../../objpath/objpath.h"
 
@@ -286,7 +287,7 @@ int main(int argc, char **argv) {
             qu_file_parse(&ctx, options.filename);
         }
         if(options.plain) {
-            qu_raw_process(&ctx, NULL,
+            qu_raw_process(&ctx, qu_anchors_frame(&ctx.pieces, &ctx, NULL),
                 qu_raw_flags_from_str(options.plain_flags));
         }
         if(err.error)

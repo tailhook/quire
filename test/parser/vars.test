@@ -1,0 +1,39 @@
+int:
+- &ten 10
+- *ten
+- $ten
+- ${ten}
+- ${ten*2}
+- ${1 + (1 + ten)*2 + 3*ten*ten}
+- &ten_thousand ${ten}k
+str:
+- &a hello
+- *a
+- $a
+- ${a}
+- ${ten*2}x $a
+- $ten_thousand dollars
+- $${ten_thousand}
+...
+---
+
+# using original formatting
+
+- command-line: quire-tool -EpPav /int
+  output: |
+    - 10
+    - 10
+    - 10
+    - 10
+    - 20
+    - 323
+    - 10k
+- command-line: quire-tool -EpPav /str
+  output: |
+    - hello
+    - hello
+    - hello
+    - hello
+    - 20x hello
+    - 10k dollars
+    - $10k
