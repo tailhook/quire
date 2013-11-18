@@ -9,7 +9,9 @@
 #include "globseq.h"
 #include "globmap.h"
 #include "merge.h"
+#include "eval.h"
 #include "../yaml/codes.h"
+#include "../yaml/access.h"
 
 typedef qu_ast_node *(*qu_directive_processor)(struct qu_parser *ctx,
                                               qu_ast_node *source);
@@ -62,7 +64,7 @@ static qu_ast_node *qu_raw_process_value(struct qu_parser *ctx,
 }
 
 static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
-    unsigned flags)
+    struct qu_var_frame *vars, unsigned flags)
 {
     switch(node->kind) {
     case QU_NODE_MAPPING: {
@@ -72,7 +74,7 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
             if(item->value->tag) {
                 item->value = qu_raw_process_value(ctx, item->value, flags);
             }
-            qu_raw_visitor(ctx, item->value, flags);
+            qu_raw_visitor(ctx, item->value, vars, flags);
             item = TAILQ_NEXT(item, lst);
         }
         } break;
@@ -83,8 +85,23 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
             if(item->value->tag) {
                 item->value = qu_raw_process_value(ctx, item->value, flags);
             }
-            qu_raw_visitor(ctx, item->value, flags);
+            qu_raw_visitor(ctx, item->value, vars, flags);
             item = TAILQ_NEXT(item, lst);
+        }
+        } break;
+    case QU_NODE_SCALAR: {
+        const char *content = qu_parse_content(node, &ctx->pieces);
+        if(content) {
+            if(flags & QU_RAW_FLAG_VARS) {
+                qu_eval_str(ctx, vars, content, node,
+                    &node->content, &node->content_len);
+            } else {
+                node->content = content;
+                node->content_len = strlen(content);
+            }
+        } else {
+            node->content = "";
+            node->content_len = 0;
         }
         } break;
     default:
@@ -92,8 +109,10 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
     }
 }
 
-void qu_raw_process(struct qu_parser *ctx, unsigned flags) {
-    qu_raw_visitor (ctx, ctx->document, flags);
+void qu_raw_process(struct qu_parser *ctx, struct qu_var_frame *vars,
+    unsigned flags)
+{
+    qu_raw_visitor (ctx, ctx->document, vars, flags);
     qu_raw_maps_visitor(ctx, ctx->document, flags);
 }
 

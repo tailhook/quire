@@ -711,12 +711,9 @@ static void qu_define_parser(struct qu_context *ctx,
     qu_code_print(ctx,
         "const char *eq = strchr(${argname}, '=');\n"
         "if(!eq) {\n"
-        "   qu_set_string(ctx, ${argname}, ``);\n"
+        "   qu_set_string(ctx, ${argname}, strlen(${argname}), ``, 0);\n"
         "} else {\n"
-        "   char buf[eq - ${argname} + 1];\n"
-        "   memcpy(buf, ${argname}, eq - ${argname});\n"
-        "   buf[eq - ${argname}] = 0;\n"
-        "   qu_set_string(ctx, buf, eq+1);\n"
+        "   qu_set_string(ctx, ${argname}, eq - ${argname}, eq+1, strlen(eq+1));\n"
         "}\n"
         , "argname", argname
         , NULL);

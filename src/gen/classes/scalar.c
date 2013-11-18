@@ -104,8 +104,7 @@ static void qu_scalar_init(struct qu_context *ctx, struct qu_class *cls,
         self->tags[i].name = qu_node_content(mem->key);
         const char *strvalue = qu_node_content(mem->value);
         if(strvalue) {
-            const char *end = qu_parse_int(strvalue, &tmpval);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_int(strvalue, &tmpval))
                 qu_err_node_error(ctx->err, mem->value, "Wrong numeric value");
             self->tags[i].value = (int)tmpval;
             i += 1;

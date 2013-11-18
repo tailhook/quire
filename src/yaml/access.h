@@ -14,6 +14,7 @@ typedef struct qu_mapping_head {
 
 
 qu_map_member **qu_find_node(qu_map_member **root, const char *value);
+const char *qu_parse_content(qu_ast_node *node, struct obstack *buf);
 
 
 // PUBLIC API

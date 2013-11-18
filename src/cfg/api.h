@@ -19,4 +19,7 @@ void qu_cli_error(struct qu_config_context *, const char *opt,
 void qu_check_config_errors(struct qu_config_context *ctx);
 void qu_print_config_errors(struct qu_config_context *ctx);
 
-#endif  // QUIRE_H_CFG_API
+void qu_set_string(struct qu_config_context *ctx,
+    const char *name, int nlen, const char *data, int dlen);
+
+#endif  /*  QUIRE_H_CFG_API  */

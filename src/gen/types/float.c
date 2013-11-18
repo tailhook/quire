@@ -61,8 +61,7 @@ static void qu_float_parse(struct qu_context *ctx,
             opt->has_default = 1;
             self->defvalue_set = 1;
             const char *strvalue = qu_node_content(value);
-            const char *end = qu_parse_float(strvalue, &self->defvalue);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_float(strvalue, &self->defvalue))
                 qu_err_node_error(ctx->err, value, "Bad floating point value");
         }
 
@@ -71,8 +70,7 @@ static void qu_float_parse(struct qu_context *ctx,
         if(*strvalue) {  /*  None is allowed as no default  */
             opt->has_default = 1;
             self->defvalue_set = 1;
-            const char *end = qu_parse_float(strvalue, &self->defvalue);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_float(strvalue, &self->defvalue))
                 qu_err_node_error(ctx->err, node, "Bad floating point value");
         }
     } else {
@@ -129,10 +127,11 @@ static void qu_float_parser(struct qu_context *ctx,
 {
     (void) opt;
     qu_code_print(ctx,
-        "qu_node_to_float(ctx, node${level:d}, &${expr});\n",
-        "level:d", level,
-        "expr", expr,
-        NULL);
+        "if(!qu_parse_float(qu_node_content(node${level:d}), &${expr}))\n"
+        "   qu_report_error(ctx, node${level:d}, `Bad floating point value`);\n"
+        , "level:d", level
+        , "expr", expr
+        , NULL);
 
 }
 

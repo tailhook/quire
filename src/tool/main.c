@@ -286,7 +286,8 @@ int main(int argc, char **argv) {
             qu_file_parse(&ctx, options.filename);
         }
         if(options.plain) {
-            qu_raw_process(&ctx, qu_raw_flags_from_str(options.plain_flags));
+            qu_raw_process(&ctx, NULL,
+                qu_raw_flags_from_str(options.plain_flags));
         }
         if(err.error)
             longjmp(jmp, 1);

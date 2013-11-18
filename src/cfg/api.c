@@ -28,7 +28,7 @@ qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
     const char *filename)
 {
     qu_file_parse(&ctx->parser, filename);
-    qu_raw_process(&ctx->parser, ~0);
+    qu_raw_process(&ctx->parser, ctx->vars, ~0);
     return ctx->parser.document;
 }
 
@@ -62,6 +62,11 @@ void qu_config_free(qu_config_head *cfg) {
 
 void *qu_config_alloc(struct qu_config_context *ctx, int size) {
     return obstack_alloc(ctx->alloc, size);
+}
+
+void qu_set_string(struct qu_config_context *ctx,
+    const char *name, int nlen, const char *data, int dlen) {
+    qu_var_set_string(&ctx->parser.pieces, ctx->vars, name, nlen, data, dlen);
 }
 
 void qu_report_error(struct qu_config_context *ctx, qu_ast_node *node,

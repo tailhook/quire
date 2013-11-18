@@ -2,7 +2,7 @@
 #define QUIRE_H_CFG_CONTEXT
 
 #include "../yaml/parser.h"
-#include "vars.h"
+#include "../raw/vars.h"
 #include "optparser.h"
 #include "../error.h"
 
@@ -11,7 +11,7 @@ struct qu_config_head;
 typedef struct qu_config_context {
     struct qu_errbuf errbuf;
     struct qu_parser parser;
-    struct qu_vars_index variables;
+    struct qu_var_frame *vars;
     struct qu_optparser_struct optparser;
     struct qu_errbuf *err;
     struct obstack *alloc;

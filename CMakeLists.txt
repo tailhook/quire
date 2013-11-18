@@ -16,8 +16,8 @@ ADD_LIBRARY(quire
     src/raw/globseq.c
     src/raw/globmap.c
     src/raw/merge.c
-    src/cfg/vars.c
-    src/cfg/eval.c
+    src/raw/vars.c
+    src/raw/eval.c
     src/cfg/context.c
     src/cfg/api.c
     src/cfg/optparser.c

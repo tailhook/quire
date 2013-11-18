@@ -36,7 +36,7 @@ const char *bool_false[] = {
     NULL};
 
 
-const char *qu_parse_int(const char *value, long *result) {
+int qu_parse_int(const char *value, long *result) {
     const char *end;
     struct unit_s *unit;
 
@@ -51,7 +51,7 @@ const char *qu_parse_int(const char *value, long *result) {
         }
     }
     *result = val;
-    return end;
+    return end == value + strlen(value);
 }
 
 int qu_parse_bool(const char *value, int *result) {
@@ -71,7 +71,7 @@ int qu_parse_bool(const char *value, int *result) {
     return 0;
 }
 
-const char *qu_parse_float(const char *value, double *result) {
+int qu_parse_float(const char *value, double *result) {
     const char *end;
     struct unit_s *unit;
 
@@ -86,5 +86,5 @@ const char *qu_parse_float(const char *value, double *result) {
         }
     }
     *result = val;
-    return end;
+    return end == value + strlen(value);
 }

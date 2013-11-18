@@ -7,8 +7,6 @@
 #include "codes.h"
 
 
-const char *qu_parse_content(qu_ast_node *node, struct obstack *buf);
-
 const char *qu_node_content(qu_ast_node *node) {
     if(node->kind == QU_NODE_ALIAS)
         return qu_node_content(node->val.alias_target);
@@ -53,9 +51,7 @@ const char *qu_parse_content(qu_ast_node *node, struct obstack *buf) {
             obstack_1grow(buf, *c);
     }
     obstack_1grow(buf, 0);
-
-    node->content = obstack_finish(buf);
-    return node->content;
+    return obstack_finish(buf);
 }
 
 qu_map_member **qu_find_node(qu_map_member **root, const char *value) {

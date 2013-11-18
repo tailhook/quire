@@ -83,7 +83,7 @@ typedef struct qu_map_member qu_map_member;
 // Methods from access.c
 qu_ast_node *qu_config_root(struct qu_config_context *ctx);
 qu_ast_node *qu_map_get(qu_ast_node *node, char *key);
-char *qu_node_content(qu_ast_node *node);
+const char *qu_node_content(qu_ast_node *node);
 const char *qu_node_tag(qu_ast_node *node);
 qu_seq_member *qu_seq_iter(qu_ast_node *node);
 qu_seq_member *qu_seq_next(qu_seq_member *iter);
@@ -104,6 +104,21 @@ void qu_config_parser_free(struct qu_config_context *ctx);
 qu_ast_node *qu_config_parse_yaml(struct qu_config_context *ctx,
                                   const char *filename);
 
+int qu_set_string(struct qu_config_context *ctx,
+    const char *name, int nlen,
+    const char *data, int dlen);
+
+void qu_report_error(struct qu_config_context *, qu_ast_node *node,
+    const char *text);
+void qu_cli_error(struct qu_config_context *, const char *opt,
+    const char *text);
+void qu_check_config_errors(struct qu_config_context *ctx);
+void qu_print_config_errors(struct qu_config_context *ctx);
+
+int qu_parse_bool(const char *src, int *result);
+int qu_parse_int(const char *src, long *result);
+int qu_parse_float(const char *src, double *result);
+
 // Methods from cfg/optparser.c
 void qu_optparser_init(struct qu_config_context *ctx,
     int argc, char **argv,
@@ -113,27 +128,6 @@ int qu_optparser_next(struct qu_config_context *ctx,
     int *opt, const char **arg);
 void qu_optparser_error(struct qu_config_context *ctx,
     const char *error);
-
-// Methods from eval.c
-void qu_node_to_bool(struct qu_config_context *ctx, qu_ast_node *node,
-    int *result);
-void qu_node_to_int(struct qu_config_context *ctx, qu_ast_node *node,
-    long *result);
-void qu_node_to_float(struct qu_config_context *ctx, qu_ast_node *node,
-    double *result);
-void qu_node_to_str(struct qu_config_context *ctx, qu_ast_node *node,
-    const char **result, int *rlen);
-
-// Methods from cfg/vars.h
-int qu_set_string(struct qu_config_context *ctx, const char *name, const char *data);
-
-// Methods from error.c
-void qu_report_error(struct qu_config_context *, qu_ast_node *node,
-    const char *text);
-void qu_cli_error(struct qu_config_context *, const char *opt,
-    const char *text);
-void qu_check_config_errors(struct qu_config_context *ctx);
-void qu_print_config_errors(struct qu_config_context *ctx);
 
 // Methods from emitter.c
 int qu_emit_init(qu_emit_context *, FILE *stream);

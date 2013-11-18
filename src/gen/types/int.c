@@ -67,23 +67,20 @@ static void qu_int_parse(struct qu_context *ctx,
             opt->has_default = 1;
             self->defvalue_set = 1;
             const char *strvalue = qu_node_content(value);
-            const char *end = qu_parse_int(strvalue, &self->defvalue);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_int(strvalue, &self->defvalue))
                 qu_err_node_error(ctx->err, value, "Bad integer value");
         }
         if((value = qu_map_get(node, "min"))) {
             self->min_set = 1;
             const char *strvalue = qu_node_content(value);
-            const char *end = qu_parse_int(strvalue, &self->min);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_int(strvalue, &self->min))
                 qu_err_node_error(ctx->err, value, "Bad integer value");
         }
 
         if((value = qu_map_get(node, "max"))) {
             self->max_set = 1;
             const char *strvalue = qu_node_content(value);
-            const char *end = qu_parse_int(strvalue, &self->max);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_int(strvalue, &self->max))
                 qu_err_node_error(ctx->err, value, "Bad integer value");
         }
 
@@ -92,8 +89,7 @@ static void qu_int_parse(struct qu_context *ctx,
         if(*strvalue) {  /*  None is allowed as no default  */
             opt->has_default = 1;
             self->defvalue_set = 1;
-            const char *end = qu_parse_int(strvalue, &self->defvalue);
-            if(end != strvalue + strlen(strvalue))
+            if(!qu_parse_int(strvalue, &self->defvalue))
                 qu_err_node_error(ctx->err, node, "Bad integer value");
         }
     } else {
@@ -228,7 +224,8 @@ static void qu_int_parser(struct qu_context *ctx,
 {
     struct qu_int_option *self = (struct qu_int_option *)opt->typedata;
     qu_code_print(ctx,
-        "qu_node_to_int(ctx, node${level:d}, &${expr});\n"
+        "if(!qu_parse_int(qu_node_content(node${level:d}), &${expr}))\n"
+        "   qu_report_error(ctx, node${level:d}, `Bad integer`);\n"
         , "level:d", level
         , "expr", expr
         , NULL);

@@ -139,10 +139,11 @@ static void qu_bool_parser(struct qu_context *ctx,
 {
     (void) opt;
     qu_code_print(ctx,
-        "qu_node_to_bool(ctx, node${level:d}, &${expr});\n",
-        "level:d", level,
-        "expr", expr,
-        NULL);
+        "if(!qu_parse_bool(qu_node_content(node${level:d}), &${expr}))\n"
+        "   qu_report_error(ctx, node${level:d}, `Bad boolean value`);\n"
+        , "level:d", level
+        , "expr", expr
+        , NULL);
 
 }
 

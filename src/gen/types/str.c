@@ -133,8 +133,10 @@ static void qu_str_parser(struct qu_context *ctx,
 {
     (void) opt;
     qu_code_print(ctx,
-        "qu_node_to_str(ctx, node${level:d}, &${expr}, &${expr}_len);\n",
-        // TODO(tailhook) check min and max
+        "${expr} = qu_node_content(node${level:d});\n"
+        "if(!${expr})\n"
+        "   qu_report_error(ctx, node${level:d}, `String expected`);\n"
+        "${expr}_len = strlen(${expr});\n",
         "level:d", level,
         "expr", expr,
         NULL);

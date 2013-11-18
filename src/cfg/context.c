@@ -10,7 +10,7 @@ void qu_config_context_init(struct qu_config_context *ctx,
     ctx->err = &ctx->errbuf;
     ctx->alloc = &target->pieces;
     qu_parser_init(&ctx->parser, ctx->err);
-    qu_vars_init(ctx);
+    ctx->vars = qu_var_new_frame(&ctx->parser.pieces, NULL);
 }
 void qu_config_context_free(struct qu_config_context *ctx) {
     qu_parser_free(&ctx->parser);
