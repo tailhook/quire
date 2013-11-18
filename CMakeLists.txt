@@ -16,6 +16,7 @@ ADD_LIBRARY(quire
     src/raw/globseq.c
     src/raw/globmap.c
     src/raw/merge.c
+    src/raw/template.c
     src/raw/vars.c
     src/raw/eval.c
     src/cfg/context.c
@@ -201,6 +202,7 @@ ADD_TOOL_TEST(longstr)
 ADD_TOOL_TEST(listblock)
 ADD_TOOL_TEST(exkeys)
 ADD_TOOL_TEST(vars)
+ADD_TOOL_TEST(template)
 
 ENDIF()
 

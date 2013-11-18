@@ -158,8 +158,9 @@ struct qu_var_frame *qu_node_frame(struct obstack *buf,
 int qu_var_get_string(struct qu_var_frame *frame,
     const char *name, int name_len, const char **data, int *dlen) {
     while(frame) {
-        if(frame->resolver(frame, name, name_len, data, dlen))
+        if(frame->resolver(frame, name, name_len, data, dlen)) {
             return 1;
+        }
         frame = frame->parent;
     }
     return 0;

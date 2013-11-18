@@ -9,14 +9,16 @@
 #include "globseq.h"
 #include "globmap.h"
 #include "merge.h"
+#include "template.h"
 #include "eval.h"
+#include "vars.h"
 #include "../yaml/codes.h"
 #include "../yaml/access.h"
 
 typedef qu_ast_node *(*qu_directive_processor)(struct qu_parser *ctx,
                                               qu_ast_node *source);
 
-static struct {
+static struct qu_tag_entry {
     const char *tag;
     unsigned flag;
     qu_directive_processor processor;
@@ -24,7 +26,7 @@ static struct {
     {"!Include", QU_RAW_FLAG_INCLUDE, qu_raw_include},
     {"!FromFile", QU_RAW_FLAG_INCLUDE, qu_raw_fromfile},
     {"!GlobSeq", QU_RAW_FLAG_INCLUDE, qu_raw_globseq},
-    {"!GlobMap", QU_RAW_FLAG_INCLUDE, qu_raw_globmap},
+    {"!GlobMap", QU_RAW_FLAG_INCLUDE, qu_raw_globmap}
 };
 
 const int qu_tag_registry_len =
@@ -55,9 +57,9 @@ static qu_ast_node *qu_raw_process_value(struct qu_parser *ctx,
     const char *tag = node->tag;
     int i;
     for (i = 0; i < qu_tag_registry_len; ++i) {
-        unsigned flag = qu_tag_registry[i].flag;
-        if(flag & flags && !strcmp(qu_tag_registry[i].tag, tag)) {
-           return qu_tag_registry[i].processor(ctx, node);
+        struct qu_tag_entry *e = &qu_tag_registry[i];
+        if(e->flag & flags && !strcmp(e->tag, tag)) {
+           return e->processor(ctx, node);
         }
     }
     return node;
@@ -74,7 +76,21 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
             if(item->value->tag) {
                 item->value = qu_raw_process_value(ctx, item->value, flags);
             }
-            qu_raw_visitor(ctx, item->value, vars, flags);
+            if(flags & QU_RAW_FLAG_TEMPLATE && item->value->tag &&
+                !strncmp(item->value->tag, "!Template:", 10)) {
+                qu_ast_node *nnode = qu_raw_template(ctx, item->value);
+                qu_raw_visitor(ctx, nnode,
+                    qu_node_frame(&ctx->pieces, item->value, vars),
+                    flags);
+                item->value = nnode;
+            } else if(flags & QU_RAW_FLAG_NOVARS && item->value->tag &&
+                !strcmp(item->value->tag, "!NoVars")) {
+                item->value->tag = NULL;
+                qu_raw_visitor(ctx, item->value,
+                    NULL, flags & ~QU_RAW_FLAG_VARS);
+            } else {
+                qu_raw_visitor(ctx, item->value, vars, flags);
+            }
             item = TAILQ_NEXT(item, lst);
         }
         } break;
@@ -85,7 +101,21 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
             if(item->value->tag) {
                 item->value = qu_raw_process_value(ctx, item->value, flags);
             }
-            qu_raw_visitor(ctx, item->value, vars, flags);
+            if(flags & QU_RAW_FLAG_TEMPLATE && item->value->tag &&
+                !strncmp(item->value->tag, "!Template:", 10)) {
+                qu_ast_node *nnode = qu_raw_template(ctx, item->value);
+                qu_raw_visitor(ctx, nnode,
+                    qu_node_frame(&ctx->pieces, item->value, vars),
+                    flags);
+                item->value = nnode;
+            } else if(flags & QU_RAW_FLAG_NOVARS && item->value->tag &&
+                !strcmp(item->value->tag, "!NoVars")) {
+                item->value->tag = NULL;
+                qu_raw_visitor(ctx, item->value,
+                    NULL, flags & ~QU_RAW_FLAG_VARS);
+            } else {
+                qu_raw_visitor(ctx, item->value, vars, flags);
+            }
             item = TAILQ_NEXT(item, lst);
         }
         } break;
@@ -112,7 +142,7 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
 void qu_raw_process(struct qu_parser *ctx, struct qu_var_frame *vars,
     unsigned flags)
 {
-    qu_raw_visitor (ctx, ctx->document, vars, flags);
+    qu_raw_visitor(ctx, ctx->document, vars, flags);
     qu_raw_maps_visitor(ctx, ctx->document, flags);
 }
 
@@ -130,6 +160,10 @@ unsigned qu_raw_flags_from_str(char *flags) {
         result |= QU_RAW_FLAG_INCLUDE;
     if(strchr(flags, 'v'))
         result |= QU_RAW_FLAG_VARS;
+    if(strchr(flags, 'V'))
+        result |= QU_RAW_FLAG_NOVARS;
+    if(strchr(flags, 't'))
+        result |= QU_RAW_FLAG_TEMPLATE;
     if(*flags == '^')
         return ~result;
     return result;

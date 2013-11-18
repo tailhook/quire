@@ -10,6 +10,9 @@ yaml.add_constructor('!Include', yaml.Loader.construct_scalar)
 yaml.add_constructor('!GlobMap', yaml.Loader.construct_scalar)
 yaml.add_constructor('!GlobSeq', yaml.Loader.construct_scalar)
 yaml.add_constructor('!Unpack', yaml.Loader.construct_sequence)
+yaml.add_constructor('!NoVars', yaml.Loader.construct_mapping) # may be anything
+yaml.add_multi_constructor('!Template:',
+    lambda ld, tag, node: ld.construct_mapping(node))
 
 error = 0
 filename = sys.argv[1]

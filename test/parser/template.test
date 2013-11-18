@@ -1,0 +1,32 @@
+_tpl1: &goods !NoVars
+    apple: $x dollars
+    pear: ${x*2} dollars
+    chair:
+    - ${y + x*2} dollars
+    - ${2*y - x} dollars
+
+shop1: !Template:goods
+    x: 1
+    y: 100
+
+shop2: !Template:goods
+    x: 2
+    y: 50
+
+...
+---
+
+- command-line: quire-tool -EpPtvV /shop1
+  output: |
+    apple: 1 dollars
+    pear: 2 dollars
+    chair:
+    - 102 dollars
+    - 199 dollars
+- command-line: quire-tool -EpPtvV /shop2
+  output: |
+    apple: 2 dollars
+    pear: 4 dollars
+    chair:
+    - 54 dollars
+    - 98 dollars

@@ -14,7 +14,9 @@ enum {
     QU_RAW_FLAG_UNPACK = 2,
     QU_RAW_FLAG_ALIAS = 4,
     QU_RAW_FLAG_INCLUDE = 8,
-    QU_RAW_FLAG_VARS = 16
+    QU_RAW_FLAG_VARS = 16,
+    QU_RAW_FLAG_NOVARS = 32,
+    QU_RAW_FLAG_TEMPLATE = 64
 };
 
 void qu_raw_process(struct qu_parser *ctx, struct qu_var_frame *frame,

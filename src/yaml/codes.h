@@ -64,7 +64,6 @@ typedef enum qu_token_kind_enum {
 typedef enum qu_node_kind_enum {
     QU_NODE_UNKNOWN,
     QU_NODE_ALIAS,
-    QU_NODE_EMPTY,
     QU_NODE_SCALAR,
     QU_NODE_SEQUENCE,
     QU_NODE_MAPPING,
