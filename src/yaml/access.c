@@ -78,6 +78,23 @@ qu_ast_node *qu_map_get(qu_ast_node *node, const char *key) {
     return NULL;
 }
 
+qu_ast_node *qu_map_get_len(qu_ast_node *node, const char *key, int klen) {
+    if(node->kind == QU_NODE_ALIAS)
+        return qu_map_get_len(node->val.alias_target, key, klen);
+    if(node->kind != QU_NODE_MAPPING)
+        return NULL;
+
+    /* TODO(tailhoook) implement search for key with length */
+    char buf[klen+1];
+    memcpy(buf, key, klen);
+    buf[klen] = 0;
+
+    qu_map_member *knode = *qu_find_node(&node->val.map_index.tree, buf);
+    if(knode)
+        return knode->value;
+    return NULL;
+}
+
 int qu_get_boolean(qu_ast_node *node, int *value) {
     const char *content = qu_node_content(node);
     if(!content)

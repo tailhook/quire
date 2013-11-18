@@ -177,9 +177,7 @@ static void eval_atom(struct qu_eval_ctx *ctx, struct qu_eval_var *res) {
         next_tok(ctx);
     } else if(ctx->curtok == TOK_IDENT) {
         res->type = VAR_STRING;
-        if(!qu_string_var(ctx->frame, ctx->token, ctx->next - ctx->token,
-                &res->data.str.value, &res->data.str.length)
-            && !qu_anchor_var(ctx->parser, ctx->token, ctx->next - ctx->token,
+        if(!qu_var_get_string(ctx->frame, ctx->token, ctx->next - ctx->token,
                 &res->data.str.value, &res->data.str.length))
         {
             qu_err_node_warn(ctx->err, ctx->node,
@@ -295,10 +293,7 @@ static void qu_eval_intern(struct qu_eval_ctx *ctx, const char *data) {
             }
             const char *value;
             int value_len;
-            if(qu_string_var(ctx->frame, name, nlen, &value, &value_len)) {
-                obstack_grow(ctx->buf, value, value_len);
-            } else if(qu_anchor_var(ctx->parser, name, nlen,
-                                    &value, &value_len)) {
+            if(qu_var_get_string(ctx->frame, name, nlen, &value, &value_len)) {
                 obstack_grow(ctx->buf, value, value_len);
             }
         }

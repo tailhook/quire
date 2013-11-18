@@ -16,6 +16,8 @@ typedef struct qu_mapping_head {
 qu_map_member **qu_find_node(qu_map_member **root, const char *value);
 const char *qu_parse_content(qu_ast_node *node, struct obstack *buf);
 
+qu_ast_node *qu_map_get_len(qu_ast_node *node, const char *key, int klen);
+
 
 // PUBLIC API
 // Keep in sync with quire.h
