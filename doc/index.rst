@@ -8,6 +8,8 @@ most prominent features:
 * Generated header with C structures with apropriate typing
 * Rich set of tools for end users (includes, yaml anchors, variables...)
 
+Sources: http://github.com/tailhook/quire
+
 Contents:
 
 .. toctree::
@@ -20,10 +22,4 @@ Contents:
 .. _Yaml: http://yaml.org
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
