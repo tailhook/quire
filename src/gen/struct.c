@@ -11,6 +11,7 @@
 static void qu_struct_init(struct qu_config_struct *self) {
     self->parent = NULL;
     self->path = NULL;
+    self->has_bitsets = 0;
     TAILQ_INIT(&self->children);
 }
 
@@ -28,6 +29,7 @@ struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
         sizeof(struct qu_config_struct));
     qu_struct_init(self);
     self->parent = parent;
+    self->has_bitsets = parent->has_bitsets;
     if(parent->path) {
         self->path = qu_template_alloc(ctx, "${parent}.${name}",
             "parent", parent->path,
@@ -86,6 +88,18 @@ void qu_struct_add_decl(struct qu_context *ctx,
 void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
 {
     struct qu_struct_member *mem;
+    if(str->has_bitsets) {
+        TAILQ_FOREACH(mem, &str->children, lst) {
+            if(!mem->is_struct && !mem->is_decl) {
+                qu_guard_print_open(ctx, mem->guard);
+                qu_code_print(ctx,
+                    "int ${name:c}_set:1;\n"
+                    , "name", mem->name
+                    , NULL);
+                qu_guard_print_close(ctx, mem->guard);
+            }
+        }
+    }
     TAILQ_FOREACH(mem, &str->children, lst) {
         qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
@@ -167,6 +181,12 @@ void qu_struct_parser(struct qu_context *ctx, struct qu_config_struct *str,
                 "prefix", prefix,
                 "memname", mem->name,
                 NULL);
+            if(str->has_bitsets) {
+                qu_code_print(ctx,
+                    "${expr}_set = 1;\n"
+                    , "expr", expr
+                    , NULL);
+            }
             mem->p.opt->vp->parser(ctx, mem->p.opt, expr, level+1);
         }
         qu_code_print(ctx,
@@ -323,6 +343,12 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
                     "descrlen:d", strlen(mem->p.opt->description),
                     NULL);
             }
+            if(str->has_bitsets) {
+                qu_code_print(ctx,
+                    "if(${expr}_set) {\n"
+                    , "expr", expr
+                    , NULL);
+            }
             qu_code_print(ctx,
                 "qu_emit_scalar(ctx, NULL, NULL, 0, ${name:q}, ${namelen:d});\n"
                 "qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_VALUE);\n",
@@ -330,6 +356,9 @@ void qu_struct_printer(struct qu_context *ctx, struct qu_config_struct *str,
                 "namelen:d", strlen(mem->name),
                 NULL);
             mem->p.opt->vp->printer(ctx, mem->p.opt, expr, "NULL");
+            if(str->has_bitsets) {
+                qu_code_print(ctx, "}\n", NULL);
+            }
             qu_code_print(ctx, "}\n", NULL);
             qu_guard_print_close(ctx, mem->guard);
         }

@@ -63,6 +63,8 @@ void qu_visit_struct_children(struct qu_context *ctx,
                 }
                 struct qu_guard *ng = qu_guard_new(ctx, mname + 7);
                 qu_visit_struct_children(ctx, item->value, str, ng);
+            } else if(!strcmp("__set_flags__", mname)) {
+                str->has_bitsets = 1;
             } else if(mname[1] != '_' && item->value->tag &&
                 !strcmp(item->value->tag, "!CDecl")) {
                 qu_struct_add_decl(ctx, str,

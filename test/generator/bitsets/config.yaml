@@ -1,0 +1,18 @@
+__meta__:
+  program-name: bitsets
+  default-config: /etc/__quire_test__/bitsets.yaml
+  description: Custom struct with bitsets test
+
+__types__:
+  str1: !Struct
+    ? __set_flags__
+    a: !Int 1
+    b: !Int 2
+  str2: !Struct
+    ? __set_flags__
+    a: !String
+    nested:
+      b: !String "B"
+
+val1: !Type str1
+val2: !Type str2

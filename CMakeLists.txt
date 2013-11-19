@@ -180,6 +180,7 @@ ADD_SUBDIRECTORY(test/generator/clionly)
 ADD_SUBDIRECTORY(test/generator/if)
 ADD_SUBDIRECTORY(test/generator/vars)
 ADD_SUBDIRECTORY(test/generator/mapar)
+ADD_SUBDIRECTORY(test/generator/bitsets)
 
 # TESTS FOR QUIRE-TOOL
 

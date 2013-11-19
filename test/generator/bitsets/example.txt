@@ -1,0 +1,8 @@
+# bitsets
+# =======
+#
+# Custom struct with bitsets test
+#
+
+val1: # required
+val2: # required
