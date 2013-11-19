@@ -576,6 +576,31 @@ You can use any expression that C preprocessor is able to evaluate instead of
    CMake handles this case automatically but some other build systems don't.
 
 
+Include
+-------
+
+There is ``__include__`` special key, which allows to add ``#include``
+directive to the generated configuration file header. This key can be present
+at any place and will add the preprocessor directive at the top of the file.
+
+For example:
+
+.. code-block:: yaml
+
+   __include__: "types.h"
+
+Will result into the following line in the ``config.h`` file:
+
+.. code-block:: c
+
+   #include "types.h"
+
+.. note:: There is no way to include a system header (``#include <filename>``),
+   you can include some intermediate file, which includes the system header, if
+   you really need the functionality. But most of the time double-quoted name
+   will be searched for in system folders if not found in the project itself.
+
+
 
 .. _custom-types:
 
