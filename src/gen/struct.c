@@ -93,7 +93,7 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
             if(!mem->is_struct && !mem->is_decl) {
                 qu_guard_print_open(ctx, mem->guard);
                 qu_code_print(ctx,
-                    "int ${name:c}_set:1;\n"
+                    "unsigned int ${name:c}_set:1;\n"
                     , "name", mem->name
                     , NULL);
                 qu_guard_print_close(ctx, mem->guard);
