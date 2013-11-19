@@ -601,6 +601,51 @@ Will result into the following line in the ``config.h`` file:
    will be searched for in system folders if not found in the project itself.
 
 
+Set Flags
+---------
+
+The flag ``__set_flags__`` can be used to generate ``xx_set`` field for each
+of the structure field. This flag may be used to find out whether field is set
+by user or the default value is provided. For example:
+
+.. code-block:: yaml
+
+    data:
+      ? __set_flags__
+      a: !Int 1
+      b: !Int 2
+
+.. note:: The syntax ``? __set_flags__`` is YAML shortcut to
+   ``__set_flags__: null``. We use and recommend this syntax for structure
+   flags as it's not only shorter, but also stand out from structure field
+   definitions.
+
+Will turn into the following structure:
+
+.. code-block:: yaml
+
+   struct cfg_main {
+     qu_config_head head;
+     struct {
+        unsigned int a_set:1;
+        unsigned int b_set:1;
+        long a;
+        long b;
+     } data;
+   };
+
+.. note:: The syntax ``int yy:1;`` is a syntax for bit field. I.e. the field
+   that is only one bit in width. Given it is unsigned it can have
+   one of the two values ``0`` and ``1``.
+
+The values of ``a`` and ``b`` fields will always be intitialized (to 1 and 2
+respectively), but the ``a_set`` and ``b_set`` will be non-zero only when
+user specified them in configuration file.
+
+The ``__set_flags__`` property can be specified in any structure, including the
+root structure and ``!Struct`` custom type or its descendent. The flag is
+propagated to the nested structures but not to the ``!Type`` fields.
+
 
 .. _custom-types:
 
