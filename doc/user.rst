@@ -237,18 +237,204 @@ anchors are never scoped.
 Includes
 ========
 
+All includes have common structure. They are denoted by tagged scalar, with the
+special tag. With the scalar being the path/filename to include. After parsing
+the yaml but before converting the data into configuration file structure, the
+node is replaced by the actual contents of the file(s).
+
+Few more properties that are common for all include directives:
+
+* All paths are relative to the configuration file name which contains the
+  include directive (in fact relative to the name under which file is opened
+  in case it symlinked into multiple places)
+
+* Include directives can be arbirarily nested (up to the memory limit)
+
+* File inclusion is logical not textual, so (a) each file must be a full valid
+  YAML file (with the anchors exception described below), and (b) the included
+  data is contained at the place where directive is (unlike many other
+  configuration systems where inclusion usually occurs at the top level of the
+  config), but you can include at the top level of the config too
+
+* Variable references are not parsed in include file names yet, but it's on
+  todo list, so do not rely on include paths that contain dollar signs
+
+* There is a common namespace for anchors and variables between parent and
+  include files, but this behavior may be changed in future
+
 
 Include Raw File Data
 ---------------------
 
+The ``!FromFile`` tag includes the contents of the file as a scalar value.
+For example if ``somefile.txt`` has the following contents::
+
+    line1
+    : line2
+
+The following yaml:
+
+.. code-block:: yaml
+
+   text: !FromFile "somefile.txt"
+
+Is equivalent to:
+
+.. code-block:: yaml
+
+   text: "line1\n: line2"
+
+The context of the file is not parsed. And it's the only way to include binary
+data in configuration at the moment.
+
+
 Include Yaml
 ------------
+
+The ``!Include`` tag includes the contents of the file replaceing the
+node that contains tag. For example:
+
+.. code-block:: yaml
+
+    # config.yaml
+    items: !Include items.yaml
+
+.. code-block:: yaml
+
+    # items.yaml
+    - apple
+    - cherry
+    - banana
+
+Is equivalent of:
+
+.. code-block:: yaml
+
+   items:
+   - apple
+   - cherry
+   - banana
+
 
 Include Sequence of Yamls
 -------------------------
 
+The ``!GlobSeq`` tag includes the files matching a glob-like pattern, so that
+each file represents an entry in the sequence. Each included file is a valid
+YAML file.
+
+The pattern is not full glob pattern (yet). It may contain only a single star
+and an arbitrary prefix and suffix.
+
+For example:
+
+.. code-block:: yaml
+
+    # config.yaml
+    items: !GlobSeq fruits/*.yaml
+
+.. code-block:: yaml
+
+    # fruits/apple.yaml
+    name: apple
+    price: 1
+
+.. code-block:: yaml
+
+    # fruits/pear.yaml
+    name: pear
+    price: 2
+
+Is equivalent of:
+
+.. code-block:: yaml
+
+   items:
+   - name: apple
+     price: 1
+   - name: pear
+     price: 2
+
+.. note:: The entries are unsorted, so you should not use the ``!GlobSeq`` in
+   places sensitive to positions for items. You should use plain sequence
+   with ``!Include`` for each item instead
+
+This construction is particularly powerful with :ref:`merge key<map-merge>`
+``<<``. For example:
+
+.. code-block:: yaml
+
+    # config.yaml
+    <<: !GlobSeq config/*.yaml
+
+.. code-block:: yaml
+
+    # config/basics.yaml
+    firstname: John
+    lastname: Smith
+
+.. code-block:: yaml
+
+    # config/location.yaml
+    country: UK
+    city: London
+
+Is equivalent of:
+
+.. code-block:: yaml
+
+    firstname: John
+    lastname: Smith
+    country: UK
+    city: London
+
+Multiple sets of files might be concatenated using
+:ref:`unpack operator<seq-merge>`.
+
+
 Include Mapping From Set of Files
 ---------------------------------
+
+The ``!GlobMap`` tag includes the files matching a glob-like pattern, so that
+each file represents an entry in the mapping. The key in the mapping is
+extracted from the part of the filename that is enclosed in parenthesis. Each
+included file is a valid YAML file.
+
+The pattern is not full glob pattern (yet). It may contain only a single star
+and an arbitrary prefix and suffix. It must contain parenthesis and the star
+character must be between the parenthesis.
+
+.. code-block:: yaml
+
+    # config.yaml
+    items: !GlobSeq fruits/(*).yaml
+
+.. code-block:: yaml
+
+    # fruits/apple.yaml
+    title: Russian Apples
+    price: 1
+
+.. code-block:: yaml
+
+    # fruits/pear.yaml
+    title: Sweet Pears
+    price: 2
+
+Is equivalent of:
+
+.. code-block:: yaml
+
+   items:
+     apple:
+       title: Russian Apples
+       price: 1
+     pear:
+       title: Sweet Pears
+       price: 2
+
+You can also merge mappings from the multiple directories and do other crazy
+things using :ref:`merge operator<map-merge>` ``<<``.
 
 .. _map-merge:
 
