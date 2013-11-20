@@ -103,12 +103,30 @@ static void qu_bool_cli_parser(struct qu_context *ctx,
     (void) ctx;
     (void) argname;
     if(action == NULL) {  /*  Bare set  */
+        qu_code_print(ctx,
+            "if(!qu_parse_bool(${argname}, &cli->${optname:c})) {\n"
+            "    qu_optparser_error(ctx, `Boolean expected`);\n"
+            "}\n"
+            "cli->${optname:c}_set = 1;\n"
+            , "argname", argname
+            , "optname", opt->path
+            , NULL);
         return;
     }
     if(!strcmp(action, "enable")) {
+        qu_code_print(ctx,
+            "cli->${optname:c} = 1;\n"
+            "cli->${optname:c}_set = 1;\n"
+            , "optname", opt->path
+            , NULL);
         return;
     }
     if(!strcmp(action, "disable")) {
+        qu_code_print(ctx,
+            "cli->${optname:c} = 0;\n"
+            "cli->${optname:c}_set = 1;\n"
+            , "optname", opt->path
+            , NULL);
         return;
     }
 }

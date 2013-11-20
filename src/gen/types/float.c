@@ -96,6 +96,14 @@ static void qu_float_cli_parser(struct qu_context *ctx,
     (void) argname;
     (void) ctx;
     if(action == NULL) {  /*  Bare set  */
+        qu_code_print(ctx,
+            "if(!qu_parse_float(${argname}, &cli->${optname:c})) {\n"
+            "    qu_optparser_error(ctx, `Float expected`);\n"
+            "}\n"
+            "cli->${optname:c}_set = 1;\n"
+            , "argname", argname
+            , "optname", opt->path
+            , NULL);
         return;
     }
 }

@@ -120,9 +120,7 @@ static void qu_int_cli_parser(struct qu_context *ctx,
     struct qu_int_option *self = opt->typedata;
     if(action == NULL) {  /*  Bare set  */
         qu_code_print(ctx,
-            "char *end;\n"
-            "long val = strtol(${argname}, &end, 0);\n"
-            "if(end != ${argname} + strlen(${argname})) {\n"
+            "if(!qu_parse_int(${argname}, &cli->${optname:c})) {\n"
             "    qu_optparser_error(ctx, `Integer expected`);\n"
             "}\n"
             , "argname", argname
@@ -130,24 +128,25 @@ static void qu_int_cli_parser(struct qu_context *ctx,
             , NULL);
         if(self->min) {
             qu_code_print(ctx,
-                "if(val < ${min:l})\n"
+                "if(cli->${optname:c} < ${min:l})\n"
                 "    qu_optparser_error(ctx, "
                     "`Integer too low, min ${min:l}`);\n"
                 , "min:l", self->min
+                , "optname", opt->path
                 , NULL);
         }
         if(self->max) {
             qu_code_print(ctx,
-                "if(val > ${max:d})\n"
+                "if(cli->${optname:c} > ${max:d})\n"
                 "    qu_optparser_error(ctx, "
                     "`Integer too big, max ${max:d}`);\n"
                 , "max:l", self->max
+                , "optname", opt->path
                 , NULL);
         }
 
         qu_code_print(ctx,
             "cli->${optname:c}_set = 1;\n"
-            "cli->${optname:c} = val;\n"
             , "argname", argname
             , "optname", opt->path
             , NULL);
