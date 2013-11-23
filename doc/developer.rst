@@ -513,6 +513,28 @@ Mapping Type
 Custom Type
 -----------
 
+Sometimes you want to reuse a part of the config in multiple places. You
+can do this with yaml aliases. But it's better to be done by declaring a
+custom type. Here we will describe only how to refer to a custom type.
+See :ref:`custom types <custom-types>` for a way to declare a type.
+
+The simplest type reference is:
+
+.. code-block:: yaml
+
+   val: !Type type_name
+
+As with most types, declaration may be expanded to a mapping:
+
+.. code-block:: yaml
+
+   val: !Type
+     description: My Value
+     type: type_name
+     example: some data
+
+.. note:: Neither command-line, nor default are supported for type reference
+   for now. But this is expected to be improved in future
 
 
 Special Keys
