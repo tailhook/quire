@@ -346,6 +346,7 @@ This works as following:
    arguments for options that either useful for almost every user, or
    should only be specified in the command-line.
 
+.. _example-array:
 
 Arrays
 ======

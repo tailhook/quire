@@ -507,6 +507,49 @@ are not supported yet.
 Array Type
 ----------
 
+The array type has no short form, and is always written as a mapping. The only
+key required in the mapping is an ``element`` which denotes the type of item
+in each array element.
+
+.. code-block:: yaml
+
+   arr: !Array
+     element: !Int
+
+Any quire type may be the element of the array. Including array itself. More
+comprehensive example below:
+
+.. code-block:: yaml
+
+   arr: !Array
+     description: Array of strings
+     element: !String hello
+     example: [hello, world]
+
+.. note:: Command-line argument parsing is not supported neither for the array
+   itself nor for any child of it. This may be improved in future. But look
+   at :ref:`variables <variables>`, if you need some command-line customization.
+
+The C structure for the array is a linked list:
+
+.. code-block:: c
+
+    struct cfg_a_str {
+        struct cfg_a_str *next;
+        const char *val;
+        int val_len;
+    };
+
+    struct cfg_main {
+        qu_config_head head;
+        struct cfg_a_str *arr;
+        struct cfg_a_str **arr_tail;
+        int arr_len;
+    };
+
+The example of array usage is given in :ref:`tutorial <example-array>`.
+
+
 Mapping Type
 ------------
 
