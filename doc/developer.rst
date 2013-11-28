@@ -553,6 +553,56 @@ The example of array usage is given in :ref:`tutorial <example-array>`.
 Mapping Type
 ------------
 
+The mapping type has no short form, and is always written as a mapping. The
+two properties required in the mapping are ``key-element`` and
+``value-element`` which denote the type of key and value for the mapping.
+
+.. code-block:: yaml
+
+   arr: !Mapping
+     key-element: !Int
+     value-element: !String
+
+Any quire type may be the value element of the array. Including array itself.
+A key may be any *scalar* type. More comprehensive example below:
+
+.. code-block:: yaml
+
+   map: !Mappings
+     description: A mapping of string to structure
+     key-element: !String
+     value-element: !String
+     example:
+        apple: fruit
+        carrot vegetable
+
+.. note:: Command-line argument parsing is not supported neither for the
+   mapping itself nor for any child of it. This may be improved in future. But
+   look at :ref:`variables <variables>`, if you need some command-line
+   customization.
+
+The C structure for the mapping is a linked list:
+
+.. code-block:: c
+
+    struct cfg_m_str_str {
+        struct cfg_m_str_str *next;
+        const char *key;
+        int key_len;
+        const char *val;
+        int val_len;
+    };
+
+    struct cfg_main {
+        qu_config_head head;
+        struct cfg_m_str_str *map;
+        struct cfg_m_str_str **map_tail;
+        int map_len;
+    };
+
+The example of mapping usage is given in :ref:`tutorial <example-mapping>`.
+
+
 Custom Type
 -----------
 

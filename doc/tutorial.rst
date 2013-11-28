@@ -413,6 +413,7 @@ We can have a frog that can cry with both USA and UK slang :)
 
 You can also create nested arrays, and arrays of structures.
 
+.. _example-mapping:
 
 Mappings
 ========
