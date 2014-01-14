@@ -1,0 +1,7 @@
+mapping:
+    a
+    b
+...
+---
+- command-line: quire-tool -E "/mapping"
+  output: "a\n    b"

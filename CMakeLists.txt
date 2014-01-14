@@ -204,6 +204,7 @@ ADD_TOOL_TEST(listblock)
 ADD_TOOL_TEST(exkeys)
 ADD_TOOL_TEST(vars)
 ADD_TOOL_TEST(template)
+ADD_TOOL_TEST(plainscalar)
 
 ENDIF()
 

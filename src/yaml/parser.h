@@ -29,6 +29,7 @@ struct qu_parser {
     int curline;
     int curpos;
     int indent;
+    int scalarindent;
     unsigned char *ptr;
     int flow_num;
     char flow_stack[MAX_FLOW_STACK];

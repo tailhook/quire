@@ -196,6 +196,7 @@ void qu_tokenize(struct qu_parser *ctx) {
     ctx->curline = 1;
     ctx->linestart = 1;
     ctx->curpos = 1;
+    ctx->scalarindent = 0;
     ctx->indent = 0;
     ctx->ptr = ctx->buf;
     ctx->flow_num = 0;
@@ -213,7 +214,7 @@ void qu_tokenize(struct qu_parser *ctx) {
                         SYNTAX_ERROR("Sequence entry dash sign is only"
                                      " allowed at the start of line")
                     }
-                    ctx->indent += 1;
+                    ctx->scalarindent = ctx->indent + 2;
                     ctok->indent = ctx->indent;
                     break;
                 } else if(CHAR == '-' && NEXT && CHAR == '-') {
@@ -227,6 +228,7 @@ void qu_tokenize(struct qu_parser *ctx) {
                 FORCE_NEXT;
                 if(KLASS == CHAR_WHITESPACE) {
                     ctx->linestart = 0;
+                    ctx->scalarindent = ctx->indent + 2;
                     ctok->kind = QU_TOK_MAPPING_KEY;
                     break;
                 } else {
@@ -420,7 +422,7 @@ void qu_tokenize(struct qu_parser *ctx) {
                 if(!ctx->flow_num && CHAR == '\n') {
                     /* scalar may continue next line */
                     do {
-                        int indent = ctx->indent+1;
+                        int indent = ctx->scalarindent+1;
                         ctx->curline += 1;
                         ctx->curpos = 0;
                         if(!NEXT) break;
@@ -441,6 +443,8 @@ void qu_tokenize(struct qu_parser *ctx) {
                             if(!NEXT) break;
                         }
                     } while(0);
+                } else if(CHAR != '\n') {
+                    ctx->scalarindent = ctx->indent;
                 }
                 // Let's strip trailing whitespace
                 while(PREV_CHAR == ' ' || PREV_CHAR == '\t' || PREV_CHAR == '\n') {
@@ -710,7 +714,7 @@ qu_ast_node *_qu_parse(struct qu_parser *ctx) {
 
     if(CTOK->kind != QU_TOK_DOC_END) {
         qu_err_file_fatal(ctx->err, CTOK->filename, CTOK->start_line,
-            "Unexpected token");
+            "Unexpected token at end of document");
     }
     return node;
 }
