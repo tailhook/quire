@@ -31,12 +31,12 @@ struct qu_config_struct *qu_struct_substruct(struct qu_context *ctx,
     self->parent = parent;
     self->has_bitsets = parent->has_bitsets;
     if(parent->path) {
-        self->path = qu_template_alloc(ctx, "${parent}.${name}",
+        self->path = qu_template_alloc(ctx, "${parent}.${name:c}",
             "parent", parent->path,
             "name", name,
             NULL);
     } else {
-        self->path = name;
+        self->path = qu_template_alloc(ctx, "${name:c}", "name", name);
     }
     struct qu_struct_member *mem = obstack_alloc(&ctx->parser.pieces,
         sizeof(struct qu_struct_member));
@@ -62,12 +62,12 @@ void qu_struct_add_option(struct qu_context *ctx,
     mem->guard = guard;
     TAILQ_INSERT_TAIL(&parent->children, mem, lst);
     if(parent->path) {
-        option->path = qu_template_alloc(ctx, "${parent}.${name}",
+        option->path = qu_template_alloc(ctx, "${parent}.${name:c}",
             "parent", parent->path,
             "name", name,
             NULL);
     } else {
-        option->path = name;
+        option->path = qu_template_alloc(ctx, "${name:c}", "name", name);
     }
 }
 
