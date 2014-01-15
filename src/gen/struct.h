@@ -25,6 +25,7 @@ struct qu_config_struct {
     TAILQ_HEAD(qu_config_s_list, qu_struct_member) children;
     struct qu_config_struct *parent;
     const char *path;
+    const char *structname;
     int has_bitsets:1;
 };
 

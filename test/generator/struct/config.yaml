@@ -32,4 +32,5 @@ val3: !Type
     nested:
       b: ex_b
 nested:
+  __name__: nested
   val: !Type str1

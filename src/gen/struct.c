@@ -11,6 +11,7 @@
 static void qu_struct_init(struct qu_config_struct *self) {
     self->parent = NULL;
     self->path = NULL;
+    self->structname = NULL;
     self->has_bitsets = 0;
     TAILQ_INIT(&self->children);
 }
@@ -103,9 +104,16 @@ void qu_struct_definition(struct qu_context *ctx, struct qu_config_struct *str)
     TAILQ_FOREACH(mem, &str->children, lst) {
         qu_guard_print_open(ctx, mem->guard);
         if(mem->is_struct) {
-            qu_code_print(ctx,
-                "struct {\n"
-                , NULL);
+            if(mem->p.str->structname) {
+                qu_code_print(ctx,
+                    "struct ${pref}_${name:c}{\n"
+                    , "name", mem->p.str->structname
+                    , NULL);
+            } else {
+                qu_code_print(ctx,
+                    "struct {\n"
+                    , NULL);
+            }
             qu_struct_definition(ctx, mem->p.str);
             qu_code_print(ctx,
                 "} ${name:c};\n",

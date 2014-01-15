@@ -737,7 +737,7 @@ by user or the default value is provided. For example:
 
 Will turn into the following structure:
 
-.. code-block:: yaml
+.. code-block:: c
 
    struct cfg_main {
      qu_config_head head;
@@ -760,6 +760,40 @@ user specified them in configuration file.
 The ``__set_flags__`` property can be specified in any structure, including the
 root structure and ``!Struct`` custom type or its descendent. The flag is
 propagated to the nested structures but not to the ``!Type`` fields.
+
+
+Structure Name
+--------------
+
+Usually nested mappings that do not denoted by ``!Type`` are represented by
+anonymous structures. But you can set ``__name__`` for the structure to have
+a name.
+
+.. code-block:: yaml
+
+    data:
+      __name__: data
+      a: !Int 1
+      b: !Int 2
+
+Will name the internal structure:
+
+.. code-block:: c
+
+   struct cfg_main {
+     qu_config_head head;
+     struct cfg_data {
+        unsigned int a_set:1;
+        unsigned int b_set:1;
+        long a;
+        long b;
+     } data;
+   };
+
+This is occasionally useful to use the structures in code.
+
+.. note:: Author of config is responsible to set unique name of the structure
+   otherwise the C compiler will throw an error.
 
 
 .. _custom-types:
