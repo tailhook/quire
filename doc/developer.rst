@@ -814,6 +814,35 @@ Enumeration Type
 Tagged Scalar Type
 ------------------
 
+
+Field Type
+----------
+
+Field type allows to wrap any other type into yet another C structure.
+It is sometimes useful, especially with non-scalar types. For example:
+
+.. code-block:: yaml
+
+   __types__:
+     string_list: !Field
+       field: !Array
+         element: !String
+
+Results into the following C definitions:
+
+.. code-block:: c
+
+   struct cfg_string_list {
+       struct cfg_a_str *val;
+       struct cfg_a_str **val_tail;
+       int val_len;
+   };
+   struct cfg_main {
+       qu_config_head head;
+       struct cfg_string_list arr1;
+   };
+
+
 C Fields
 ========
 

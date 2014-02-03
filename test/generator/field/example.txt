@@ -1,0 +1,11 @@
+# field
+# =====
+#
+# Field type test
+#
+
+arr1: # required
+arr2:
+- - one
+  - two
+- - three

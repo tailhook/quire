@@ -1,0 +1,18 @@
+__meta__:
+  program-name: field
+  default-config: /etc/__quire_test__/field.yaml
+  description: Field type test
+
+
+__types__:
+  string_list: !Field
+    field: !Array
+      element: !String
+
+arr1: !Type string_list
+arr2: !Array
+  element: !Type string_list
+  example:
+  - - one
+    - two
+  - - three

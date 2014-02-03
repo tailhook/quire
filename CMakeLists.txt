@@ -38,6 +38,7 @@ ADD_EXECUTABLE(quire-gen
     src/gen/classes/scalar.c
     src/gen/classes/enum.c
     src/gen/classes/choice.c
+    src/gen/classes/field.c
     src/gen/types/types.c
     src/gen/types/int.c
     src/gen/types/str.c
@@ -181,6 +182,7 @@ ADD_SUBDIRECTORY(test/generator/if)
 ADD_SUBDIRECTORY(test/generator/vars)
 ADD_SUBDIRECTORY(test/generator/mapar)
 ADD_SUBDIRECTORY(test/generator/bitsets)
+ADD_SUBDIRECTORY(test/generator/field)
 
 # TESTS FOR QUIRE-TOOL
 

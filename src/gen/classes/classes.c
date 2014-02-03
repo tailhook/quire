@@ -7,6 +7,7 @@
 #include "choice.h"
 #include "enum.h"
 #include "scalar.h"
+#include "field.h"
 
 static struct {
     const char *name;
@@ -15,7 +16,8 @@ static struct {
     {"!Struct", &qu_class_vptr_struct},
     {"!Choice", &qu_class_vptr_choice},
     {"!Enum", &qu_class_vptr_enum},
-    {"!TagScalar", &qu_class_vptr_scalar}
+    {"!TagScalar", &qu_class_vptr_scalar},
+    {"!Field", &qu_class_vptr_field}
 };
 const int qu_vpointers_num = sizeof(qu_vpointers)/sizeof(qu_vpointers[0]);
 
