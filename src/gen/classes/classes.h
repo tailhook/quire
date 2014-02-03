@@ -8,6 +8,7 @@ struct qu_option;
 
 struct qu_class {
     const char *name;
+    qu_ast_node *node;
     qu_token *start_token;  /*  This is to store file/line info  */
     int line;
     struct qu_class_vptr *vp;
@@ -27,5 +28,6 @@ struct qu_class_vptr {
 
 struct qu_class_vptr *qu_class_get_vptr(const char *name);
 void qu_classes_print_functions(struct qu_context *ctx);
+void qu_classes_print_cdecls(struct qu_context *ctx, qu_ast_node *source);
 
 #endif  /* QUIRE_H_GEN_CLASSES */

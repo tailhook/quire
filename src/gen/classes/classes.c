@@ -2,6 +2,7 @@
 
 #include "../context.h"
 #include "../util/print.h"
+#include "../../yaml/access.h"
 #include "classes.h"
 #include "struct.h"
 #include "choice.h"
@@ -52,4 +53,20 @@ static void qu_classes_body_visit(struct qu_context *ctx, struct qu_class *cls)
 void qu_classes_print_functions(struct qu_context *ctx) {
     qu_classes_decl_visit(ctx, ctx->class_index.root);
     qu_classes_body_visit(ctx, ctx->class_index.root);
+}
+
+void qu_classes_print_cdecls(struct qu_context *ctx, qu_ast_node *source) {
+    if(source->kind != QU_NODE_MAPPING)
+        return;
+    qu_map_member *item;
+    TAILQ_FOREACH(item, &source->val.map_index.items, lst) {
+        const char *mname = qu_node_content(item->key);
+        if(mname[0] == '_' && mname[1] != '_' && item->value->tag &&
+            !strcmp(item->value->tag, "!CDecl")) {
+            qu_code_print(ctx, "${typ} ${varname:c};\n"
+                , "typ", qu_node_content(item->value)
+                , "varname", mname
+                , NULL);
+        }
+    }
 }

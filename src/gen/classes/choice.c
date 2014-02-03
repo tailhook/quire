@@ -54,6 +54,10 @@ static void qu_choice_print(struct qu_context *ctx, struct qu_class *cls) {
         "union ${pref}_${typename} {\n"
         "   struct ${pref}_${typename}_any {\n"
         "       enum ${pref}_${typename}_choice tag;\n"
+        , "typename", cls->name
+        , NULL);
+    qu_classes_print_cdecls(ctx, cls->node);
+    qu_code_print(ctx,
         "   } any;\n"
         , "typename", cls->name
         , NULL);
@@ -64,6 +68,7 @@ static void qu_choice_print(struct qu_context *ctx, struct qu_class *cls) {
             , "typename", cls->name
             , "choice", self->choices[i].name
             , NULL);
+        qu_classes_print_cdecls(ctx, cls->node);
         self->choices[i].opt->vp->definition(ctx, self->choices[i].opt, "val");
         qu_code_print(ctx,
             "} ${choice:c};\n"

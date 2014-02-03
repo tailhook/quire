@@ -63,6 +63,7 @@ static void qu_scalar_print(struct qu_context *ctx, struct qu_class *cls) {
         "} tag;\n"
         , NULL);
     self->opt->vp->definition(ctx, self->opt, "val");
+    qu_classes_print_cdecls(ctx, cls->node);
     qu_code_print(ctx,
         "};\n"
         , NULL);

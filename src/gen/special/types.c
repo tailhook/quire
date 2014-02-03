@@ -61,6 +61,7 @@ void qu_special_types(struct qu_context *ctx, qu_ast_node *typesnode) {
         *cls = qu_class_new(ctx, cname, item->value);
         if(!*cls)
             continue;  /*  Error is already reported  */
+        (*cls)->node = item->value;
         (*cls)->vp->init(ctx, (*cls), item->value);
     }
 }

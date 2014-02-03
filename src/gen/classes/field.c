@@ -35,6 +35,7 @@ static void qu_field_print(struct qu_context *ctx, struct qu_class *cls) {
         , "typename", cls->name
         , NULL);
     self->opt->vp->definition(ctx, self->opt, "val");
+    qu_classes_print_cdecls(ctx, cls->node);
     qu_code_print(ctx,
         "};\n"
         , NULL);
