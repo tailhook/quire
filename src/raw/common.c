@@ -78,10 +78,10 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
             }
             if(flags & QU_RAW_FLAG_TEMPLATE && item->value->tag &&
                 !strncmp(item->value->tag, "!Template:", 10)) {
-                qu_ast_node *nnode = qu_raw_template(ctx, item->value);
-                qu_raw_visitor(ctx, nnode,
-                    qu_node_frame(&ctx->pieces, item->value, vars),
-                    flags);
+                struct qu_var_frame *tframe = qu_node_frame(&ctx->pieces,
+                    item->value, vars);
+                qu_ast_node *nnode = qu_raw_template(ctx, item->value, tframe);
+                qu_raw_visitor(ctx, nnode, tframe, flags);
                 item->value = nnode;
             } else if(flags & QU_RAW_FLAG_NOVARS && item->value->tag &&
                 !strcmp(item->value->tag, "!NoVars")) {
@@ -103,10 +103,10 @@ static void qu_raw_visitor(struct qu_parser *ctx, qu_ast_node *node,
             }
             if(flags & QU_RAW_FLAG_TEMPLATE && item->value->tag &&
                 !strncmp(item->value->tag, "!Template:", 10)) {
-                qu_ast_node *nnode = qu_raw_template(ctx, item->value);
-                qu_raw_visitor(ctx, nnode,
-                    qu_node_frame(&ctx->pieces, item->value, vars),
-                    flags);
+                struct qu_var_frame *tframe = qu_node_frame(&ctx->pieces,
+                    item->value, vars);
+                qu_ast_node *nnode = qu_raw_template(ctx, item->value, tframe);
+                qu_raw_visitor(ctx, nnode, tframe, flags);
                 item->value = nnode;
             } else if(flags & QU_RAW_FLAG_NOVARS && item->value->tag &&
                 !strcmp(item->value->tag, "!NoVars")) {

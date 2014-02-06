@@ -59,6 +59,5 @@ void qu_sequence_add(struct qu_parser *ctx,
     qu_ast_node *seq, qu_ast_node *child);
 int qu_mapping_add(struct qu_parser *ctx,
     qu_ast_node *map, qu_ast_node *knode, const char *key, qu_ast_node *value);
-qu_ast_node *qu_node_deep_copy(struct qu_parser *ctx, qu_ast_node *src);
 
 #endif  /* QUIRE_H_YAML_NODE */

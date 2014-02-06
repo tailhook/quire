@@ -6,6 +6,7 @@
 
 struct qu_parser;
 
-qu_ast_node *qu_raw_template(struct qu_parser *ctx, qu_ast_node *node);
+qu_ast_node *qu_raw_template(struct qu_parser *ctx, qu_ast_node *node,
+    struct qu_var_frame *vars);
 
 #endif  /* QUIRE_H_RAW_TEMPLATE */

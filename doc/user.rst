@@ -186,6 +186,10 @@ Few comments:
 3. The result of substitution is parsed using same rules as plain scalar, so
    may use :ref:`units <units>` as well.
 
+.. note:: You can't use variables when declaring mapping key. The only case
+   where you can is inside a :ref:`Template <templates>`.
+
+.. _templates:
 
 Templates
 =========
@@ -226,12 +230,15 @@ The templates may be arbitrarily complex. There are few limitations:
    example, or define all the variables to get rid of warnings of
    ``Undefined variable``
 
-3. Variables in mapping keys or tags are not supported
+3. Variables in tags are not supported
 
 Note, the limitation #1, doesn't limit you to use anchor or templates inside
 a template (the anchored node), just the scoped variables inside the template
 invocation (the items of a mapping tagged ``!Template``) must be scalar. And
 anchors are never scoped.
+
+.. note:: The variable expansion in mapping keys work *only* for template, but
+   doesn't work in all other cases.
 
 
 Includes
