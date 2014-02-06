@@ -113,7 +113,7 @@ void parse_options(int argc, char **argv) {
 static void _emit_node(qu_emit_context *ctx, qu_ast_node *node) {
     switch(node->kind) {
     case QU_NODE_MAPPING: {
-        qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_START);
+        qu_emit_opcode(ctx, node->tag, NULL, QU_EMIT_MAP_START);
         qu_map_member *item;
         TAILQ_FOREACH(item, &node->val.map_index.items, lst) {
             _emit_node(ctx, item->key);
@@ -123,7 +123,7 @@ static void _emit_node(qu_emit_context *ctx, qu_ast_node *node) {
         qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_MAP_END);
         } break;
     case QU_NODE_SEQUENCE: {
-        qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_START);
+        qu_emit_opcode(ctx, node->tag, NULL, QU_EMIT_SEQ_START);
         qu_seq_member *item;
         TAILQ_FOREACH(item, &node->val.seq_index.items, lst) {
             qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_ITEM);
@@ -132,7 +132,7 @@ static void _emit_node(qu_emit_context *ctx, qu_ast_node *node) {
         qu_emit_opcode(ctx, NULL, NULL, QU_EMIT_SEQ_END);
         } break;
     case QU_NODE_SCALAR:
-        qu_emit_scalar(ctx, NULL, NULL, QU_STYLE_PLAIN,
+        qu_emit_scalar(ctx, node->tag, NULL, QU_STYLE_PLAIN,
                        qu_node_content(node), -1);
         break;
     case QU_NODE_ALIAS: {
