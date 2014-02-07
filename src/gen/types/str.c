@@ -133,13 +133,12 @@ static void qu_str_parser(struct qu_context *ctx,
 {
     (void) opt;
     qu_code_print(ctx,
-        "${expr} = qu_node_content(node${level:d});\n"
-        "if(!${expr})\n"
+        "if(!qu_node_content(node${level:d}))\n"
         "   qu_report_error(ctx, node${level:d}, `String expected`);\n"
-        "${expr}_len = strlen(${expr});\n",
-        "level:d", level,
-        "expr", expr,
-        NULL);
+        "qu_node_to_scalar(ctx, node${level:d}, &${expr}, &${expr}_len);\n"
+        , "level:d", level
+        , "expr", expr
+        , NULL);
 
 }
 

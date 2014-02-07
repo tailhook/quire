@@ -64,6 +64,13 @@ void *qu_config_alloc(struct qu_config_context *ctx, int size) {
     return obstack_alloc(ctx->alloc, size);
 }
 
+void qu_node_to_scalar(struct qu_config_context *ctx, qu_ast_node *node,
+    const char **target, int *target_len)
+{
+    *target = obstack_copy0(ctx->alloc, node->content, node->content_len);
+    *target_len = node->content_len;
+}
+
 void qu_set_string(struct qu_config_context *ctx,
     const char *name, int nlen, const char *data, int dlen) {
     qu_var_set_string(&ctx->parser.pieces, ctx->vars, name, nlen, data, dlen);

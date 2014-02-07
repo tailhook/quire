@@ -95,7 +95,9 @@ qu_ast_node *qu_map_value(qu_map_member *iter);
 
 void *qu_config_init(void *cfg, int size);
 void qu_config_free(void *cfg);
-void *qu_config_alloc(struct qu_config_context *cfg, int size);
+void *qu_config_alloc(struct qu_config_context *ctx, int size);
+void qu_node_to_scalar(struct qu_config_context *ctx, qu_ast_node *node,
+    const char **target, int *target_len);
 
 // Methods from cfg/api.c
 struct qu_config_context *qu_config_parser(struct qu_config_head *head,

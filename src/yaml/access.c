@@ -18,8 +18,10 @@ const char *qu_node_content(qu_ast_node *node) {
         }
         return NULL;
     }
-    if(!node->content)
+    if(!node->content) {
         node->content = qu_parse_content(node, &node->ctx->pieces);
+        node->content_len = strlen(node->content);
+    }
     return node->content;
 }
 
