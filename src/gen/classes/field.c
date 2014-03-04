@@ -51,8 +51,7 @@ static void qu_field_init(struct qu_context *ctx, struct qu_class *cls,
     qu_ast_node *field = qu_map_get(node, "field");
 
     if(!field)
-        qu_err_node_fatal(ctx->err, node,
-            "TagScalar must have `type` and `tags`");
+        qu_err_node_fatal(ctx->err, node, "Field must have `field` key");
 
     self->opt = qu_parse_option(ctx, field, "", NULL);
 
